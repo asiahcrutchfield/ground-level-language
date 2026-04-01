@@ -1,0 +1,13 @@
+{
+    "u00-0001": 
+    {
+        "vocab": "water",
+        "image": [
+            {"filename": "u00-0001.jpg", "type": "default"},
+            {"filename": "en_00-0001_001.jpg", "type": "variant"}
+        ],
+        "audio": [
+            {"filename": "en_u00-0001.mp3", "gender": "male"}
+        ]
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "u00-0001": 
+    {
+        "vocab": "水",
+        "image": [
+            {"filename": "u00-0001.jpg", "type": "default"}
+        ],
+        "audio": [
+            {"filename": "zh_u00-0001.mp3", "gender": "male"}
+        ]
+    },
+    "u00-0002": 
+    {
+        "vocab": "貓",
+        "image": [
+            {"filename": "u00-0002.jpg", "type": "default"}
+        ],
+        "audio": [
+            {"filename": "zh_u00-0002.mp3", "gender": "male"}
+        ]
+    },
+    "u00-0003": 
+    {
+        "vocab": "公園",
+        "image": [
+            {"filename": "u00-0003.jpg", "type": "default"}
+        ],
+        "audio": [
+            {"filename": "zh_u00-0003.mp3", "gender": "male"}
+        ]
+    },
+    "u00-0004": 
+    {
+        "vocab": "手機",
+        "image": [
+            {"filename": "u00-0004.jpg", "type": "default"}
+        ],
+        "audio": [
+            {"filename": "zh_u00-0004.mp3", "gender": "male"}
+        ]
+    },
+    "u00-0005": 
+    {
+        "vocab": "朋友",
+        "image": [
+            {"filename": "u00-0005.png", "type": "default"}
+        ],
+        "audio": [
+            {"filename": "zh_u00-0005.mp3", "gender": "male"}
+        ]
+    }
+}

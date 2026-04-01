@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="stylesheet" href="src/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ground Level Stories</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="primer">
+        <select name="stories" id="story-select">
+        </select>
+        <div id="image-container">
+          <div id="image-frame">
+            <img class="primer-image" src="" alt="">
+          </div>
+          <audio class="vocab-audio" controls>
+            <source>
+          </audio>
+        </div>
+        <div id="btn-frame">
+          <button class="nav-btn" id="backward"><div class="arrow" id="right-arrow"></div></button>
+          <button class="nav-btn" id="forward"><div class="arrow" id="left-arrow"></div></button>
+        </div>
+      </div>
+
+      <div id="player">
+        <audio controls id="story">
+        </audio>
+      </div>
+
+      <div class="review" id="pic-audio">
+        <img src="/dictionary/zh/images/公園.jpg" class="review-img">
+
+        <form class="review-answers">
+          <div class="choice-container">
+            <div class="choice">
+              <label class="choice-label audio-label" for="audio-choice_1">
+                <audio controls class="review-audio review-answer"></audio>
+              </label>
+              <input type="radio" name="audio-choice" id="audio-choice_1">
+            </div>
+
+            <div class="choice">
+              <label class="choice-label audio-label" for="audio-choice_2">
+                <audio controls class="review-audio review-answer"></audio>
+              </label>
+              <input type="radio" name="audio-choice" id="audio-choice_2">
+            </div>
+          </div>
+
+          <button type="submit" class="answer-submit">Submit</button>
+        </form>
+      </div>
+
+      <div class="review" id="audio-pic">
+        <audio controls class="review-audio"></audio>
+
+        <form class="review-answers">
+          <div class="choice-container">
+            <div class="choice">
+              <label class="choice-label pic-label" for="pic-choice_1">
+                <img src="/dictionary/zh/images/貓.jpg" class="review-img review-answer">
+              </label>
+              <input type="radio" name="pic-choice" id="pic-choice_1">
+            </div>
+
+            <div class="choice">
+              <label class="choice-label pic-label" for="pic-choice_2">
+                <img src="/dictionary/zh/images/手機.jpg" class="review-img review-answer">
+              </label>
+              <input type="radio" name="pic-choice" id="pic-choice_2">
+            </div>
+          </div>
+
+          <button type="submit" class="answer-submit">Submit</button>
+        </form>
+      </div>
+    </div>
+
+    <!--Script-->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
