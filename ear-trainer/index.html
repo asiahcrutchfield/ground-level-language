@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="src/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ground Level Ear Trainer</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="test-zone">
+        <ul id="sound-primer">
+          <!--append here-->
+        </ul>
+          <template id="sound-template">
+            <li>
+              <audio></audio>
+            </li>
+          </template>
+        <button class="test-button start-button">▶️</button>
+
+        <div id="test-area">
+          <div class="test true_false-test">
+            <div class="question_answer-area">
+              <div class="question-area true_false-question_area">
+                <div class="question-box true_false-box">
+                  <audio class="question true_false-question"></audio>
+                  <audio class="pseudo-answer"></audio>
+                </div>
+              </div>
+              
+              <div class="answer-area true_false-answer_area">
+                <div class="answer-box true_false-box">
+                  <form id="true-false">
+                    <input type="radio" name="true_false-answer" id="TF_Ans-1">
+                      <label for="TF_Ans-1">
+                        <audio class="answer true_false-choice"></audio>
+                        ✅
+                      </label>
+                    <input type="radio" name="true_false-answer" id="TF_Ans-2">
+                      <label for="TF_Ans-2">
+                        <audio class="answer true_false-choice"></audio>
+                        ❌
+                      </label>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="test matching-test">
+            <div class="question_answer-area">
+              <div class="question-area matching-question_area">
+                <div class="question-box matching-box">
+                  <audio class="question matching-question"></audio>
+                </div>
+              </div>
+              
+              <div class="answer-area matching-answer_area">
+                <div class="answer-box matching-box">
+                  <form id="matching">
+                    <input type="radio" name="matching-answer" id="Match_Ans-1">
+                      <label for="Match_Ans-1">
+                        <audio class="question matching_Ans-choice"></audio>
+                      </label>
+                    <input type="radio" name="matching-answer" id="Match_Ans-2">
+                      <label for="Match_Ans-2">
+                        <audio class="question matching_Ans-choice"></audio>
+                      </label>
+                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="test rhythm-test">
+            <div class="question_answer-area">
+              <div class="question-area rhythm-question_area">
+                <div class="question-box rhythm-box">
+                  <audio class="question rhythm-question"></audio>
+                </div>
+              </div>
+              
+              <div class="answer-area rhythm-answer_area">
+                <div class="answer-box rhythm-box">
+                  <form id="rhythm">
+                    <input type="radio" name="rhythm-answer" id="Rhythm_Ans-1">
+                      <label for="Rhythm_Ans-1">
+                        <audio class="question rhythm_Ans-choice"></audio>
+                      </label>
+                    <input type="radio" name="rhythm-answer" id="Rhythm_Ans-2">
+                      <label for="Rhythm_Ans-2">
+                        <audio class="question rhythm_Ans-choice"></audio>
+                      </label>
+                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="test syllable-test">
+              <div class="question_answer-area">
+                <div class="question-area syllable-question_area">
+                  <div class="question-box syllable-box">
+                    <audio class="question syllable-question"></audio>
+                  </div>
+                </div>
+                
+                <div class="answer-area syllable-answer_area">
+                  <div class="answer-box syllable-box">
+                    <form id="syllables">
+                      <input type="radio" name="syllable-answer" id="Syllable_Ans-1">
+                        <label for="Syllable_Ans-1">
+                          <audio class="question syllable_Ans-choice"></audio>
+                        </label>
+                      <input type="radio" name="syllable-answer" id="Syllable_Ans-2">
+                        <label for="Syllable_Ans-2">
+                          <audio class="question syllable_Ans-choice"></audio>
+                        </label>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
