@@ -1,12 +1,10 @@
-let language: string = document.documentElement.lang
+let lang: string = document.documentElement.lang
 /*
 ==============
 PATHS
 ==============
 */
-const vowelPath: string = `/engine/speech/${language}/phonemes/vowels`
-const consonantPath: string = `/engine/speech/${language}/phonemes/consonants`
-const phonemeJsonPath: string = `/engine/speech/${language}/phonemes/`
+const phonemeJsonPath: string = `/engine/speech/${lang}/phonemes/`
 
 /*
 ==============
@@ -48,12 +46,14 @@ type PhonemeFile = {
     consonants: Record<string, PhonemeEntry>
 }   
 
+const phonemeFile = async function phonemes(): Promise<PhonemeFile> {
+    return await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
+}
+
 async function populatePrimer(): Promise<void> {
-    const phonemeFile: PhonemeFile = 
-        await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
-        
-    const vowels: [string, PhonemeEntry][] = [...Object.entries(phonemeFile.vowels)]
-    const consonants: [string, PhonemeEntry][] = [...Object.entries(phonemeFile.consonants)]
+    const phonemeData = await phonemeFile()
+    const vowels: [string, PhonemeEntry][] = [...Object.entries(phonemeData.vowels)]
+    const consonants: [string, PhonemeEntry][] = [...Object.entries(phonemeData.consonants)]
     const allSounds = [
         ...vowels.map(([id, sound]) => ({
             id,
@@ -77,12 +77,98 @@ async function populatePrimer(): Promise<void> {
             return
         }
 
+        if (!sound.audio.default) {
+            return
+        }
+
         cloneAudioEl.src = 
-            `/engine/speech/${language}/phonemes/${sound.category}/${sound.audio.default}`
+            `/engine/speech/${lang}/phonemes/${sound.category}/${sound.audio.default}`
             
         cloneAudioEl.load()
         soundPrimer.append(clone)
     })
-    console.log(allSounds)
 }
 populatePrimer()
+
+// button
+
+/*
+==============
+TEST AREA
+==============
+*/
+// true-false
+const vocabPath: string = `/engine/vocab/${lang}/audio/`
+const vocabJsonPath: string = `/engine/vocab/${lang}/`
+
+type VocabAudio = {
+    filename: string,
+    gender: string
+}[]
+type VocabImage = {
+    filename: string,
+    type: string
+}[]
+type VocabEntry = {
+    vocab: string,
+    image: VocabImage,
+    audio: VocabAudio,
+    syllables: number
+    phonemes: string[]
+}
+type VocabFile = Record<string, VocabEntry>
+
+const tfQuestion: HTMLAudioElement = 
+    document.querySelector(".true_false-question") as HTMLAudioElement
+const candidatePhoneme: HTMLAudioElement = 
+    document.querySelector(".candidate-phoneme") as HTMLAudioElement
+
+async function popTFquestion(): Promise<boolean> {
+    const vocabFile = await getPromise<VocabFile>(vocabJsonPath, "labels.json")
+
+    const listAudio = Object.entries(vocabFile)
+        .filter(([,entry]) => entry.syllables === 1)
+        .map(([id, entry]) => ({
+            id,
+            ...entry
+        }))
+    const randIndex: number = Math.floor(Math.random()*listAudio.length)
+    const audioListLen: number = listAudio[randIndex].audio.length
+    const randAudio: string = listAudio[randIndex].audio[Math.floor(Math.random()*audioListLen)].filename
+    console.log(listAudio)
+
+    tfQuestion.src = `${vocabPath}${randAudio}`
+    tfQuestion.load()
+
+    const phonemeData = await phonemeFile()
+    const phonemeList: [string, Record<string, PhonemeEntry>][] = 
+        Object.entries(phonemeData)
+    const phonemeIDs = phonemeList.flatMap(([category, entry]) => 
+            Object.entries(entry).map(([id, sound]) => ({
+                id, category, ...sound
+            }))
+        )
+    console.log(phonemeIDs)
+
+    const randAnsIndex: number = Math.floor(Math.random()*phonemeIDs.length)
+    const randAnsAudio: string = phonemeIDs[randAnsIndex].audio.default
+
+    candidatePhoneme.src = `/engine/speech/${lang}/phonemes/${phonemeIDs[randAnsIndex].category}/${randAnsAudio}`
+    candidatePhoneme.load()
+
+    // find if answer matches question
+    const tfQuestionPhonemes: string[] = listAudio[randIndex].phonemes
+    const candidateAns: string = phonemeIDs[randAnsIndex].id
+    
+    const isMatch: boolean = tfQuestionPhonemes.includes(candidateAns)
+
+    return isMatch
+}
+popTFquestion()
+
+const tfRadio: HTMLInputElement = 
+    document.querySelector('input[name="true_false-answer"]:checked') as HTMLInputElement
+    
+function checkTFquestion(answer: boolean) {
+
+}

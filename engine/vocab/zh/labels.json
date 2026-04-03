@@ -7,7 +7,9 @@
         ],
         "audio": [
             {"filename": "zh_u00-0001.mp3", "gender": "male"}
-        ]
+        ],
+        "syllables": 1,
+        "phonemes": ["v01, c02"]
     },
     "u00-0002": 
     {
@@ -17,7 +19,9 @@
         ],
         "audio": [
             {"filename": "zh_u00-0002.mp3", "gender": "male"}
-        ]
+        ],
+        "syllables": 1,
+        "phonemes": ["v01, c02"]
     },
     "u00-0003": 
     {
@@ -27,7 +31,9 @@
         ],
         "audio": [
             {"filename": "zh_u00-0003.mp3", "gender": "male"}
-        ]
+        ],
+        "syllables": 2,
+        "phonemes": ["v01, c02"]
     },
     "u00-0004": 
     {
@@ -37,7 +43,9 @@
         ],
         "audio": [
             {"filename": "zh_u00-0004.mp3", "gender": "male"}
-        ]
+        ],
+        "syllables": 2,
+        "phonemes": ["v01, c02"]
     },
     "u00-0005": 
     {
@@ -47,6 +55,8 @@
         ],
         "audio": [
             {"filename": "zh_u00-0005.mp3", "gender": "male"}
-        ]
+        ],
+        "syllables": 2,
+        "phonemes": ["v01, c02"]
     }
 }
