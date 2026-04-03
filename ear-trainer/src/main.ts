@@ -21,6 +21,31 @@ async function getPromise<T>(path:string, file:string): Promise<T> {
     return await response.json() as T
 }
 
+function setAudioSource(audioEl: HTMLAudioElement, path: string, filename: string): void {
+    audioEl.src = `${path}${filename}`
+    audioEl.load()
+}
+
+function getRandomItem<T>(item: T[]): T {
+    return item[Math.floor(Math.random() * item.length)]
+}
+
+function flattenFile<T>(file: Record<string, T>) {
+    return Object.entries(file)
+        .map(([id, entry]) => ({
+            id,
+            ...entry
+        }))
+}
+
+function flattenNestedFile<T>(file: Record<string, Record<string, T>>) {
+    return Object.entries(file).flatMap(([category, group]) => 
+            Object.entries(group).map(([id, entry]) => ({
+                id, category, ...entry
+            }))
+        )
+}
+
 /*
 ==============
 SOUND PRIMER
@@ -195,3 +220,5 @@ async function initTFquestion(): Promise<void> {
 }
 
 initTFquestion()
+
+// matching test
