@@ -164,11 +164,34 @@ async function popTFquestion(): Promise<boolean> {
 
     return isMatch
 }
-popTFquestion()
 
-const tfRadio: HTMLInputElement = 
-    document.querySelector('input[name="true_false-answer"]:checked') as HTMLInputElement
-    
 function checkTFquestion(answer: boolean) {
+    const tfRadio: HTMLInputElement = 
+        document.querySelector('input[name="true_false-answer"]:checked') as HTMLInputElement
+    
+    if (!tfRadio) {
+        console.log("No answer selected")
+        return
+    }
 
+    const userAnswer = tfRadio.value === "true"
+
+    if (userAnswer === answer) {
+        console.log(`That's correct! The answer is ${answer}!`)
+    } else {
+        console.log(`That's wrong! The answer is ${answer}!`)
+    }
 }
+
+async function initTFquestion(): Promise<void> {
+    const tfTestAns: boolean = await popTFquestion()
+    const form: HTMLFormElement = document.querySelector("#true-false") as HTMLFormElement
+
+    if (!form) return
+
+    form.addEventListener("change", () => {
+        checkTFquestion(tfTestAns)
+    })
+}
+
+initTFquestion()
