@@ -4,7 +4,55 @@ let lang: string = document.documentElement.lang
 PATHS
 ==============
 */
+const vocabPath: string = `/engine/vocab/${lang}/audio/`
+const vocabJsonPath: string = `/engine/vocab/${lang}/`
 const phonemeJsonPath: string = `/engine/speech/${lang}/phonemes/`
+
+type PhonemeWithMeta = {
+    id: string,
+    category: "vowels" | "consonants",
+} & PhonemeEntry
+type LabelWithMeta = {
+    id: string
+} & VocabEntry
+type BasicVocabQuestion = {
+    question: LabelWithMeta,
+    choice1: LabelWithMeta,
+    choice2: LabelWithMeta,
+    correctChoiceClass: "ans-1" | "ans-2"
+}
+type BasicPhonemeQuestion = {
+    question: PhonemeWithMeta,
+    choice1: PhonemeWithMeta,
+    choice2: PhonemeWithMeta,
+    correctChoiceClass: "ans-1" | "ans-2"
+}
+type VocabtoPhonemeQuestion = {
+    question: LabelWithMeta,
+    choice1: PhonemeWithMeta,
+    choice2: PhonemeWithMeta,
+    correctChoiceClass: "ans-1" | "ans-2"
+}
+type PhonemetoVocabQuestion = {
+    question: PhonemeWithMeta,
+    choice1: LabelWithMeta,
+    choice2: LabelWithMeta,
+    correctChoiceClass: "ans-1" | "ans-2"
+}
+type PhonemeEntry = {
+    ipa: string,
+    transcription: {
+        pinyin: string,
+        zhuyin: string
+    },
+    audio: {
+        default: string
+    }
+} 
+type PhonemeFile = {
+    vowels: Record<string, PhonemeEntry>,
+    consonants: Record<string, PhonemeEntry>
+} 
 
 /*
 ==============
@@ -26,24 +74,173 @@ function setAudioSource(audioEl: HTMLAudioElement, path: string, filename: strin
     audioEl.load()
 }
 
+function buildVocabQuestion(vocabList: LabelWithMeta[], 
+    phonemeList: PhonemeWithMeta[]): VocabtoPhonemeQuestion {
+    const question: LabelWithMeta = getRandomItem(vocabList)
+
+    const correctPool: PhonemeWithMeta[] = phonemeList.filter(phoneme => 
+        question.phonemes.includes(phoneme.id)
+    )
+    const wrongPool: PhonemeWithMeta[] = phonemeList.filter(phoneme => 
+        !question.phonemes.includes(phoneme.id)
+    )
+
+    if (correctPool.length === 0) {
+        throw new Error(`No correct phoneme found for ${question.id}`)
+    }
+    if (wrongPool.length === 0) {
+        throw new Error(`No correct phoneme found for ${question.id}`)
+    }
+ 
+    const wrongAns: PhonemeWithMeta = getRandomItem(wrongPool)
+    const rightAns: PhonemeWithMeta = getRandomItem(correctPool)
+
+    const correctIsFirst = Math.random() < 0.5
+    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
+
+    return {
+        question,
+        choice1: correctIsFirst? rightAns : wrongAns,
+        choice2: correctIsFirst? wrongAns : rightAns,
+        correctChoiceClass
+    }
+}
+function renderVocabQuestion(QA: VocabtoPhonemeQuestion, testArea: HTMLDivElement): void {
+    const questionArea: HTMLAudioElement = 
+        testArea.querySelector(".question") as HTMLAudioElement
+    const ans1: HTMLAudioElement = 
+        testArea.querySelector(".ans-1_audio") as HTMLAudioElement
+    const ans2: HTMLAudioElement = 
+        testArea.querySelector(".ans-2_audio") as HTMLAudioElement
+    const randomAudio = getRandomItem(QA.question.audio)
+
+    if (!questionArea || !ans1 || !ans2) return
+
+    setAudioSource(questionArea, vocabPath, randomAudio.filename)
+    setAudioSource(ans1, `/engine/speech/${lang}/phonemes/${QA.choice1.category}/`, QA.choice1.audio.default)
+    setAudioSource(ans2, `/engine/speech/${lang}/phonemes/${QA.choice2.category}/`, QA.choice2.audio.default)
+}
+
+function renderPhonemeQuestion(): void {
+
+}
+
 function getRandomItem<T>(item: T[]): T {
     return item[Math.floor(Math.random() * item.length)]
 }
 
 function flattenFile<T>(file: Record<string, T>) {
-    return Object.entries(file)
-        .map(([id, entry]) => ({
-            id,
+    // return Object.entries(file)
+    //     .map(([id, entry]) => ({
+    //         id,
+    //         ...entry
+    //     }))
+    /*
+    Plain English:
+    For everything in the file,
+    take its key,
+    take its value,
+    combine them into one object,
+    and put that object into a new array
+    */
+
+    const entries = Object.entries(file)
+    /* [
+        ["u00-0001", {"vocab": "水", "syllables": 1}],
+        ["u00-0002", {"vocab": "貓", "syllables": 1}]
+       ] 
+    */ 
+
+    const result = []
+
+    for (let i = 0; i < entries.length; i++) {
+        const pair = entries[i]
+
+        const id = pair[0]
+        const entry = pair[1]
+
+        const newObject = {
+            id: id,
             ...entry
-        }))
+            /*
+            {
+                id: "u00-0001",
+                vocab: "水",
+                syllables: 1
+            }
+            */
+        }
+        /*
+            const newObject = {}
+
+            newObject.id = id
+
+            // copy all properties manually
+            for (const key in entry) {
+                newObject[key] = entry[key]
+            }
+        */
+        result.push(newObject)
+    }
+    return result
 }
 
 function flattenNestedFile<T>(file: Record<string, Record<string, T>>) {
-    return Object.entries(file).flatMap(([category, group]) => 
-            Object.entries(group).map(([id, entry]) => ({
-                id, category, ...entry
-            }))
-        )
+    // return Object.entries(file).flatMap(([category, group]) => 
+    //         Object.entries(group).map(([id, entry]) => ({
+    //             id, category, ...entry
+    //         }))
+    //     )
+    /*
+    for each category
+        for each item inside category
+            push flattened object
+    */
+    const outerKeys = Object.entries(file)
+    /* [
+        ["vowels", {...}],
+        ["consonants", {...}]
+       ] 
+    */ 
+
+    const result = []
+
+    for (let i = 0; i < outerKeys.length; i++) {
+        const outerPair = outerKeys[i] // in phonemes.json this is v01, v02, c01...
+
+         const category = outerPair[0] // this is a category like "vowels"
+         const group = outerPair[1] // this is an id like "{v01: {...}, v02: {...}}"
+
+         const innerEntries = Object.entries(group)
+         /* [
+                ["v01", {...}],
+                ["v02", {...}]
+            ] 
+        */ 
+
+         for (let j = 0; j < innerEntries.length; j++) {
+            const innerPair = innerEntries[j]
+
+            const id = innerPair[0] // "v01"
+            const entry = innerPair[1] // {ipa: "i"}
+
+            const newObject = {
+                id: id,
+                category: category,
+                ...entry
+                /*
+                iteration 1:
+                {
+                    id: "v01",
+                    category: "vowels",
+                    ipa: "i"
+                }
+                */
+            }
+            result.push(newObject)
+         }
+    }
+    return result
 }
 
 /*
@@ -55,21 +252,7 @@ const soundTemplate: HTMLTemplateElement =
     document.querySelector<HTMLTemplateElement>("#sound-template")!
 const soundPrimer: HTMLUListElement = 
     document.querySelector<HTMLUListElement>("#sound-primer")!
-
-type PhonemeEntry = {
-    ipa: string,
-    transcription: {
-        pinyin: string,
-        zhuyin: string
-    },
-    audio: {
-        default: string
-    }
-} 
-type PhonemeFile = {
-    vowels: Record<string, PhonemeEntry>,
-    consonants: Record<string, PhonemeEntry>
-}   
+  
 
 const phonemeFile = async function phonemes(): Promise<PhonemeFile> {
     return await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
@@ -123,9 +306,6 @@ TEST AREA
 ==============
 */
 // true-false
-const vocabPath: string = `/engine/vocab/${lang}/audio/`
-const vocabJsonPath: string = `/engine/vocab/${lang}/`
-
 type VocabAudio = {
     filename: string,
     gender: string
