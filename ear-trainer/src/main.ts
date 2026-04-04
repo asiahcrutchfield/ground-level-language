@@ -54,6 +54,10 @@ type PhonemeFile = {
     consonants: Record<string, PhonemeEntry>
 } 
 
+const phonemeFile = async function phonemes(): Promise<PhonemeFile> {
+    return await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
+}
+
 /*
 ==============
 UNIVERSAL FUNCTIONS
@@ -120,6 +124,45 @@ function renderVocabQuestion(QA: VocabtoPhonemeQuestion, testArea: HTMLDivElemen
     setAudioSource(ans1, `/engine/speech/${lang}/phonemes/${QA.choice1.category}/`, QA.choice1.audio.default)
     setAudioSource(ans2, `/engine/speech/${lang}/phonemes/${QA.choice2.category}/`, QA.choice2.audio.default)
 }
+function checkVocabQuestion(QA: VocabtoPhonemeQuestion, 
+    testArea: HTMLDivElement, inputName: string) {
+        const selected: HTMLInputElement = testArea.querySelector(
+            `input[name="${inputName}"]:checked`
+        ) as HTMLInputElement
+
+        if (!selected) {
+            console.log("No answer selected")
+            return
+        }
+
+        const isCorrect = selected.classList.contains(QA.correctChoiceClass)
+
+        if (isCorrect) {
+            console.log("Correct!")
+        } else {
+            console.log("Wrong!")
+        }
+}
+async function initVocabQuestion(testArea: HTMLDivElement, formID: string,
+    formInputName: string): Promise<void> {
+    const vocabFile: VocabFile = 
+        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
+    const phonemeData = await phonemeFile()
+
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
+    const phonemeList = flattenNestedFile(phonemeData)
+
+    const QA = buildVocabQuestion(vocabList, phonemeList)
+    renderVocabQuestion(QA, testArea)
+
+    const form = testArea.querySelector<HTMLFormElement>(formID)
+
+    if (!form) return
+
+    form.addEventListener("change", () => {
+        checkVocabQuestion(QA, testArea, formInputName)
+    })
+}
 
 function renderPhonemeQuestion(): void {
 
@@ -129,7 +172,7 @@ function getRandomItem<T>(item: T[]): T {
     return item[Math.floor(Math.random() * item.length)]
 }
 
-function flattenFile<T>(file: Record<string, T>) {
+function flattenFile<T>(file: Record<string, T>): ({id: string} & T)[] {
     // return Object.entries(file)
     //     .map(([id, entry]) => ({
     //         id,
@@ -185,7 +228,8 @@ function flattenFile<T>(file: Record<string, T>) {
     return result
 }
 
-function flattenNestedFile<T>(file: Record<string, Record<string, T>>) {
+function flattenNestedFile<T>(file: Record<string, Record<string, T>>):
+    ({id: string; category: "vowels" | "consonants"} & T)[] {
     // return Object.entries(file).flatMap(([category, group]) => 
     //         Object.entries(group).map(([id, entry]) => ({
     //             id, category, ...entry
@@ -252,11 +296,6 @@ const soundTemplate: HTMLTemplateElement =
     document.querySelector<HTMLTemplateElement>("#sound-template")!
 const soundPrimer: HTMLUListElement = 
     document.querySelector<HTMLUListElement>("#sound-primer")!
-  
-
-const phonemeFile = async function phonemes(): Promise<PhonemeFile> {
-    return await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
-}
 
 async function populatePrimer(): Promise<void> {
     const phonemeData = await phonemeFile()
