@@ -93,7 +93,7 @@ function buildVocabQuestion(vocabList: LabelWithMeta[],
         throw new Error(`No correct phoneme found for ${question.id}`)
     }
     if (wrongPool.length === 0) {
-        throw new Error(`No correct phoneme found for ${question.id}`)
+        throw new Error(`No wrong phoneme found for ${question.id}`)
     }
  
     const wrongAns: PhonemeWithMeta = getRandomItem(wrongPool)
@@ -124,25 +124,6 @@ function renderVocabQuestion(QA: VocabtoPhonemeQuestion, testArea: HTMLDivElemen
     setAudioSource(ans1, `/engine/speech/${lang}/phonemes/${QA.choice1.category}/`, QA.choice1.audio.default)
     setAudioSource(ans2, `/engine/speech/${lang}/phonemes/${QA.choice2.category}/`, QA.choice2.audio.default)
 }
-function checkVocabQuestion(QA: VocabtoPhonemeQuestion, 
-    testArea: HTMLDivElement, inputName: string) {
-        const selected: HTMLInputElement = testArea.querySelector(
-            `input[name="${inputName}"]:checked`
-        ) as HTMLInputElement
-
-        if (!selected) {
-            console.log("No answer selected")
-            return
-        }
-
-        const isCorrect = selected.classList.contains(QA.correctChoiceClass)
-
-        if (isCorrect) {
-            console.log("Correct!")
-        } else {
-            console.log("Wrong!")
-        }
-}
 async function initVocabQuestion(testArea: HTMLDivElement, formID: string,
     formInputName: string): Promise<void> {
     const vocabFile: VocabFile = 
@@ -160,12 +141,96 @@ async function initVocabQuestion(testArea: HTMLDivElement, formID: string,
     if (!form) return
 
     form.addEventListener("change", () => {
-        checkVocabQuestion(QA, testArea, formInputName)
+        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
     })
 }
 
-function renderPhonemeQuestion(): void {
+function buildPhonemeQuestion(vocabList: LabelWithMeta[], 
+    phonemeList: PhonemeWithMeta[]): PhonemetoVocabQuestion {
+    const question: PhonemeWithMeta = getRandomItem(phonemeList)
 
+    const correctPool: LabelWithMeta[] = vocabList.filter(vocab => 
+        vocab.phonemes.includes(question.id)
+    )
+    const wrongPool: LabelWithMeta[] = vocabList.filter(vocab => 
+        !vocab.phonemes.includes(question.id)
+    )
+
+    if (correctPool.length === 0) {
+        throw new Error(`No correct vocab found for ${question.id}`)
+    }
+    if (wrongPool.length === 0) {
+        throw new Error(`No wrong phoneme found for ${question.id}`)
+    }
+ 
+    const wrongAns: LabelWithMeta = getRandomItem(wrongPool)
+    const rightAns: LabelWithMeta = getRandomItem(correctPool)
+
+    const correctIsFirst = Math.random() < 0.5
+    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
+
+    return {
+        question,
+        choice1: correctIsFirst? rightAns : wrongAns,
+        choice2: correctIsFirst? wrongAns : rightAns,
+        correctChoiceClass
+    }
+}
+function renderPhonemeQuestion(QA: PhonemetoVocabQuestion, testArea: HTMLDivElement): void {
+    const questionArea: HTMLAudioElement = 
+        testArea.querySelector(".question") as HTMLAudioElement
+    const ans1: HTMLAudioElement = 
+        testArea.querySelector(".ans-1_audio") as HTMLAudioElement
+    const ans2: HTMLAudioElement = 
+        testArea.querySelector(".ans-2_audio") as HTMLAudioElement
+    const choice1Audio = getRandomItem(QA.choice1.audio)
+    const choice2Audio = getRandomItem(QA.choice2.audio)
+
+    if (!questionArea || !ans1 || !ans2) return
+
+    setAudioSource(questionArea, `/engine/speech/${lang}/phonemes/${QA.question.category}/`, QA.question.audio.default)
+    setAudioSource(ans1, vocabPath, choice1Audio.filename)
+    setAudioSource(ans2, vocabPath, choice2Audio.filename)
+}
+async function initPhonemeQuestion(testArea: HTMLDivElement, formID: string,
+    formInputName: string): Promise<void> {
+    const vocabFile: VocabFile = 
+        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
+    const phonemeData = await phonemeFile()
+
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
+    const phonemeList = flattenNestedFile(phonemeData)
+
+    const QA = buildPhonemeQuestion(vocabList, phonemeList)
+    renderPhonemeQuestion(QA, testArea)
+
+    const form = testArea.querySelector<HTMLFormElement>(formID)
+
+    if (!form) return
+
+    form.addEventListener("change", () => {
+        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
+    })
+}
+
+function checkChoiceQuestion(correctChoiceClass: "ans-1" | "ans-2", 
+    testArea: HTMLDivElement, inputName: string): void {
+        const selected: HTMLInputElement = testArea.querySelector(
+            `input[name="${inputName}"]:checked`
+        ) as HTMLInputElement
+
+        if (!selected) {
+            console.log("No answer selected")
+            return
+        }
+
+        const isCorrect = selected.classList.contains(correctChoiceClass)
+
+        if (isCorrect) {
+            console.log("Correct!")
+        } else {
+            console.log("Wrong!")
+        }
 }
 
 function getRandomItem<T>(item: T[]): T {
@@ -247,13 +312,13 @@ function flattenNestedFile<T>(file: Record<string, Record<string, T>>):
        ] 
     */ 
 
-    const result = []
+    const result: ({id: string; category: "vowels" | "consonants"} & T)[] = []
 
     for (let i = 0; i < outerKeys.length; i++) {
-        const outerPair = outerKeys[i] // in phonemes.json this is v01, v02, c01...
+        const outerPair = outerKeys[i] // ["vowels", {...}] or ["consonants", {...}]
 
          const category = outerPair[0] // this is a category like "vowels"
-         const group = outerPair[1] // this is an id like "{v01: {...}, v02: {...}}"
+         const group = outerPair[1] // this is the object holding that category's phonemes
 
          const innerEntries = Object.entries(group)
          /* [
@@ -280,7 +345,7 @@ function flattenNestedFile<T>(file: Record<string, Record<string, T>>):
                     ipa: "i"
                 }
                 */
-            }
+            } as {id: string; category: "vowels" | "consonants"} & T
             result.push(newObject)
          }
     }
@@ -441,3 +506,5 @@ async function initTFquestion(): Promise<void> {
 initTFquestion()
 
 // matching test
+const matchingTest: HTMLDivElement = document.querySelector(".matching-test") as HTMLDivElement
+initVocabQuestion(matchingTest, "matching", "matching-answer")

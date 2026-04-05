@@ -32,6 +32,16 @@
             "audio": {
                 "default": "zh_c01.mp3"
             }
+        },
+        "c02": {
+            "ipa": "p",
+            "transcription": {
+                "pinyin": "b",
+                "zhuyin": "ㄅ"
+            },
+            "audio": {
+                "default": "zh_c01.mp3"
+            }
         }
     }
 }

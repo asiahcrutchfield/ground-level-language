@@ -9,7 +9,7 @@
             {"filename": "zh_u00-0001.mp3", "gender": "male"}
         ],
         "syllables": 1,
-        "phonemes": ["v01, c02"]
+        "phonemes": ["v01", "c01", "v02"]
     },
     "u00-0002": 
     {
@@ -21,7 +21,7 @@
             {"filename": "zh_u00-0002.mp3", "gender": "male"}
         ],
         "syllables": 1,
-        "phonemes": ["v01, c02"]
+        "phonemes":  ["v02"]
     },
     "u00-0003": 
     {
@@ -33,7 +33,7 @@
             {"filename": "zh_u00-0003.mp3", "gender": "male"}
         ],
         "syllables": 2,
-        "phonemes": ["v01, c02"]
+        "phonemes":  ["v01", "c01", "v02"]
     },
     "u00-0004": 
     {
@@ -45,7 +45,7 @@
             {"filename": "zh_u00-0004.mp3", "gender": "male"}
         ],
         "syllables": 2,
-        "phonemes": ["v01, c02"]
+        "phonemes":  ["v01", "c01", "v02"]
     },
     "u00-0005": 
     {
@@ -57,6 +57,6 @@
             {"filename": "zh_u00-0005.mp3", "gender": "male"}
         ],
         "syllables": 2,
-        "phonemes": ["v01, c02"]
+        "phonemes":  ["v01", "v02"]
     }
 }
