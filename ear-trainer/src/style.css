@@ -294,3 +294,7 @@ code {
     border-right-color: var(--border);
   }
 }
+
+.test {
+  border: 3px dotted red;
+}

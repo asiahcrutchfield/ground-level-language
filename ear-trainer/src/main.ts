@@ -6,7 +6,7 @@ PATHS
 */
 const vocabPath: string = `/engine/vocab/${lang}/audio/`
 const vocabJsonPath: string = `/engine/vocab/${lang}/`
-const phonemeJsonPath: string = `/engine/speech/${lang}/phonemes/`
+const phonemeJsonPath: string = `/engine/speech/${lang}/generic/phonemes/`
 
 type PhonemeWithMeta = {
     id: string,
