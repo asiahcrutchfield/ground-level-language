@@ -1,0 +1,36 @@
+{
+    "t01": {
+        "tone": 1,
+        "audio": {
+            "default": "zh_t01.mp3"
+        }
+    },
+
+    "t02": {
+        "tone": 2,
+        "audio": {
+            "default": "zh_t02.mp3"
+        }
+    },
+
+    "t03": {
+        "tone": 3,
+        "audio": {
+            "default": "zh_t03.mp3"
+        }
+    },
+
+    "t04": {
+        "tone": 4,
+        "audio": {
+            "default": "zh_t04.mp3"
+        }
+    },
+
+    "t05": {
+        "tone": 5,
+        "audio": {
+            "default": "zh_t05.mp3"
+        }
+    }
+}

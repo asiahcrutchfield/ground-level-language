@@ -1,0 +1,25 @@
+{
+    "sy001": {
+        "pattern": ["ma"],
+        "syllables": 1,
+        "audio": {
+            "default": "zh_sy01.mp3"
+        }
+    },
+
+    "sy002": {
+        "pattern": ["ma", "ma"],
+        "syllables": 2,
+        "audio": {
+            "default": "zh_sy02.mp3"
+        }
+    },
+
+    "sy003": {
+        "pattern": ["ma", "ma", "ma"],
+        "syllables": 3,
+        "audio": {
+            "default": "zh_sy03.mp3"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "rh001": {
+        "beats": 1,
+        "audio": {
+            "default": "zh_rh01.mp3"
+        }
+    },
+
+    "rh002": {
+        "beats": 2,
+        "audio": {
+            "default": "zh_rh02.mp3"
+        }
+    },
+
+    "rh003": {
+        "beats": 3,
+        "audio": {
+            "default": "zh_rh03.mp3"
+        }
+    }
+}

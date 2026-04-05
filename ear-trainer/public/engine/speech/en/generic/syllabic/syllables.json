@@ -1,0 +1,25 @@
+{
+    "sy001": {
+        "pattern": ["da"],
+        "syllables": 1,
+        "audio": {
+            "default": "en_sy01.mp3"
+        }
+    },
+
+    "sy002": {
+        "pattern": ["da", "da"],
+        "syllables": 2,
+        "audio": {
+            "default": "en_sy02.mp3"
+        }
+    },
+
+    "sy003": {
+        "pattern": ["da", "da", "da"],
+        "syllables": 3,
+        "audio": {
+            "default": "en_sy03.mp3"
+        }
+    }
+}
