@@ -1,0 +1,47 @@
+{
+    "vowels": {
+        "v01": {
+            "ipa": "i",
+            "transcription": {
+                "pinyin": "i",
+                "zhuyin": "ㄧ"
+            },
+            "audio": {
+                "default": "zh_v01.mp3"
+            }
+        },
+        "v02": {
+            "ipa": "a",
+            "transcription": {
+                "pinyin": "a",
+                "zhuyin": "ㄚ"
+            },
+            "audio": {
+                "default": "zh_v02.mp3"
+            }
+        }
+    },
+
+    "consonants": {
+        "c01": {
+            "ipa": "p",
+            "transcription": {
+                "pinyin": "b",
+                "zhuyin": "ㄅ"
+            },
+            "audio": {
+                "default": "zh_c01.mp3"
+            }
+        },
+        "c02": {
+            "ipa": "p",
+            "transcription": {
+                "pinyin": "b",
+                "zhuyin": "ㄅ"
+            },
+            "audio": {
+                "default": "zh_c01.mp3"
+            }
+        }
+    }
+}

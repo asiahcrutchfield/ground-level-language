@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "scripts": {
+    "sync-engine": "node sync-engine-watch.js"
+  },
+  "dependencies": {
+    "chokidar": "^5.0.0"
+  }
+}
