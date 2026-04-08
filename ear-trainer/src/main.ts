@@ -307,13 +307,7 @@ function buildSyllabicQuestion(
 ): VocabtoSyllabicQuestion {
     const question: LabelWithMeta = getRandomItem(vocabList)
 
-    const correctPool: SyllabicWithMeta[] = syllabicList.filter(pattern =>
-        pattern.id === question.syllabicPattern
-    )
-
-    const wrongPool: SyllabicWithMeta[] = syllabicList.filter(pattern =>
-        pattern.id !== question.syllabicPattern
-    )
+    const {correctPool, wrongPool} = filteredPool(syllabicList, question.syllabicPattern)
 
     if (correctPool.length === 0) {
         throw new Error(`No correct syllabic pattern found for ${question.id}`)
@@ -540,11 +534,20 @@ async function initToneQuestion(
     })
 }
 
+function filteredPool<T extends {id: string}> (list: T[], targetId: string): 
+    {
+        correctPool: T[],
+        wrongPool: T[]
+    } 
+{
+     const correctPool = list.filter(item => item.id === targetId)
+     const wrongPool = list.filter(item => item.id !== targetId)
 
+     return {correctPool, wrongPool}
+}
 function getRandomItem<T>(item: T[]): T {
     return item[Math.floor(Math.random() * item.length)]
 }
-
 function flattenFile<T>(file: Record<string, T>): ({id: string} & T)[] {
     // return Object.entries(file)
     //     .map(([id, entry]) => ({
