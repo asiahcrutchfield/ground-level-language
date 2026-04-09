@@ -19,6 +19,96 @@
             "audio": {
                 "default": "zh_v02.mp3"
             }
+        },
+        "v03": {
+            "ipa": "ɘ̃",
+            "transcription": {
+                "pinyin": "n",
+                "zhuyin": "ㄣ"
+            },
+            "audio": {
+                "default": "zh_v03.mp3"
+            }
+        },
+        "v04": {
+            "ipa": "u",
+            "transcription": {
+                "pinyin": "u",
+                "zhuyin": "ㄨ"
+            },
+            "audio": {
+                "default": "zh_v04.mp3"
+            }
+        },
+        "v05": {
+            "ipa": "ʊ",
+            "transcription": {
+                "pinyin": "o",
+                "zhuyin": "ㄡ"
+            },
+            "audio": {
+                "default": "zh_v05.mp3"
+            }
+        },
+        "v06": {
+            "ipa": "y",
+            "transcription": {
+                "pinyin": "ü",
+                "zhuyin": "ㄩ"
+            },
+            "audio": {
+                "default": "zh_v06.mp3"
+            }
+        },
+        "v07": {
+            "ipa": "e",
+            "transcription": {
+                "pinyin": "e",
+                "zhuyin": "ㄝ"
+            },
+            "audio": {
+                "default": "zh_v07.mp3"
+            }
+        },
+        "v08": {
+            "ipa": "o",
+            "transcription": {
+                "pinyin": "o",
+                "zhuyin": "ㄛ"
+            },
+            "audio": {
+                "default": "zh_v08.mp3"
+            }
+        },
+        "v09": {
+            "ipa": "ɤ",
+            "transcription": {
+                "pinyin": "e",
+                "zhuyin": "ㄜ"
+            },
+            "audio": {
+                "default": "zh_v09.mp3"
+            }
+        },
+        "v10": {
+            "ipa": "ə",
+            "transcription": {
+                "pinyin": "e",
+                "zhuyin": "ㄣ"
+            },
+            "audio": {
+                "default": "zh_v10.mp3"
+            }
+        },
+        "v11": {
+            "ipa": "ɛ",
+            "transcription": {
+                "pinyin": "a",
+                "zhuyin": "ㄢ"
+            },
+            "audio": {
+                "default": "zh_v11.mp3"
+            }
         }
     },
 
@@ -34,14 +124,234 @@
             }
         },
         "c02": {
-            "ipa": "p",
+            "ipa": "pʰ",
             "transcription": {
-                "pinyin": "b",
-                "zhuyin": "ㄅ"
+                "pinyin": "p",
+                "zhuyin": "ㄆ"
             },
             "audio": {
-                "default": "zh_c01.mp3"
+                "default": "zh_c02.mp3"
             }
-        }
+        },
+        "c03": {
+            "ipa": "m",
+            "transcription": {
+                "pinyin": "m",
+                "zhuyin": "ㄇ"
+            },
+            "audio": {
+                "default": "zh_c03.mp3"
+            }
+        },
+        "c04": {
+            "ipa": "f",
+            "transcription": {
+                "pinyin": "f",
+                "zhuyin": "ㄈ"
+            },
+            "audio": {
+                "default": "zh_c04.mp3"
+            }
+        },
+        "c05": {
+            "ipa": "d",
+            "transcription": {
+                "pinyin": "d",
+                "zhuyin": "ㄉ"
+            },
+            "audio": {
+                "default": "zh_c05.mp3"
+            }
+        },
+        "c06": {
+            "ipa": "tʰ",
+            "transcription": {
+                "pinyin": "t",
+                "zhuyin": "ㄊ"
+            },
+            "audio": {
+                "default": "zh_c06.mp3"
+            }
+        },
+        "c07": {
+            "ipa": "n",
+            "transcription": {
+                "pinyin": "n",
+                "zhuyin": "ㄋ"
+            },
+            "audio": {
+                "default": "zh_c07.mp3"
+            }
+        },
+        "c08": {
+            "ipa": "l",
+            "transcription": {
+                "pinyin": "l",
+                "zhuyin": "ㄌ"
+            },
+            "audio": {
+                "default": "zh_c08.mp3"
+            }
+        },
+        "c09": {
+            "ipa": "k",
+            "transcription": {
+                "pinyin": "g",
+                "zhuyin": "ㄍ"
+            },
+            "audio": {
+                "default": "zh_c09.mp3"
+            }
+        },
+        "c10": {
+            "ipa": "kʰ",
+            "transcription": {
+                "pinyin": "k",
+                "zhuyin": "ㄎ"
+            },
+            "audio": {
+                "default": "zh_c10.mp3"
+            }
+        },
+        "c11": {
+            "ipa": "ŋ",
+            "transcription": {
+                "pinyin": "ng",
+                "zhuyin": "ㄫ"
+            },
+            "audio": {
+                "default": "zh_c11.mp3"
+            }
+        },
+        "c12": {
+            "ipa": "x",
+            "transcription": {
+                "pinyin": "h",
+                "zhuyin": "ㄏ"
+            },
+            "audio": {
+                "default": "zh_c12.mp3"
+            }
+        },
+        "c13": {
+            "ipa": "t͡ɕ",
+            "transcription": {
+                "pinyin": "j",
+                "zhuyin": "ㄐ"
+            },
+            "audio": {
+                "default": "zh_c13.mp3"
+            }
+        },
+        "c14": {
+            "ipa": "t͡ɕʰ",
+            "transcription": {
+                "pinyin": "q",
+                "zhuyin": "ㄑ"
+            },
+            "audio": {
+                "default": "zh_c14.mp3"
+            }
+        },
+        "c15": {
+            "ipa": "ɕ",
+            "transcription": {
+                "pinyin": "x",
+                "zhuyin": "ㄒ"
+            },
+            "audio": {
+                "default": "zh_c15.mp3"
+            }
+        },
+        "c16": {
+            "ipa": "ʈ͡ʂ",
+            "transcription": {
+                "pinyin": "zh",
+                "zhuyin": "ㄓ"
+            },
+            "audio": {
+                "default": "zh_c16.mp3"
+            }
+        },
+        "c17": {
+            "ipa": "ʈ͡ʂʰ",
+            "transcription": {
+                "pinyin": "ch",
+                "zhuyin": "ㄔ"
+            },
+            "audio": {
+                "default": "zh_c17.mp3"
+            }
+        },
+        "c18": {
+            "ipa": "ʂ",
+            "transcription": {
+                "pinyin": "sh",
+                "zhuyin": "ㄕ"
+            },
+            "audio": {
+                "default": "zh_c18.mp3"
+            }
+        },
+        "c19": {
+            "ipa": "ʐ",
+            "transcription": {
+                "pinyin": "r",
+                "zhuyin": "ㄖ"
+            },
+            "audio": {
+                "default": "zh_c19.mp3"
+            }
+        },
+        "c20": {
+            "ipa": "t͡s",
+            "transcription": {
+                "pinyin": "z",
+                "zhuyin": "ㄗ"
+            },
+            "audio": {
+                "default": "zh_c20.mp3"
+            }
+        },
+        "c21": {
+            "ipa": "t͡sʰ",
+            "transcription": {
+                "pinyin": "c",
+                "zhuyin": "ㄘ"
+            },
+            "audio": {
+                "default": "zh_c21.mp3"
+            }
+        },
+        "c22": {
+            "ipa": "s",
+            "transcription": {
+                "pinyin": "s",
+                "zhuyin": "ㄙ"
+            },
+            "audio": {
+                "default": "zh_c22.mp3"
+            }
+        },
+        "c23": {
+            "ipa": "w",
+            "transcription": {
+                "pinyin": "w",
+                "zhuyin": "ㄨ"
+            },
+            "audio": {
+                "default": "zh_c23.mp3"
+            }
+        },
+        "c24": {
+            "ipa": "j",
+            "transcription": {
+                "pinyin": "y",
+                "zhuyin": "ㄧ"
+            },
+            "audio": {
+                "default": "zh_c24.mp3"
+            }
+        } 
     }
 }

@@ -1,9 +1,270 @@
 {
-    "vowels": {
+  "vowels": {
+    "v01": { 
+      "ipa": "i", 
+      "transcription": "ee", 
+      "audio": { 
+        "default": "en_v01.mp3"
+      }
+    },
+    "v02": { 
+      "ipa": "ɪ", 
+      "transcription": "i", 
+      "audio": { 
+        "default": "en_v02.mp3"
+      }
+    },
+    "v03": { 
+      "ipa": "e", 
+      "transcription": "a", 
+      "audio": { 
+        "default": "en_v03.mp3"
+      }
+    },
+    "v04": { 
+      "ipa": "ɛ", 
+      "transcription": "e", 
+      "audio": { 
+        "default": "en_v04.mp3"
+      }
+    },
+    "v05": { 
+      "ipa": "æ", 
+      "transcription": "a", 
+      "audio": { 
+        "default": "en_v05.mp3"
+      }
+    },
+    "v06": { 
+      "ipa": "ɑ", 
+      "transcription": "o", 
+      "audio": { 
+        "default": "en_v06.mp3"
+      }
+    },
+    "v07": { 
+      "ipa": "ʌ", 
+      "transcription": "u", 
+      "audio": { 
+        "default": "en_v07.mp3"
+      }
+    },
+    "v08": { 
+      "ipa": "ə", 
+      "transcription": "a", 
+      "audio": { 
+        "default": "en_v08.mp3"
+      }
+    },
+    "v09": { 
+      "ipa": "u", 
+      "transcription": "oo", 
+      "audio": { 
+        "default": "en_v09.mp3"
+      }
+    },
+    "v10": { 
+      "ipa": "ʊ", 
+      "transcription": "oo", 
+      "audio": { 
+        "default": "en_v10.mp3"
+      }
+    },
+    "v11": { 
+      "ipa": "o", 
+      "transcription": "o", 
+      "audio": { 
+        "default": "en_v11.mp3"
+      }
+    },
+    "v12": { 
+      "ipa": "ɔ", 
+      "transcription": "aw", 
+      "audio": { 
+        "default": "en_v12.mp3"
+      }
+    },
+    "v13": { 
+      "ipa": "ɝ", 
+      "transcription": "er", 
+      "audio": { 
+        "default": "en_v13.mp3"
+      }
+    }
+  },
 
+  "consonants": {
+    "c01": { 
+      "ipa": "p", 
+      "transcription": "p", 
+      "audio": { 
+        "default": "en_c01.mp3"
+      }
+    },
+    "c02": { 
+      "ipa": "b", 
+      "transcription": "b", 
+      "audio": { 
+        "default": "en_c02.mp3"
+      }
+    },
+    "c03": { 
+      "ipa": "t", 
+      "transcription": "t", 
+      "audio": { 
+        "default": "en_c03.mp3"
+      }
+    },
+    "c04": { 
+      "ipa": "d", 
+      "transcription": "d", 
+      "audio": { 
+        "default": "en_c04.mp3"
+      }
+    },
+    "c05": { 
+      "ipa": "k", 
+      "transcription": "k", 
+      "audio": { 
+        "default": "en_c05.mp3"
+      }
+    },
+    "c06": { 
+      "ipa": "g", 
+      "transcription": "g", 
+      "audio": { 
+        "default": "en_c06.mp3"
+      }
     },
 
-    "consonants": {
+    "c07": { 
+      "ipa": "f", 
+      "transcription": "f", 
+      "audio": { 
+        "default": "en_c07.mp3"
+      }
+    },
+    "c08": { 
+      "ipa": "v", 
+      "transcription": "v", 
+      "audio": { 
+        "default": "en_c08.mp3"
+      }
+    },
+    "c09": { 
+      "ipa": "θ", 
+      "transcription": "th", 
+      "audio": { 
+        "default": "en_c09.mp3"
+      }
+    },
+    "c10": { 
+      "ipa": "ð", 
+      "transcription": "th", 
+      "audio": { 
+        "default": "en_c10.mp3"
+      }
+    },
+    "c11": { 
+      "ipa": "s", 
+      "transcription": "s", 
+      "audio": { 
+        "default": "en_c11.mp3"
+      }
+    },
+    "c12": { 
+      "ipa": "z", 
+      "transcription": "z", 
+      "audio": { 
+        "default": "en_c12.mp3"
+      }
+    },
+    "c13": { 
+      "ipa": "ʃ", 
+      "transcription": "sh", 
+      "audio": { 
+        "default": "en_c13.mp3"
+      }
+    },
+    "c14": { 
+      "ipa": "ʒ", 
+      "transcription": "zh", 
+      "audio": { 
+        "default": "en_c14.mp3"
+      }
+    },
+    "c15": { 
+      "ipa": "h", 
+      "transcription": "h", 
+      "audio": { 
+        "default": "en_c15.mp3"
+      }
+    },
 
+    "c16": { 
+      "ipa": "tʃ", 
+      "transcription": "ch", 
+      "audio": { 
+        "default": "en_c16.mp3"
+      }
+    },
+    "c17": { 
+      "ipa": "dʒ", 
+      "transcription": "j", 
+      "audio": { 
+        "default": "en_c17.mp3"
+      }
+    },
+
+    "c18": { 
+      "ipa": "m", 
+      "transcription": "m", 
+      "audio": { 
+        "default": "en_c18.mp3"
+      }
+    },
+    "c19": { 
+      "ipa": "n", 
+      "transcription": "n", 
+      "audio": { 
+        "default": "en_c19.mp3"
+      }
+    },
+    "c20": { 
+      "ipa": "ŋ", 
+      "transcription": "ng", 
+      "audio": { 
+        "default": "en_c20.mp3"
+      }
+    },
+
+    "c21": { 
+      "ipa": "l", 
+      "transcription": "l", 
+      "audio": { 
+        "default": "en_c21.mp3"
+      }
+    },
+    "c22": { 
+      "ipa": "r", 
+      "transcription": "r", 
+      "audio": { 
+        "default": "en_c22.mp3"
+      }
+    },
+    "c23": { 
+      "ipa": "j", 
+      "transcription": "y", 
+      "audio": { 
+        "default": "en_c23.mp3"
+      }
+    },
+    "c24": { 
+      "ipa": "w", 
+      "transcription": "w", 
+      "audio": { 
+        "default": "en_c24.mp3"
+      }
     }
+  }
 }
