@@ -1,7 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "sync-engine": "node sync-engine-watch.js"
+    "sync-engine": "node sync-engine-watch.js",
+    "new-lang": "node create-language.js"
   },
   "dependencies": {
     "chokidar": "^5.0.0"
