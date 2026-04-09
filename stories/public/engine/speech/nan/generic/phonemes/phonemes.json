@@ -1,4 +1,397 @@
 {
-  "vowels": {},
-  "consonants": {}
+  "vowels": {
+    "v01": {
+      "ipa": "i",
+      "transcription": {
+        "tai-lo": "i",
+        "zhuyin": "ㄧ",
+        "poj": "i"
+      },
+      "audio": {
+        "default": "nan_v01.mp3"
+      }
+    },
+    "v02": {
+      "ipa": "ĩ",
+      "transcription": {
+        "tai-lo": "inn",
+        "zhuyin": "ㆪ",
+        "poj": "inn"
+      },
+      "audio": {
+        "default": "nan_v02.mp3"
+      }
+    },
+    "v03": {
+      "ipa": "u",
+      "transcription": {
+        "tai-lo": "u",
+        "zhuyin": "ㄨ",
+        "poj": "u"
+      },
+      "audio": {
+        "default": "nan_v03.mp3"
+      }
+    },
+    "v04": {
+      "ipa": "ũ",
+      "transcription": {
+        "tai-lo": "unn",
+        "zhuyin": "ㆫ",
+        "poj": "unn"
+      },
+      "audio": {
+        "default": "nan_v04.mp3"
+      }
+    },
+    "v05": {
+      "ipa": "e",
+      "transcription": {
+        "tai-lo": "e",
+        "zhuyin": "ㆤ",
+        "poj": "e"
+      },
+      "audio": {
+        "default": "nan_v05.mp3"
+      }
+    },
+    "v06": {
+      "ipa": "ẽ",
+      "transcription": {
+        "tai-lo": "enn",
+        "zhuyin": "ㆥ",
+        "poj": "enn"
+      },
+      "audio": {
+        "default": "nan_v06.mp3"
+      }
+    },
+    "v07": {
+      "ipa": "ə",
+      "transcription": {
+        "tai-lo": "o",
+        "zhuyin": "ㄜ",
+        "poj": "o"
+      },
+      "audio": {
+        "default": "nan_v07.mp3"
+      }
+    },
+    "v08": {
+      "ipa": "ɔ",
+      "transcription": {
+        "tai-lo": "oo",
+        "zhuyin": "ㆦ",
+        "poj": "o͘"
+      },
+      "audio": {
+        "default": "nan_v08.mp3"
+      }
+    },
+    "v09": {
+      "ipa": "ɔ̃",
+      "transcription": {
+        "tai-lo": "onn",
+        "zhuyin": "ㆧ",
+        "poj": "oⁿ"
+      },
+      "audio": {
+        "default": "nan_v09.mp3"
+      }
+    },
+    "v10": {
+      "ipa": "a",
+      "transcription": {
+        "tai-lo": "a",
+        "zhuyin": "ㄚ",
+        "poj": "a"
+      },
+      "audio": {
+        "default": "nan_v10.mp3"
+      }
+    },
+    "v11": {
+      "ipa": "ã",
+      "transcription": {
+        "tai-lo": "ann",
+        "zhuyin": "ㆩ",
+        "poj": "aⁿ"
+      },
+      "audio": {
+        "default": "nan_v11.mp3"
+      }
+    },
+    "v12": {
+      "ipa": "m̩",
+      "transcription": {
+        "tai-lo": "m",
+        "zhuyin": "ㆬ",
+        "poj": "m"
+      },
+      "audio": {
+        "default": "nan_v12.mp3"
+      }
+    },
+    "v13": {
+      "ipa": "ŋ̍",
+      "transcription": {
+        "tai-lo": "ng",
+        "zhuyin": "ㆭ",
+        "poj": "ng"
+      },
+      "audio": {
+        "default": "nan_v13.mp3"
+      }
+    }
+  },
+
+  "consonants": {
+    "c01": {
+      "ipa": "p",
+      "transcription": {
+        "tai-lo": "p",
+        "zhuyin": "ㄅ",
+        "poj": "p"
+      },
+      "audio": {
+        "default": "nan_c01.mp3"
+      }
+    },
+    "c02": {
+      "ipa": "pʰ",
+      "transcription": {
+        "tai-lo": "ph",
+        "zhuyin": "ㄆ",
+        "poj": "ph"
+      },
+      "audio": {
+        "default": "nan_c02.mp3"
+      }
+    },
+    "c03": {
+      "ipa": "b",
+      "transcription": {
+        "tai-lo": "b",
+        "zhuyin": "ㆠ",
+        "poj": "b"
+      },
+      "audio": {
+        "default": "nan_c03.mp3"
+      }
+    },
+    "c04": {
+      "ipa": "m",
+      "transcription": {
+        "tai-lo": "m",
+        "zhuyin": "ㄇ",
+        "poj": "m"
+      },
+      "audio": {
+        "default": "nan_c04.mp3"
+      }
+    },
+
+    "c05": {
+      "ipa": "t",
+      "transcription": {
+        "tai-lo": "t",
+        "zhuyin": "ㄉ",
+        "poj": "t"
+      },
+      "audio": {
+        "default": "nan_c05.mp3"
+      }
+    },
+    "c06": {
+      "ipa": "tʰ",
+      "transcription": {
+        "tai-lo": "th",
+        "zhuyin": "ㄊ",
+        "poj": "th"
+      },
+      "audio": {
+        "default": "nan_c06.mp3"
+      }
+    },
+    "c07": {
+      "ipa": "d",
+      "transcription": {
+        "tai-lo": "d",
+        "zhuyin": "ㄉ",
+        "poj": "j"
+      },
+      "audio": {
+        "default": "nan_c07.mp3"
+      }
+    },
+    "c08": {
+      "ipa": "n",
+      "transcription": {
+        "tai-lo": "n",
+        "zhuyin": "ㄋ",
+        "poj": "n"
+      },
+      "audio": {
+        "default": "nan_c08.mp3"
+      }
+    },
+    "c09": {
+      "ipa": "l",
+      "transcription": {
+        "tai-lo": "l",
+        "zhuyin": "ㄌ",
+        "poj": "l"
+      },
+      "audio": {
+        "default": "nan_c09.mp3"
+      }
+    },
+
+    "c10": {
+      "ipa": "k",
+      "transcription": {
+        "tai-lo": "k",
+        "zhuyin": "ㄍ",
+        "poj": "k"
+      },
+      "audio": {
+        "default": "nan_c10.mp3"
+      }
+    },
+    "c11": {
+      "ipa": "kʰ",
+      "transcription": {
+        "tai-lo": "kh",
+        "zhuyin": "ㄎ",
+        "poj": "kh"
+      },
+      "audio": {
+        "default": "nan_c11.mp3"
+      }
+    },
+    "c12": {
+      "ipa": "g",
+      "transcription": {
+        "tai-lo": "g",
+        "zhuyin": "ㆣ",
+        "poj": "g"
+      },
+      "audio": {
+        "default": "nan_c12.mp3"
+      }
+    },
+    "c13": {
+      "ipa": "ŋ",
+      "transcription": {
+        "tai-lo": "ng",
+        "zhuyin": "ㄫ",
+        "poj": "ng"
+      },
+      "audio": {
+        "default": "nan_c13.mp3"
+      }
+    },
+
+    "c14": {
+      "ipa": "ts",
+      "transcription": {
+        "tai-lo": "ts",
+        "zhuyin": "ㄗ",
+        "poj": "ch"
+      },
+      "audio": {
+        "default": "nan_c14.mp3"
+      }
+    },
+    "c15": {
+      "ipa": "tsʰ",
+      "transcription": {
+        "tai-lo": "tsh",
+        "zhuyin": "ㄘ",
+        "poj": "chh"
+      },
+      "audio": {
+        "default": "nan_c15.mp3"
+      }
+    },
+    "c16": {
+      "ipa": "dz",
+      "transcription": {
+        "tai-lo": "j",
+        "zhuyin": "ㆡ",
+        "poj": "j"
+      },
+      "audio": {
+        "default": "nan_c16.mp3"
+      }
+    },
+
+    "c17": {
+      "ipa": "tɕ",
+      "transcription": {
+        "tai-lo": "ts(i)",
+        "zhuyin": "ㄐ",
+        "poj": "ch(i)"
+      },
+      "audio": {
+        "default": "nan_c17.mp3"
+      }
+    },
+    "c18": {
+      "ipa": "tɕʰ",
+      "transcription": {
+        "tai-lo": "tsh(i)",
+        "zhuyin": "ㄑ",
+        "poj": "chh(i)"
+      },
+      "audio": {
+        "default": "nan_c18.mp3"
+      }
+    },
+    "c19": {
+      "ipa": "ɕ",
+      "transcription": {
+        "tai-lo": "si",
+        "zhuyin": "ㄒ",
+        "poj": "si"
+      },
+      "audio": {
+        "default": "nan_c19.mp3"
+      }
+    },
+    "c20": {
+      "ipa": "dʑ",
+      "transcription": {
+        "tai-lo": "j(i)",
+        "zhuyin": "ㆢ",
+        "poj": "j(i)"
+      },
+      "audio": {
+        "default": "nan_c20.mp3"
+      }
+    },
+
+    "c21": {
+      "ipa": "s",
+      "transcription": {
+        "tai-lo": "s",
+        "zhuyin": "ㄙ",
+        "poj": "s"
+      },
+      "audio": {
+        "default": "nan_c21.mp3"
+      }
+    },
+    "c22": {
+      "ipa": "h",
+      "transcription": {
+        "tai-lo": "h",
+        "zhuyin": "ㄏ",
+        "poj": "h"
+      },
+      "audio": {
+        "default": "nan_c22.mp3"
+      }
+    }
+  }
 }

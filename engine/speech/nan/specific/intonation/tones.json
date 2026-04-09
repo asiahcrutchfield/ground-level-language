@@ -1,0 +1,57 @@
+{
+    "t01": {
+        "tone": 1,
+        "audio": {
+            "default": "nan_t01.mp3"
+        }
+    },
+
+    "t02": {
+        "tone": 2,
+        "audio": {
+            "default": "nan_t02.mp3"
+        }
+    },
+
+    "t03": {
+        "tone": 3,
+        "audio": {
+            "default": "nan_t03.mp3"
+        }
+    },
+
+    "t04": {
+        "tone": 4,
+        "audio": {
+            "default": "nan_t04.mp3"
+        }
+    },
+
+    "t05": {
+        "tone": 5,
+        "audio": {
+            "default": "nan_t05.mp3"
+        }
+    },
+
+    "t06": {
+        "tone": 6,
+        "audio": {
+            "default": "nan_t06.mp3"
+        }
+    },
+
+    "t07": {
+        "tone": 7,
+        "audio": {
+            "default": "nan_t07.mp3"
+        }
+    },
+
+    "t08": {
+        "tone": 8,
+        "audio": {
+            "default": "nan_t08.mp3"
+        }
+    }
+}
