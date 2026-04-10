@@ -34,13 +34,6 @@
         }
     },
 
-    "t06": {
-        "tone": 6,
-        "audio": {
-            "default": "nan_t06.mp3"
-        }
-    },
-
     "t07": {
         "tone": 7,
         "audio": {
@@ -52,6 +45,13 @@
         "tone": 8,
         "audio": {
             "default": "nan_t08.mp3"
+        }
+    },
+
+    "t09": {
+        "tone": 9,
+        "audio": {
+            "default": "nan_t09.mp3"
         }
     }
 }
