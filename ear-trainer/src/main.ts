@@ -1,106 +1,114 @@
 let lang: string = document.documentElement.lang
+
 /*
 ==============
 PATHS
 ==============
 */
-const vocabPath: string = `/engine/vocab/${lang}/audio/`
-const syllablePath: string = `/engine/speech/${lang}/generic/syllabic/audio/`
-const rhythmPath: string = `/engine/speech/${lang}/generic/rhythm/audio/`
-const tonePath: string = `/engine/speech/zh/specific/intonation/audio/`
 
-const vocabJsonPath: string = `/engine/vocab/${lang}/`
-const phonemeJsonPath: string = `/engine/speech/${lang}/generic/phonemes/`
-const syllableJsonPath: string = `/engine/speech/${lang}/generic/syllabic/`
-const rhythmJsonPath: string = `/engine/speech/${lang}/generic/rhythm/`
-const toneJsonPath: string = `/engine/speech/zh/specific/intonation/`
+const PATHS = {
+    vocabAudio: `/engine/vocab/${lang}/audio/`,
+    vocabJson: `/engine/vocab/${lang}/`,
 
-type PhonemeWithMeta = {
-    id: string,
-    category: "vowels" | "consonants",
-} & PhonemeEntry
+    phonemeAudio: `/engine/speech/${lang}/generic/phonemes/`,
+    phonemeJson: `/engine/speech/${lang}/generic/phonemes/`,
+
+    syllableAudio: `/engine/speech/${lang}/generic/syllabic/audio/`,
+    syllableJson: `/engine/speech/${lang}/generic/syllabic/`,
+
+    rhythmAudio: `/engine/speech/${lang}/generic/rhythm/audio/`,
+    rhythmJson: `/engine/speech/${lang}/generic/rhythm/`,
+
+    toneAudio: `/engine/speech/${lang}/specific/intonation/audio/`,
+    toneJson: `/engine/speech/${lang}/specific/intonation/`
+} as const
+
+/*
+==============
+COMMON TYPES
+==============
+*/
+
+type CorrectChoiceClass = "ans-1" | "ans-2"
+
+type WithId = {
+    id: string
+}
+
+type ChoiceQuestion<TQuestion, TChoice> = {
+    question: TQuestion
+    choice1: TChoice
+    choice2: TChoice
+    correctChoiceClass: CorrectChoiceClass
+}
+
 type LabelWithMeta = {
     id: string
 } & VocabEntry
-type BasicVocabQuestion = {
-    question: LabelWithMeta,
-    choice1: LabelWithMeta,
-    choice2: LabelWithMeta,
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type BasicPhonemeQuestion = {
-    question: PhonemeWithMeta,
-    choice1: PhonemeWithMeta,
-    choice2: PhonemeWithMeta,
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type VocabtoPhonemeQuestion = {
-    question: LabelWithMeta,
-    choice1: PhonemeWithMeta,
-    choice2: PhonemeWithMeta,
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type PhonemetoVocabQuestion = {
-    question: PhonemeWithMeta,
-    choice1: LabelWithMeta,
-    choice2: LabelWithMeta,
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type VocabtoSyllabicQuestion = {
-    question: LabelWithMeta
-    choice1: SyllabicWithMeta
-    choice2: SyllabicWithMeta
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type VocabtoRhythmQuestion = {
-    question: LabelWithMeta
-    choice1: RhythmWithMeta
-    choice2: RhythmWithMeta
-    correctChoiceClass: "ans-1" | "ans-2"
-}
-type VocabtoToneQuestion = {
-    question: LabelWithMeta
-    choice1: ToneWithMeta
-    choice2: ToneWithMeta
-    correctChoiceClass: "ans-1" | "ans-2"
-}
 
-type PhonemeEntry = {
-    ipa: string,
-    transcription: {
-        pinyin: string,
-        zhuyin: string
-    },
-    audio: {
-        default: string
-    }
-} 
-type PhonemeFile = {
-    vowels: Record<string, PhonemeEntry>,
-    consonants: Record<string, PhonemeEntry>
-}
-type SyllabicEntry = {
-    pattern: string[],
-    syllables: number,
-    audio: {
-        default: string
-    }
-}
-type SyllabicFile = Record<string, SyllabicEntry>
+type PhonemeWithMeta = {
+    id: string
+    category: "vowels" | "consonants"
+} & PhonemeEntry
+
 type SyllabicWithMeta = {
     id: string
 } & SyllabicEntry
 
-type RhythmEntry = {
-    beats: number,
+type RhythmWithMeta = {
+    id: string
+} & RhythmEntry
+
+type ToneWithMeta = {
+    id: string
+} & ToneEntry
+
+type VocabToPhonemeQuestion = ChoiceQuestion<LabelWithMeta, PhonemeWithMeta>
+type PhonemeToVocabQuestion = ChoiceQuestion<PhonemeWithMeta, LabelWithMeta>
+type VocabToSyllabicQuestion = ChoiceQuestion<LabelWithMeta, SyllabicWithMeta>
+type VocabToRhythmQuestion = ChoiceQuestion<LabelWithMeta, RhythmWithMeta>
+type VocabToToneQuestion = ChoiceQuestion<LabelWithMeta, ToneWithMeta>
+
+/*
+==============
+DATA TYPES
+==============
+*/
+
+type PhonemeEntry = {
+    ipa: string
+    transcription: {
+        pinyin: string
+        zhuyin: string
+    }
     audio: {
         default: string
     }
 }
+
+type PhonemeFile = {
+    vowels: Record<string, PhonemeEntry>
+    consonants: Record<string, PhonemeEntry>
+}
+
+type SyllabicEntry = {
+    pattern: string[]
+    syllables: number
+    audio: {
+        default: string
+    }
+}
+
+type SyllabicFile = Record<string, SyllabicEntry>
+
+type RhythmEntry = {
+    beats: number
+    audio: {
+        default: string
+    }
+}
+
 type RhythmFile = Record<string, RhythmEntry>
-type RhythmWithMeta = {
-    id: string
-} & RhythmEntry
 
 type ToneEntry = {
     tone: number
@@ -108,30 +116,39 @@ type ToneEntry = {
         default: string
     }
 }
-type ToneFile = Record<string, ToneEntry>
-type ToneWithMeta = {
-    id: string
-} & ToneEntry
 
-const phonemeFile = async function phonemes(): Promise<PhonemeFile> {
-    return await getPromise<PhonemeFile>(phonemeJsonPath, "phonemes.json")
+type ToneFile = Record<string, ToneEntry>
+
+type VocabAudio = {
+    filename: string
+    gender: string
+}[]
+
+type VocabImage = {
+    filename: string
+    type: string
+}[]
+
+type VocabEntry = {
+    vocab: string
+    image: VocabImage
+    audio: VocabAudio
+    syllables: number
+    phonemes: string[]
+    syllabicPattern: string
+    rhythmPattern: string
+    tonePattern?: string
 }
-const syllabicFile = async function syllabic(): Promise<SyllabicFile> {
-    return await getPromise<SyllabicFile>(syllableJsonPath, "syllables.json")
-}
-const rhythmFile = async function rhythm(): Promise<RhythmFile> {
-    return await getPromise<RhythmFile>(rhythmJsonPath, "rhythm.json")
-}
-const toneFile = async function tone(): Promise<ToneFile> {
-    return await getPromise<ToneFile>(toneJsonPath, "tones.json")
-}
+
+type VocabFile = Record<string, VocabEntry>
 
 /*
 ==============
-UNIVERSAL FUNCTIONS
+DATA LOADERS
 ==============
 */
-async function getPromise<T>(path:string, file:string): Promise<T> {
+
+async function getPromise<T>(path: string, file: string): Promise<T> {
     const response: Response = await fetch(`${path}${file}`)
 
     if (!response.ok) {
@@ -140,697 +157,564 @@ async function getPromise<T>(path:string, file:string): Promise<T> {
 
     return await response.json() as T
 }
+async function getOptionalPromise<T>(path: string, file: string): Promise<T | null> {
+    const response: Response = await fetch(`${path}${file}`)
+
+    if (response.status === 404) {
+        return null
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`)
+    }
+
+    return await response.json() as T
+}
+
+
+const loadPhonemeFile = (): Promise<PhonemeFile> =>
+    getPromise<PhonemeFile>(PATHS.phonemeJson, "phonemes.json")
+
+const loadSyllabicFile = (): Promise<SyllabicFile> =>
+    getPromise<SyllabicFile>(PATHS.syllableJson, "syllables.json")
+
+const loadRhythmFile = (): Promise<RhythmFile> =>
+    getPromise<RhythmFile>(PATHS.rhythmJson, "rhythm.json")
+
+const loadToneFile = (): Promise<ToneFile | null> =>
+    getOptionalPromise<ToneFile>(PATHS.toneJson, "tones.json")
+
+const loadVocabFile = (): Promise<VocabFile> =>
+    getPromise<VocabFile>(PATHS.vocabJson, "labels.json")
+
+/*
+==============
+UNIVERSAL HELPERS
+==============
+*/
 
 function setAudioSource(audioEl: HTMLAudioElement, path: string, filename: string): void {
     audioEl.src = `${path}${filename}`
     audioEl.load()
 }
 
-function buildVocabQuestion(vocabList: LabelWithMeta[], 
-    phonemeList: PhonemeWithMeta[]): VocabtoPhonemeQuestion {
-    const question: LabelWithMeta = getRandomItem(vocabList)
+function getRandomItem<T>(items: T[]): T {
+    return items[Math.floor(Math.random() * items.length)]
+}
 
-    const correctPool: PhonemeWithMeta[] = phonemeList.filter(phoneme => 
+function filteredPool<T extends WithId>(
+    list: T[],
+    targetId: string
+): {
+    correctPool: T[]
+    wrongPool: T[]
+} {
+    const correctPool = list.filter(item => item.id === targetId)
+    const wrongPool = list.filter(item => item.id !== targetId)
+
+    return { correctPool, wrongPool }
+}
+
+function pickChoices<T>(correctPool: T[], wrongPool: T[]) {
+    const rightAns = getRandomItem(correctPool)
+    const wrongAns = getRandomItem(wrongPool)
+
+    const correctIsFirst = Math.random() < 0.5
+    const correctChoiceClass: CorrectChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
+
+    return {
+        choice1: correctIsFirst ? rightAns : wrongAns,
+        choice2: correctIsFirst ? wrongAns : rightAns,
+        correctChoiceClass
+    }
+}
+
+function flattenFile<T>(file: Record<string, T>): ({ id: string } & T)[] {
+    const entries = Object.entries(file)
+    const result: ({ id: string } & T)[] = []
+
+    for (let i = 0; i < entries.length; i++) {
+        const [id, entry] = entries[i]
+        result.push({ id, ...entry })
+    }
+
+    return result
+}
+
+function flattenNestedFile<T>(
+    file: Record<string, Record<string, T>>
+): ({ id: string; category: "vowels" | "consonants" } & T)[] {
+    const outerEntries = Object.entries(file)
+    const result: ({ id: string; category: "vowels" | "consonants" } & T)[] = []
+
+    for (let i = 0; i < outerEntries.length; i++) {
+        const [category, group] = outerEntries[i]
+        const innerEntries = Object.entries(group)
+
+        for (let j = 0; j < innerEntries.length; j++) {
+            const [id, entry] = innerEntries[j]
+
+            result.push({
+                id,
+                category: category as "vowels" | "consonants",
+                ...entry
+            })
+        }
+    }
+
+    return result
+}
+
+function getQuestionAudioEls(testArea: HTMLDivElement) {
+    const questionArea = testArea.querySelector<HTMLAudioElement>(".question")
+    const ans1 = testArea.querySelector<HTMLAudioElement>(".ans-1_audio")
+    const ans2 = testArea.querySelector<HTMLAudioElement>(".ans-2_audio")
+
+    return { questionArea, ans1, ans2 }
+}
+
+function checkChoiceQuestion(
+    correctChoiceClass: CorrectChoiceClass,
+    testArea: HTMLDivElement,
+    inputName: string
+): void {
+    const selected = testArea.querySelector<HTMLInputElement>(
+        `input[name="${inputName}"]:checked`
+    )
+
+    if (!selected) {
+        console.log("No answer selected")
+        return
+    }
+
+    const isCorrect = selected.classList.contains(correctChoiceClass)
+    console.log(isCorrect ? "Correct!" : "Wrong!")
+}
+
+/*
+==============
+GENERIC QUESTION BUILDERS
+==============
+*/
+
+function buildMappedQuestion<TQuestion, TChoice extends WithId>(
+    questionList: TQuestion[],
+    choiceList: TChoice[],
+    getTargetId: (question: TQuestion) => string,
+    errorLabel: string
+): ChoiceQuestion<TQuestion, TChoice> {
+    const question = getRandomItem(questionList)
+    const targetId = getTargetId(question)
+
+    const { correctPool, wrongPool } = filteredPool(choiceList, targetId)
+
+    if (correctPool.length === 0) {
+        throw new Error(`No correct ${errorLabel} found`)
+    }
+
+    if (wrongPool.length === 0) {
+        throw new Error(`No wrong ${errorLabel} found`)
+    }
+
+    return {
+        question,
+        ...pickChoices(correctPool, wrongPool)
+    }
+}
+
+function buildVocabQuestion(
+    vocabList: LabelWithMeta[],
+    phonemeList: PhonemeWithMeta[]
+): VocabToPhonemeQuestion {
+    const question = getRandomItem(vocabList)
+
+    const correctPool = phonemeList.filter(phoneme =>
         question.phonemes.includes(phoneme.id)
     )
-    const wrongPool: PhonemeWithMeta[] = phonemeList.filter(phoneme => 
+    const wrongPool = phonemeList.filter(phoneme =>
         !question.phonemes.includes(phoneme.id)
     )
 
     if (correctPool.length === 0) {
         throw new Error(`No correct phoneme found for ${question.id}`)
     }
+
     if (wrongPool.length === 0) {
         throw new Error(`No wrong phoneme found for ${question.id}`)
     }
- 
-    const wrongAns: PhonemeWithMeta = getRandomItem(wrongPool)
-    const rightAns: PhonemeWithMeta = getRandomItem(correctPool)
-
-    const correctIsFirst = Math.random() < 0.5
-    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
 
     return {
         question,
-        choice1: correctIsFirst? rightAns : wrongAns,
-        choice2: correctIsFirst? wrongAns : rightAns,
-        correctChoiceClass
+        ...pickChoices(correctPool, wrongPool)
     }
 }
-function renderVocabQuestion(QA: VocabtoPhonemeQuestion, testArea: HTMLDivElement): void {
-    const questionArea: HTMLAudioElement = 
-        testArea.querySelector(".question") as HTMLAudioElement
-    const ans1: HTMLAudioElement = 
-        testArea.querySelector(".ans-1_audio") as HTMLAudioElement
-    const ans2: HTMLAudioElement = 
-        testArea.querySelector(".ans-2_audio") as HTMLAudioElement
-    const randomAudio = getRandomItem(QA.question.audio)
 
-    if (!questionArea || !ans1 || !ans2) return
+function buildPhonemeQuestion(
+    vocabList: LabelWithMeta[],
+    phonemeList: PhonemeWithMeta[]
+): PhonemeToVocabQuestion {
+    const question = getRandomItem(phonemeList)
 
-    setAudioSource(questionArea, vocabPath, randomAudio.filename)
-    setAudioSource(ans1, `/engine/speech/${lang}/phonemes/${QA.choice1.category}/`, QA.choice1.audio.default)
-    setAudioSource(ans2, `/engine/speech/${lang}/phonemes/${QA.choice2.category}/`, QA.choice2.audio.default)
-}
-async function initVocabQuestion(testArea: HTMLDivElement, formID: string,
-    formInputName: string): Promise<void> {
-    const vocabFile: VocabFile = 
-        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
-    const phonemeData = await phonemeFile()
-
-    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
-    const phonemeList = flattenNestedFile(phonemeData)
-
-    const QA = buildVocabQuestion(vocabList, phonemeList)
-    renderVocabQuestion(QA, testArea)
-
-    const form = testArea.querySelector<HTMLFormElement>(formID)
-
-    if (!form) return
-
-    form.addEventListener("change", () => {
-        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
-    })
-}
-
-function buildPhonemeQuestion(vocabList: LabelWithMeta[], 
-    phonemeList: PhonemeWithMeta[]): PhonemetoVocabQuestion {
-    const question: PhonemeWithMeta = getRandomItem(phonemeList)
-
-    const correctPool: LabelWithMeta[] = vocabList.filter(vocab => 
+    const correctPool = vocabList.filter(vocab =>
         vocab.phonemes.includes(question.id)
     )
-    const wrongPool: LabelWithMeta[] = vocabList.filter(vocab => 
+    const wrongPool = vocabList.filter(vocab =>
         !vocab.phonemes.includes(question.id)
     )
 
     if (correctPool.length === 0) {
         throw new Error(`No correct vocab found for ${question.id}`)
     }
-    if (wrongPool.length === 0) {
-        throw new Error(`No wrong phoneme found for ${question.id}`)
-    }
- 
-    const wrongAns: LabelWithMeta = getRandomItem(wrongPool)
-    const rightAns: LabelWithMeta = getRandomItem(correctPool)
 
-    const correctIsFirst = Math.random() < 0.5
-    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
+    if (wrongPool.length === 0) {
+        throw new Error(`No wrong vocab found for ${question.id}`)
+    }
 
     return {
         question,
-        choice1: correctIsFirst? rightAns : wrongAns,
-        choice2: correctIsFirst? wrongAns : rightAns,
-        correctChoiceClass
+        ...pickChoices(correctPool, wrongPool)
     }
-}
-function renderPhonemeQuestion(QA: PhonemetoVocabQuestion, testArea: HTMLDivElement): void {
-    const questionArea: HTMLAudioElement = 
-        testArea.querySelector(".question") as HTMLAudioElement
-    const ans1: HTMLAudioElement = 
-        testArea.querySelector(".ans-1_audio") as HTMLAudioElement
-    const ans2: HTMLAudioElement = 
-        testArea.querySelector(".ans-2_audio") as HTMLAudioElement
-    const choice1Audio = getRandomItem(QA.choice1.audio)
-    const choice2Audio = getRandomItem(QA.choice2.audio)
-
-    if (!questionArea || !ans1 || !ans2) return
-
-    setAudioSource(questionArea, `/engine/speech/${lang}/phonemes/${QA.question.category}/`, QA.question.audio.default)
-    setAudioSource(ans1, vocabPath, choice1Audio.filename)
-    setAudioSource(ans2, vocabPath, choice2Audio.filename)
-}
-async function initPhonemeQuestion(testArea: HTMLDivElement, formID: string,
-    formInputName: string): Promise<void> {
-    const vocabFile: VocabFile = 
-        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
-    const phonemeData = await phonemeFile()
-
-    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
-    const phonemeList = flattenNestedFile(phonemeData)
-
-    const QA = buildPhonemeQuestion(vocabList, phonemeList)
-    renderPhonemeQuestion(QA, testArea)
-
-    const form = testArea.querySelector<HTMLFormElement>(formID)
-
-    if (!form) return
-
-    form.addEventListener("change", () => {
-        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
-    })
-}
-
-function checkChoiceQuestion(correctChoiceClass: "ans-1" | "ans-2", 
-    testArea: HTMLDivElement, inputName: string): void {
-        const selected: HTMLInputElement = testArea.querySelector(
-            `input[name="${inputName}"]:checked`
-        ) as HTMLInputElement
-
-        if (!selected) {
-            console.log("No answer selected")
-            return
-        }
-
-        const isCorrect = selected.classList.contains(correctChoiceClass)
-
-        if (isCorrect) {
-            console.log("Correct!")
-        } else {
-            console.log("Wrong!")
-        }
 }
 
 function buildSyllabicQuestion(
     vocabList: LabelWithMeta[],
     syllabicList: SyllabicWithMeta[]
-): VocabtoSyllabicQuestion {
-    const question: LabelWithMeta = getRandomItem(vocabList)
-
-    const {correctPool, wrongPool} = filteredPool(syllabicList, question.syllabicPattern)
-
-    if (correctPool.length === 0) {
-        throw new Error(`No correct syllabic pattern found for ${question.id}`)
-    }
-
-    if (wrongPool.length === 0) {
-        throw new Error(`No wrong syllabic pattern found for ${question.id}`)
-    }
-
-    const rightAns: SyllabicWithMeta = getRandomItem(correctPool)
-    const wrongAns: SyllabicWithMeta = getRandomItem(wrongPool)
-
-    const correctIsFirst = Math.random() < 0.5
-    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
-
-    return {
-        question,
-        choice1: correctIsFirst ? rightAns : wrongAns,
-        choice2: correctIsFirst ? wrongAns : rightAns,
-        correctChoiceClass
-    }
-}
-function renderSyllabicQuestion(
-    QA: VocabtoSyllabicQuestion,
-    testArea: HTMLDivElement
-): void {
-    const questionArea = testArea.querySelector<HTMLAudioElement>(".question")
-    const ans1 = testArea.querySelector<HTMLAudioElement>(".ans-1_audio")
-    const ans2 = testArea.querySelector<HTMLAudioElement>(".ans-2_audio")
-
-    if (!questionArea || !ans1 || !ans2) return
-
-    const randomAudio = getRandomItem(QA.question.audio)
-
-    setAudioSource(questionArea, vocabPath, randomAudio.filename)
-    setAudioSource(ans1, syllablePath, QA.choice1.audio.default)
-    setAudioSource(ans2, syllablePath, QA.choice2.audio.default)
-}
-async function initSyllabicQuestion(
-    testArea: HTMLDivElement,
-    formID: string,
-    formInputName: string
-): Promise<void> {
-    const vocabFile: VocabFile =
-        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
-
-    const syllabicData = await syllabicFile()
-
-    const vocabList: LabelWithMeta[] =
-        flattenFile(vocabFile).filter(entry => entry.syllables >= 1)
-
-    const syllabicList: SyllabicWithMeta[] =
-        flattenFile(syllabicData)
-
-    const QA = buildSyllabicQuestion(vocabList, syllabicList)
-    renderSyllabicQuestion(QA, testArea)
-
-    const form = testArea.querySelector<HTMLFormElement>(formID)
-
-    if (!form) return
-
-    form.addEventListener("change", () => {
-        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
-    })
+): VocabToSyllabicQuestion {
+    return buildMappedQuestion(
+        vocabList,
+        syllabicList,
+        question => question.syllabicPattern,
+        "syllabic pattern"
+    )
 }
 
 function buildRhythmQuestion(
     vocabList: LabelWithMeta[],
     rhythmList: RhythmWithMeta[]
-): VocabtoRhythmQuestion {
-    const question: LabelWithMeta = getRandomItem(vocabList)
-
-    const correctPool: RhythmWithMeta[] = rhythmList.filter(pattern =>
-        pattern.id === question.rhythmPattern
+): VocabToRhythmQuestion {
+    return buildMappedQuestion(
+        vocabList,
+        rhythmList,
+        question => question.rhythmPattern,
+        "rhythm pattern"
     )
-
-    const wrongPool: RhythmWithMeta[] = rhythmList.filter(pattern =>
-        pattern.id !== question.rhythmPattern
-    )
-
-    if (correctPool.length === 0) {
-        throw new Error(`No correct rhythm pattern found for ${question.id}`)
-    }
-
-    if (wrongPool.length === 0) {
-        throw new Error(`No wrong rhythm pattern found for ${question.id}`)
-    }
-
-    const rightAns: RhythmWithMeta = getRandomItem(correctPool)
-    const wrongAns: RhythmWithMeta = getRandomItem(wrongPool)
-
-    const correctIsFirst = Math.random() < 0.5
-    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
-
-    return {
-        question,
-        choice1: correctIsFirst ? rightAns : wrongAns,
-        choice2: correctIsFirst ? wrongAns : rightAns,
-        correctChoiceClass
-    }
-}
-function renderRhythmQuestion(
-    QA: VocabtoRhythmQuestion,
-    testArea: HTMLDivElement
-): void {
-    const questionArea = testArea.querySelector<HTMLAudioElement>(".question")
-    const ans1 = testArea.querySelector<HTMLAudioElement>(".ans-1_audio")
-    const ans2 = testArea.querySelector<HTMLAudioElement>(".ans-2_audio")
-
-    if (!questionArea || !ans1 || !ans2) return
-
-    const randomAudio = getRandomItem(QA.question.audio)
-
-    setAudioSource(questionArea, vocabPath, randomAudio.filename)
-    setAudioSource(ans1, rhythmPath, QA.choice1.audio.default)
-    setAudioSource(ans2, rhythmPath, QA.choice2.audio.default)
-}
-async function initRhythmQuestion(
-    testArea: HTMLDivElement,
-    formID: string,
-    formInputName: string
-): Promise<void> {
-    const vocabFile: VocabFile =
-        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
-
-    const rhythmData = await rhythmFile()
-
-    const vocabList: LabelWithMeta[] =
-        flattenFile(vocabFile).filter(entry => entry.syllables >= 1)
-
-    const rhythmList: RhythmWithMeta[] =
-        flattenFile(rhythmData)
-
-    const QA = buildRhythmQuestion(vocabList, rhythmList)
-    renderRhythmQuestion(QA, testArea)
-
-    const form = testArea.querySelector<HTMLFormElement>(formID)
-
-    if (!form) return
-
-    form.addEventListener("change", () => {
-        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
-    })
 }
 
 function buildToneQuestion(
     vocabList: LabelWithMeta[],
     toneList: ToneWithMeta[]
-): VocabtoToneQuestion {
-    const question: LabelWithMeta = getRandomItem(vocabList)
-
-    const correctPool: ToneWithMeta[] = toneList.filter(pattern =>
-        pattern.id === question.tonePattern
+): VocabToToneQuestion {
+    const toneVocabList = vocabList.filter(
+        (entry): entry is LabelWithMeta & { tonePattern: string } =>
+            typeof entry.tonePattern === "string" && entry.tonePattern.length > 0
     )
 
-    const wrongPool: ToneWithMeta[] = toneList.filter(pattern =>
-        pattern.id !== question.tonePattern
+    return buildMappedQuestion(
+        toneVocabList,
+        toneList,
+        question => question.tonePattern,
+        "tone pattern"
     )
-
-    if (correctPool.length === 0) {
-        throw new Error(`No correct tone pattern found for ${question.id}`)
-    }
-
-    if (wrongPool.length === 0) {
-        throw new Error(`No wrong tone pattern found for ${question.id}`)
-    }
-
-    const rightAns: ToneWithMeta = getRandomItem(correctPool)
-    const wrongAns: ToneWithMeta = getRandomItem(wrongPool)
-
-    const correctIsFirst = Math.random() < 0.5
-    const correctChoiceClass = correctIsFirst ? "ans-1" : "ans-2"
-
-    return {
-        question,
-        choice1: correctIsFirst ? rightAns : wrongAns,
-        choice2: correctIsFirst ? wrongAns : rightAns,
-        correctChoiceClass
-    }
 }
 
-function renderToneQuestion(
-    QA: VocabtoToneQuestion,
+
+/*
+==============
+GENERIC RENDERERS
+==============
+*/
+
+function renderVocabQuestion(
+    QA: VocabToPhonemeQuestion,
     testArea: HTMLDivElement
 ): void {
-    const questionArea = testArea.querySelector<HTMLAudioElement>(".question")
-    const ans1 = testArea.querySelector<HTMLAudioElement>(".ans-1_audio")
-    const ans2 = testArea.querySelector<HTMLAudioElement>(".ans-2_audio")
+    const { questionArea, ans1, ans2 } = getQuestionAudioEls(testArea)
 
     if (!questionArea || !ans1 || !ans2) return
 
     const randomAudio = getRandomItem(QA.question.audio)
 
-    setAudioSource(questionArea, vocabPath, randomAudio.filename)
-    setAudioSource(ans1, tonePath, QA.choice1.audio.default)
-    setAudioSource(ans2, tonePath, QA.choice2.audio.default)
+    setAudioSource(questionArea, PATHS.vocabAudio, randomAudio.filename)
+    setAudioSource(
+        ans1,
+        `${PATHS.phonemeAudio}${QA.choice1.category}/`,
+        QA.choice1.audio.default
+    )
+    setAudioSource(
+        ans2,
+        `${PATHS.phonemeAudio}${QA.choice2.category}/`,
+        QA.choice2.audio.default
+    )
 }
 
-async function initToneQuestion(
+function renderPhonemeQuestion(
+    QA: PhonemeToVocabQuestion,
+    testArea: HTMLDivElement
+): void {
+    const { questionArea, ans1, ans2 } = getQuestionAudioEls(testArea)
+
+    if (!questionArea || !ans1 || !ans2) return
+
+    const choice1Audio = getRandomItem(QA.choice1.audio)
+    const choice2Audio = getRandomItem(QA.choice2.audio)
+
+    setAudioSource(
+        questionArea,
+        `${PATHS.phonemeAudio}${QA.question.category}/`,
+        QA.question.audio.default
+    )
+    setAudioSource(ans1, PATHS.vocabAudio, choice1Audio.filename)
+    setAudioSource(ans2, PATHS.vocabAudio, choice2Audio.filename)
+}
+
+function renderPatternQuestion<TChoice extends { audio: { default: string } }>(
+    QA: ChoiceQuestion<LabelWithMeta, TChoice>,
     testArea: HTMLDivElement,
-    formID: string,
-    formInputName: string
-): Promise<void> {
-    const vocabFile: VocabFile =
-        await getPromise<VocabFile>(vocabJsonPath, "labels.json")
+    answerAudioPath: string
+): void {
+    const { questionArea, ans1, ans2 } = getQuestionAudioEls(testArea)
 
-    const toneData = await toneFile()
+    if (!questionArea || !ans1 || !ans2) return
 
-    const vocabList: LabelWithMeta[] =
-        flattenFile(vocabFile).filter(entry => entry.syllables >= 1)
+    const randomAudio = getRandomItem(QA.question.audio)
 
-    const toneList: ToneWithMeta[] =
-        flattenFile(toneData)
+    setAudioSource(questionArea, PATHS.vocabAudio, randomAudio.filename)
+    setAudioSource(ans1, answerAudioPath, QA.choice1.audio.default)
+    setAudioSource(ans2, answerAudioPath, QA.choice2.audio.default)
+}
 
-    const QA = buildToneQuestion(vocabList, toneList)
-    renderToneQuestion(QA, testArea)
+function renderSyllabicQuestion(
+    QA: VocabToSyllabicQuestion,
+    testArea: HTMLDivElement
+): void {
+    renderPatternQuestion(QA, testArea, PATHS.syllableAudio)
+}
 
-    const form = testArea.querySelector<HTMLFormElement>(formID)
+function renderRhythmQuestion(
+    QA: VocabToRhythmQuestion,
+    testArea: HTMLDivElement
+): void {
+    renderPatternQuestion(QA, testArea, PATHS.rhythmAudio)
+}
 
+function renderToneQuestion(
+    QA: VocabToToneQuestion,
+    testArea: HTMLDivElement
+): void {
+    renderPatternQuestion(QA, testArea, PATHS.toneAudio)
+}
+
+/*
+==============
+GENERIC INIT
+==============
+*/
+
+async function initChoiceQuestion<TQA>({
+    testArea,
+    formSelector,
+    inputName,
+    buildQuestion,
+    renderQuestion
+}: {
+    testArea: HTMLDivElement
+    formSelector: string
+    inputName: string
+    buildQuestion: () => Promise<TQA> | TQA
+    renderQuestion: (qa: TQA, testArea: HTMLDivElement) => void
+}): Promise<void> {
+    const QA = await buildQuestion()
+    renderQuestion(QA, testArea)
+
+    const form = testArea.querySelector<HTMLFormElement>(formSelector)
     if (!form) return
 
     form.addEventListener("change", () => {
-        checkChoiceQuestion(QA.correctChoiceClass, testArea, formInputName)
+        checkChoiceQuestion(
+            (QA as { correctChoiceClass: CorrectChoiceClass }).correctChoiceClass,
+            testArea,
+            inputName
+        )
     })
 }
 
-function filteredPool<T extends {id: string}> (list: T[], targetId: string): 
-    {
-        correctPool: T[],
-        wrongPool: T[]
-    } 
-{
-     const correctPool = list.filter(item => item.id === targetId)
-     const wrongPool = list.filter(item => item.id !== targetId)
+/*
+==============
+SPECIFIC INIT FUNCTIONS
+==============
+*/
 
-     return {correctPool, wrongPool}
+async function initVocabQuestion(
+    testArea: HTMLDivElement,
+    formSelector: string,
+    inputName: string
+): Promise<void> {
+    const vocabFile = await loadVocabFile()
+    const phonemeData = await loadPhonemeFile()
+
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
+    const phonemeList = flattenNestedFile(phonemeData)
+
+    await initChoiceQuestion({
+        testArea,
+        formSelector,
+        inputName,
+        buildQuestion: () => buildVocabQuestion(vocabList, phonemeList),
+        renderQuestion: renderVocabQuestion
+    })
 }
-function getRandomItem<T>(item: T[]): T {
-    return item[Math.floor(Math.random() * item.length)]
+
+async function initPhonemeQuestion(
+    testArea: HTMLDivElement,
+    formSelector: string,
+    inputName: string
+): Promise<void> {
+    const vocabFile = await loadVocabFile()
+    const phonemeData = await loadPhonemeFile()
+
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables === 1)
+    const phonemeList = flattenNestedFile(phonemeData)
+
+    await initChoiceQuestion({
+        testArea,
+        formSelector,
+        inputName,
+        buildQuestion: () => buildPhonemeQuestion(vocabList, phonemeList),
+        renderQuestion: renderPhonemeQuestion
+    })
 }
-function flattenFile<T>(file: Record<string, T>): ({id: string} & T)[] {
-    // return Object.entries(file)
-    //     .map(([id, entry]) => ({
-    //         id,
-    //         ...entry
-    //     }))
-    /*
-    Plain English:
-    For everything in the file,
-    take its key,
-    take its value,
-    combine them into one object,
-    and put that object into a new array
-    */
 
-    const entries = Object.entries(file)
-    /* [
-        ["u00-0001", {"vocab": "水", "syllables": 1}],
-        ["u00-0002", {"vocab": "貓", "syllables": 1}]
-       ] 
-    */ 
+async function initSyllabicQuestion(
+    testArea: HTMLDivElement,
+    formSelector: string,
+    inputName: string
+): Promise<void> {
+    const vocabFile = await loadVocabFile()
+    const syllabicData = await loadSyllabicFile()
 
-    const result = []
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables >= 1)
+    const syllabicList = flattenFile(syllabicData)
 
-    for (let i = 0; i < entries.length; i++) {
-        const pair = entries[i]
+    await initChoiceQuestion({
+        testArea,
+        formSelector,
+        inputName,
+        buildQuestion: () => buildSyllabicQuestion(vocabList, syllabicList),
+        renderQuestion: renderSyllabicQuestion
+    })
+}
 
-        const id = pair[0]
-        const entry = pair[1]
+async function initRhythmQuestion(
+    testArea: HTMLDivElement,
+    formSelector: string,
+    inputName: string
+): Promise<void> {
+    const vocabFile = await loadVocabFile()
+    const rhythmData = await loadRhythmFile()
 
-        const newObject = {
-            id: id,
-            ...entry
-            /*
-            {
-                id: "u00-0001",
-                vocab: "水",
-                syllables: 1
-            }
-            */
-        }
-        /*
-            const newObject = {}
+    const vocabList = flattenFile(vocabFile).filter(entry => entry.syllables >= 1)
+    const rhythmList = flattenFile(rhythmData)
 
-            newObject.id = id
+    await initChoiceQuestion({
+        testArea,
+        formSelector,
+        inputName,
+        buildQuestion: () => buildRhythmQuestion(vocabList, rhythmList),
+        renderQuestion: renderRhythmQuestion
+    })
+}
 
-            // copy all properties manually
-            for (const key in entry) {
-                newObject[key] = entry[key]
-            }
-        */
-        result.push(newObject)
+async function initToneQuestion(
+    testArea: HTMLDivElement | null,
+    formSelector: string,
+    inputName: string
+): Promise<void> {
+    if (!testArea) return
+
+    const toneData = await loadToneFile()
+
+    if (!toneData) {
+        testArea.hidden = true
+        return
     }
-    return result
-}
 
-function flattenNestedFile<T>(file: Record<string, Record<string, T>>):
-    ({id: string; category: "vowels" | "consonants"} & T)[] {
-    // return Object.entries(file).flatMap(([category, group]) => 
-    //         Object.entries(group).map(([id, entry]) => ({
-    //             id, category, ...entry
-    //         }))
-    //     )
-    /*
-    for each category
-        for each item inside category
-            push flattened object
-    */
-    const outerKeys = Object.entries(file)
-    /* [
-        ["vowels", {...}],
-        ["consonants", {...}]
-       ] 
-    */ 
+    const vocabFile = await loadVocabFile()
 
-    const result: ({id: string; category: "vowels" | "consonants"} & T)[] = []
+    const vocabList = flattenFile(vocabFile).filter(
+        (entry): entry is LabelWithMeta & { tonePattern: string } =>
+            entry.syllables >= 1 &&
+            typeof entry.tonePattern === "string" &&
+            entry.tonePattern.length > 0
+    )
 
-    for (let i = 0; i < outerKeys.length; i++) {
-        const outerPair = outerKeys[i] // ["vowels", {...}] or ["consonants", {...}]
-
-         const category = outerPair[0] // this is a category like "vowels"
-         const group = outerPair[1] // this is the object holding that category's phonemes
-
-         const innerEntries = Object.entries(group)
-         /* [
-                ["v01", {...}],
-                ["v02", {...}]
-            ] 
-        */ 
-
-         for (let j = 0; j < innerEntries.length; j++) {
-            const innerPair = innerEntries[j]
-
-            const id = innerPair[0] // "v01"
-            const entry = innerPair[1] // {ipa: "i"}
-
-            const newObject = {
-                id: id,
-                category: category,
-                ...entry
-                /*
-                iteration 1:
-                {
-                    id: "v01",
-                    category: "vowels",
-                    ipa: "i"
-                }
-                */
-            } as {id: string; category: "vowels" | "consonants"} & T
-            result.push(newObject)
-         }
+    if (vocabList.length === 0) {
+        testArea.hidden = true
+        return
     }
-    return result
+
+    const toneList = flattenFile(toneData)
+
+    if (toneList.length === 0) {
+        testArea.hidden = true
+        return
+    }
+
+    await initChoiceQuestion({
+        testArea,
+        formSelector,
+        inputName,
+        buildQuestion: () => buildToneQuestion(vocabList, toneList),
+        renderQuestion: renderToneQuestion
+    })
 }
+
 
 /*
 ==============
 SOUND PRIMER
 ==============
 */
-const soundTemplate: HTMLTemplateElement = 
+
+const soundTemplate =
     document.querySelector<HTMLTemplateElement>("#sound-template")!
-const soundPrimer: HTMLUListElement = 
+
+const soundPrimer =
     document.querySelector<HTMLUListElement>("#sound-primer")!
 
 async function populatePrimer(): Promise<void> {
-    const phonemeData = await phonemeFile()
-    const vowels: [string, PhonemeEntry][] = [...Object.entries(phonemeData.vowels)]
-    const consonants: [string, PhonemeEntry][] = [...Object.entries(phonemeData.consonants)]
-    const allSounds = [
-        ...vowels.map(([id, sound]) => ({
-            id,
-            category: "vowels" as const,
-            ...sound
-        })),
-        ...consonants.map(([id, sound]) => ({
-            id,
-            category: "consonants" as const,
-            ...sound
-        }))
-    ]
+    const phonemeData = await loadPhonemeFile()
+    const allSounds = flattenNestedFile(phonemeData)
 
     soundPrimer.innerHTML = ""
 
     allSounds.forEach(sound => {
-        const clone: DocumentFragment = soundTemplate.content.cloneNode(true) as DocumentFragment
-        const cloneAudioEl: HTMLAudioElement = clone.querySelector("audio") as HTMLAudioElement
+        const clone = soundTemplate.content.cloneNode(true) as DocumentFragment
+        const cloneAudioEl = clone.querySelector("audio") as HTMLAudioElement
 
-        if (!cloneAudioEl) {
-            return
-        }
+        if (!cloneAudioEl) return
+        if (!sound.audio.default) return
 
-        if (!sound.audio.default) {
-            return
-        }
-
-        cloneAudioEl.src = 
-            `/engine/speech/${lang}/phonemes/${sound.category}/${sound.audio.default}`
-            
+        cloneAudioEl.src = `${PATHS.phonemeAudio}${sound.category}/${sound.audio.default}`
         cloneAudioEl.load()
+
         soundPrimer.append(clone)
     })
 }
-populatePrimer()
-
-// button
 
 /*
 ==============
-TEST AREA
+BOOTSTRAP
 ==============
 */
-// true-false
-type VocabAudio = {
-    filename: string,
-    gender: string
-}[]
-type VocabImage = {
-    filename: string,
-    type: string
-}[]
-type VocabEntry = {
-    vocab: string,
-    image: VocabImage,
-    audio: VocabAudio,
-    syllables: number
-    phonemes: string[]
-    syllabicPattern: string
-    rhythmPattern: string
-    tonePattern: string
-}
-type VocabFile = Record<string, VocabEntry>
 
-const tfQuestion: HTMLAudioElement = 
-    document.querySelector(".true_false-question") as HTMLAudioElement
-const candidatePhoneme: HTMLAudioElement = 
-    document.querySelector(".candidate-phoneme") as HTMLAudioElement
+populatePrimer()
 
-async function popTFquestion(): Promise<boolean> {
-    const vocabFile = await getPromise<VocabFile>(vocabJsonPath, "labels.json")
+const matchingTest = document.querySelector(".matching-test") as HTMLDivElement
+const rhythmTest = document.querySelector(".rhythm-test") as HTMLDivElement
+const syllableTest = document.querySelector(".syllable-test") as HTMLDivElement
+const toneTest = document.querySelector(".tone-test") as HTMLDivElement | null
 
-    const listAudio = Object.entries(vocabFile)
-        .filter(([,entry]) => entry.syllables === 1)
-        .map(([id, entry]) => ({
-            id,
-            ...entry
-        }))
-    const randIndex: number = Math.floor(Math.random()*listAudio.length)
-    const audioListLen: number = listAudio[randIndex].audio.length
-    const randAudio: string = listAudio[randIndex].audio[Math.floor(Math.random()*audioListLen)].filename
-    console.log(listAudio)
-
-    tfQuestion.src = `${vocabPath}${randAudio}`
-    tfQuestion.load()
-
-    const phonemeData = await phonemeFile()
-    const phonemeList: [string, Record<string, PhonemeEntry>][] = 
-        Object.entries(phonemeData)
-    const phonemeIDs = phonemeList.flatMap(([category, entry]) => 
-            Object.entries(entry).map(([id, sound]) => ({
-                id, category, ...sound
-            }))
-        )
-    console.log(phonemeIDs)
-
-    const randAnsIndex: number = Math.floor(Math.random()*phonemeIDs.length)
-    const randAnsAudio: string = phonemeIDs[randAnsIndex].audio.default
-
-    candidatePhoneme.src = `/engine/speech/${lang}/phonemes/${phonemeIDs[randAnsIndex].category}/${randAnsAudio}`
-    candidatePhoneme.load()
-
-    // find if answer matches question
-    const tfQuestionPhonemes: string[] = listAudio[randIndex].phonemes
-    const candidateAns: string = phonemeIDs[randAnsIndex].id
-    
-    const isMatch: boolean = tfQuestionPhonemes.includes(candidateAns)
-
-    return isMatch
-}
-
-function checkTFquestion(answer: boolean) {
-    const tfRadio: HTMLInputElement = 
-        document.querySelector('input[name="true_false-answer"]:checked') as HTMLInputElement
-    
-    if (!tfRadio) {
-        console.log("No answer selected")
-        return
-    }
-
-    const userAnswer = tfRadio.value === "true"
-
-    if (userAnswer === answer) {
-        console.log(`That's correct! The answer is ${answer}!`)
-    } else {
-        console.log(`That's wrong! The answer is ${answer}!`)
-    }
-}
-
-async function initTFquestion(): Promise<void> {
-    const tfTestAns: boolean = await popTFquestion()
-    const form: HTMLFormElement = document.querySelector("#true-false") as HTMLFormElement
-
-    if (!form) return
-
-    form.addEventListener("change", () => {
-        checkTFquestion(tfTestAns)
-    })
-}
-
-initTFquestion()
-
-// matching test
-const matchingTest: HTMLDivElement = document.querySelector(".matching-test")!
 initVocabQuestion(matchingTest, "#matching", "matching-answer")
-
-// rhythm test
-const rhythmTest: HTMLDivElement = document.querySelector(".rhythm-test")!
 initRhythmQuestion(rhythmTest, "#rhythm", "rhythm-answer")
-
-// syllable test
-const syllableTest: HTMLDivElement = document.querySelector(".syllable-test")!
 initSyllabicQuestion(syllableTest, "#syllables", "syllable-answer")
-
-// tone test
-const toneTest: HTMLDivElement = document.querySelector(".tone-test")!
 initToneQuestion(toneTest, "#tone", "tone-answer")
