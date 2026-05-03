@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ground Level Languages</title>
-    <link rel="stylesheet" href="style.css" />
   </head>
   <body class="is-landing">
     <main>
@@ -14,7 +13,7 @@
             <span class="brand-glyph" aria-hidden="true"></span>
             <span>Ground Level Languages</span>
           </a>
-          <button class="nav-cta" type="button" data-enter-app>Enter the app</button>
+          <button class="nav-cta" type="button" data-open-home>Enter the app</button>
         </header>
 
         <section class="hero-section" aria-labelledby="hero-title">
@@ -26,7 +25,7 @@
               rhythm, timing, and direct meaning.
             </p>
             <div class="hero-actions">
-              <button class="primary-cta" type="button" data-enter-app>Enter the experience</button>
+              <button class="primary-cta" type="button" data-open-home>Enter the experience</button>
               <a class="quiet-link" href="#approach">How it works</a>
             </div>
           </div>
@@ -107,7 +106,81 @@
             <p class="eyebrow">When you enter, the words disappear.</p>
             <h2 id="enter-title">Listen first. Let the screen become quiet.</h2>
           </div>
-          <button class="primary-cta" type="button" data-enter-app>Enter the experience</button>
+          <button class="primary-cta" type="button" data-open-home>Enter the experience</button>
+        </section>
+      </section>
+
+      <section class="home-shell" id="home" aria-labelledby="home-title" hidden>
+        <header class="home-nav">
+          <button class="brand-mark home-brand" type="button" data-open-landing aria-label="Ground Level Languages">
+            <span class="brand-glyph" aria-hidden="true"></span>
+            <span>Ground Level Languages</span>
+          </button>
+          <button class="nav-cta" type="button" data-start-mode="vocab">Begin</button>
+        </header>
+
+        <section class="home-hero">
+          <div class="home-copy">
+            <p class="eyebrow">Listening room</p>
+            <h1 id="home-title">Choose a way in.</h1>
+            <p>
+              The core practice screen has no words. This page gives you a quiet moment to choose what kind of
+              listening you want to train before entering.
+            </p>
+          </div>
+          <div class="home-orb" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </section>
+
+        <section class="module-grid" aria-label="Practice modules">
+          <button class="module-card featured" type="button" data-start-mode="vocab">
+            <span class="module-symbol image-icon" aria-hidden="true"></span>
+            <span class="module-copy">
+              <strong>Level 0 meanings</strong>
+              <span>Hear a word, choose the image, and build direct sound-to-meaning links.</span>
+            </span>
+            <span class="module-preview image-preview" aria-hidden="true">
+              <img src="engine/universal/images/u00-0001.jpg" alt="" />
+              <img src="engine/universal/images/u00-0002.jpg" alt="" />
+              <img src="engine/universal/images/u00-0003.jpg" alt="" />
+            </span>
+          </button>
+
+          <button class="module-card" type="button" data-start-mode="ear">
+            <span class="module-symbol sound-icon" aria-hidden="true"></span>
+            <span class="module-copy">
+              <strong>Ear training</strong>
+              <span>Focus on sound differences, phonemes, rhythm, and tone before meaning.</span>
+            </span>
+            <span class="module-preview wave-preview" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </span>
+          </button>
+
+          <button class="module-card" type="button" data-start-mode="story">
+            <span class="module-symbol story-icon" aria-hidden="true"></span>
+            <span class="module-copy">
+              <strong>Micro stories</strong>
+              <span>Listen to tiny native-speed stories supported by familiar images.</span>
+            </span>
+            <span class="module-preview path-preview" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </span>
+          </button>
+
+          <button class="module-card" type="button" data-start-mode="replay">
+            <span class="module-symbol rhythm-icon" aria-hidden="true"></span>
+            <span class="module-copy">
+              <strong>Replay practice</strong>
+              <span>Hear, wait, replay internally, then hear again until timing settles.</span>
+            </span>
+            <span class="module-preview echo-preview" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </span>
+          </button>
         </section>
       </section>
 
@@ -151,7 +224,7 @@
         </nav>
 
         <div class="control-orbit">
-          <button class="icon-button" id="home-button" type="button" aria-label="Landing page">
+          <button class="icon-button" id="home-button" type="button" aria-label="Home">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m4 12 8-7 8 7"></path>
               <path d="M7 10.5V20h10v-9.5"></path>
@@ -178,6 +251,6 @@
         <audio id="choice-audio"></audio>
       </section>
     </main>
-    <script src="app.js" type="module"></script>
+    <script src="/src/main.ts" type="module"></script>
   </body>
 </html>
