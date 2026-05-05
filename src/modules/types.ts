@@ -2,6 +2,23 @@ export type Mode = "vocab" | "ear" | "story" | "replay"
 
 export type Surface = "landing" | "home" | "experience"
 
+export type SupportedLanguage = "en" | "nan" | "zh"
+
+export type LanguageOption = {
+  code: SupportedLanguage
+  name: string
+  nativeName: string
+}
+
+export type LearningPaths = {
+  vocab: string
+  vocabAudio: string
+  images: string
+  phonemes: string
+  phonemeAudio: string
+  stories: readonly string[]
+}
+
 export type VocabImage = {
   filename: string
   type: string
@@ -59,7 +76,10 @@ export type Story = {
 export type StoryFile = Story[] | Story[][]
 
 export type LearningData = {
+  lang: SupportedLanguage
+  paths: LearningPaths
   vocab: VocabItem[]
   sounds: SoundItem[]
   stories: Story[]
+  storyAudio: string
 }

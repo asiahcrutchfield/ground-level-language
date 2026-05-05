@@ -1,17 +1,26 @@
 {
-  "u00-0001": 
-    {
-        "vocab": "水",
-        "image": [
-            {"filename": "u00-0001.jpg", "type": "default"}
-        ],
-        "audio": [
-            {"filename": "zh_u00-0001.mp3", "gender": "male"}
-        ],
-        "syllables": 1,
-        "phonemes": ["v01", "c01", "v02"],
-        "syllablePattern": "sy001",
-        "rhythmPattern": "rh01",
-        "tonePattern": ""
-    }  
+  "u0001": {
+    "vocab": "水",
+    "image": [
+      {
+        "filename": "u0001.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "nan_u0001.wav",
+        "gender": "male"
+      }
+    ],
+    "syllables": 1,
+    "phonemes": [
+      "v01",
+      "c01",
+      "v02"
+    ],
+    "syllablePattern": "sy001",
+    "rhythmPattern": "rh01",
+    "tonePattern": ""
+  }
 }

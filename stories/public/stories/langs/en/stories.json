@@ -5,7 +5,13 @@
       "title": "Food on the Ground",
       "arc": "stray",
       "perspective": "cat",
-      "coreConcepts": ["u00-0002", "u00-0003", "u00-0004", "u00-0001", "u00-0005"],
+      "coreConcepts": [
+        "u0002",
+        "u0003",
+        "u0004",
+        "u0001",
+        "u0005"
+      ],
       "lines": [
         "I wake up.",
         "I am hungry.",

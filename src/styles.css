@@ -458,6 +458,70 @@ img {
   transform: translate(76px, 68px);
 }
 
+.language-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(320px, 1fr);
+  gap: clamp(20px, 4vw, 48px);
+  align-items: end;
+  width: min(1160px, calc(100% - 40px));
+  margin: 0 auto clamp(18px, 4vw, 36px);
+  padding: 24px 0 28px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.language-flow h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+
+.language-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.language-card {
+  display: grid;
+  gap: 6px;
+  min-height: 96px;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.language-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: 0 14px 32px rgba(35, 36, 32, 0.1);
+}
+
+.language-card[aria-checked="true"] {
+  color: #fff;
+  border-color: var(--ink);
+  background: var(--ink);
+  box-shadow: 0 18px 40px rgba(23, 24, 25, 0.18);
+}
+
+.language-card strong {
+  font-size: clamp(22px, 2.5vw, 30px);
+  line-height: 1.05;
+}
+
+.language-card span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.language-card[aria-checked="true"] span {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .module-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -951,6 +1015,7 @@ img {
   .difference-layout,
   .enter-band,
   .home-hero,
+  .language-flow,
   .module-grid {
     grid-template-columns: 1fr;
   }
@@ -986,6 +1051,7 @@ img {
 
   .home-nav,
   .home-hero,
+  .language-flow,
   .module-grid {
     width: min(100% - 28px, 1160px);
   }
@@ -1027,6 +1093,10 @@ img {
 
   .home-orb {
     display: none;
+  }
+
+  .language-grid {
+    grid-template-columns: 1fr;
   }
 
   .module-card,

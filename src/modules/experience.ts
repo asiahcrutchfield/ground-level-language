@@ -1,6 +1,6 @@
-import { loadLearningData, paths } from "./data"
+import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
-import type { LearningData, Mode, SoundItem, Surface, VocabItem } from "./types"
+import type { LearningData, Mode, SoundItem, SupportedLanguage, Surface, VocabItem } from "./types"
 
 const modeSequence: Mode[] = ["vocab", "ear", "story", "replay"]
 
@@ -26,6 +26,7 @@ export function createExperience(): void {
   const choiceGrid = mustQuery<HTMLElement>("#choice-grid")
   const pulseTrack = mustQuery<HTMLDivElement>("#pulse-track")
   const progressConstellation = mustQuery<HTMLDivElement>("#progress-constellation")
+  const languageGrid = mustQuery<HTMLDivElement>("#language-grid")
   const mainAudio = mustQuery<HTMLAudioElement>("#main-audio")
   const choiceAudio = mustQuery<HTMLAudioElement>("#choice-audio")
   const playButton = mustQuery<HTMLButtonElement>("#play-button")
@@ -37,12 +38,15 @@ export function createExperience(): void {
   const openLandingButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-open-landing]"))
   const startModeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-start-mode]"))
 
+  let selectedLanguage = getInitialLanguage()
   let mode: Mode = "vocab"
   let currentIndex = 0
   let currentAnswer = ""
   let storyIndex = 0
   let learningData: LearningData | null = null
-  let bootPromise: Promise<LearningData> | null = null
+  const dataCache = new Map<SupportedLanguage, Promise<LearningData>>()
+
+  document.documentElement.dataset.learningLang = selectedLanguage
 
   function data(): LearningData {
     if (!learningData) throw new Error("Learning data has not loaded")
@@ -50,14 +54,18 @@ export function createExperience(): void {
   }
 
   function boot(): Promise<LearningData> {
-    if (learningData) return Promise.resolve(learningData)
+    if (learningData?.lang === selectedLanguage) return Promise.resolve(learningData)
+
+    let bootPromise = dataCache.get(selectedLanguage)
     if (!bootPromise) {
-      bootPromise = loadLearningData().then((loaded) => {
-        learningData = loaded
-        return loaded
-      })
+      bootPromise = loadLearningData(selectedLanguage)
+      dataCache.set(selectedLanguage, bootPromise)
     }
-    return bootPromise
+
+    return bootPromise.then((loaded) => {
+      if (loaded.lang === selectedLanguage) learningData = loaded
+      return loaded
+    })
   }
 
   function setSurface(nextSurface: Surface): void {
@@ -89,6 +97,69 @@ export function createExperience(): void {
   function enterMode(nextMode: Mode): void {
     mode = nextMode
     setSurface("experience")
+  }
+
+  function renderLanguageOptions(): void {
+    clearNode(languageGrid)
+
+    languageOptions.forEach((option) => {
+      const button = document.createElement("button")
+      button.type = "button"
+      button.className = "language-card"
+      button.dataset.language = option.code
+      button.setAttribute("role", "radio")
+      button.setAttribute("aria-checked", String(option.code === selectedLanguage))
+
+      const nativeName = document.createElement("strong")
+      nativeName.textContent = option.nativeName
+
+      const name = document.createElement("span")
+      name.textContent = option.name
+
+      button.append(nativeName, name)
+      button.addEventListener("click", () => {
+        selectLanguage(option.code)
+      })
+
+      languageGrid.append(button)
+    })
+  }
+
+  function resetPractice(): void {
+    currentIndex = 0
+    storyIndex = 0
+    currentAnswer = ""
+    learningData = null
+    mainAudio.removeAttribute("src")
+    choiceAudio.removeAttribute("src")
+    mainAudio.load()
+    choiceAudio.load()
+    clearNode(visualStack)
+    clearNode(choiceGrid)
+    clearNode(progressConstellation)
+    clearNode(pulseTrack)
+    app.classList.remove("is-offline")
+  }
+
+  function selectLanguage(nextLanguage: SupportedLanguage): void {
+    if (nextLanguage === selectedLanguage) return
+
+    selectedLanguage = nextLanguage
+    document.documentElement.dataset.learningLang = selectedLanguage
+    saveLanguage(selectedLanguage)
+    resetPractice()
+    renderLanguageOptions()
+
+    if (!app.hidden) {
+      boot()
+        .then(() => {
+          render()
+          window.setTimeout(playCurrent, 140)
+        })
+        .catch(() => {
+          app.classList.add("is-offline")
+        })
+    }
   }
 
   function pulse(count = 5): void {
@@ -123,15 +194,15 @@ export function createExperience(): void {
   }
 
   function getImage(entry: VocabItem): string {
-    return `${paths.images}${sample(entry.image).filename}`
+    return `${data().paths.images}${sample(entry.image).filename}`
   }
 
   function getVocabAudio(entry: VocabItem): string {
-    return `${paths.vocabAudio}${sample(entry.audio).filename}`
+    return `${data().paths.vocabAudio}${sample(entry.audio).filename}`
   }
 
   function getSoundAudio(sound: SoundItem): string {
-    return `${paths.phonemeAudio}${sound.category}/${sound.audio.default}`
+    return `${data().paths.phonemeAudio}${sound.category}/${sound.audio.default}`
   }
 
   function renderImage(entry: VocabItem, active = true): HTMLButtonElement {
@@ -218,7 +289,7 @@ export function createExperience(): void {
   }
 
   function renderStory(): void {
-    const { stories, vocab } = data()
+    const { stories, storyAudio, vocab } = data()
     const available = stories.filter((story) => story.coreConcepts.length)
     const story = available[storyIndex % available.length]
     clearNode(visualStack)
@@ -240,7 +311,7 @@ export function createExperience(): void {
     })
     visualStack.append(strip)
 
-    setAudio(mainAudio, `${paths.storyAudio}${story.audio}`)
+    setAudio(mainAudio, `${storyAudio}${story.audio}`)
     pulse(Math.min(story.coreConcepts.length, 7))
   }
 
@@ -344,6 +415,7 @@ export function createExperience(): void {
     })
   })
 
+  renderLanguageOptions()
   boot().catch(() => {
     app.classList.add("is-offline")
   })
