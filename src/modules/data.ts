@@ -15,7 +15,7 @@ export const supportedLanguages = ["en", "nan", "zh"] as const
 
 export const languageOptions: readonly LanguageOption[] = [
   { code: "zh", name: "Mandarin", nativeName: "中文" },
-  { code: "nan", name: "Taiwanese", nativeName: "台語" },
+  { code: "nan", name: "Taiwanese", nativeName: "Tâi-gí" },
   { code: "en", name: "English", nativeName: "English" }
 ]
 

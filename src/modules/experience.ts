@@ -1,422 +1,232 @@
-import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
+import seedSvgMarkup from "../../assets/symbols/start_page/start.html?raw"
+import meaningTreeSvgMarkup from "../../assets/symbols/path_screen/meaning_tree.html?raw"
+import soundGardenSvgMarkup from "../../assets/symbols/path_screen/sound_garden.html?raw"
+import { languageOptions, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
-import type { LearningData, Mode, SoundItem, SupportedLanguage, Surface, VocabItem } from "./types"
+import type { SupportedLanguage } from "./types"
 
-const modeSequence: Mode[] = ["vocab", "ear", "story", "replay"]
+type Surface = "start" | "language" | "path"
+type SeedState = "idle" | "previewing" | "revealed" | "selected"
 
-const shuffle = <T>(items: T[]): T[] => [...items].sort(() => Math.random() - 0.5)
-const sample = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)]
-
-function setAudio(audio: HTMLAudioElement, src: string): void {
-  audio.pause()
-  audio.src = src
-  audio.currentTime = 0
-  audio.load()
+type LanguageSeed = {
+  code: SupportedLanguage
+  state: SeedState
 }
 
-function safePlay(audio: HTMLAudioElement): Promise<void | undefined> {
-  return audio.play().catch(() => undefined)
+const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
+
+const getDisplayName = (code: SupportedLanguage): string => {
+  const option = languageOptions.find((language) => language.code === code)
+  if (!option) return code
+  return option.nativeName === option.name ? option.nativeName : `${option.nativeName} (${option.name})`
+}
+
+function makeChime(): void {
+  const AudioContextConstructor =
+    window.AudioContext ||
+    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!AudioContextConstructor) return
+
+  const context = new AudioContextConstructor()
+  void context.resume()
+  const now = context.currentTime
+  const master = context.createGain()
+  master.gain.setValueAtTime(0.0001, now)
+  master.gain.exponentialRampToValueAtTime(0.16, now + 0.04)
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.65)
+  master.connect(context.destination)
+
+  ;[392, 523.25, 659.25].forEach((frequency, index) => {
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    const start = now + index * 0.09
+
+    oscillator.type = "sine"
+    oscillator.frequency.setValueAtTime(frequency, start)
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.012, start + 1.1)
+
+    gain.gain.setValueAtTime(0.0001, start)
+    gain.gain.exponentialRampToValueAtTime(0.32 / (index + 1), start + 0.05)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.3)
+
+    oscillator.connect(gain)
+    gain.connect(master)
+    oscillator.start(start)
+    oscillator.stop(start + 1.45)
+  })
+}
+
+function createSeedSvg(): HTMLElement {
+  const wrapper = document.createElement("span")
+  wrapper.className = "language-seed-art"
+  wrapper.innerHTML = seedSvgMarkup.trim()
+  wrapper.querySelector("svg")?.setAttribute("focusable", "false")
+  return wrapper
 }
 
 export function createExperience(): void {
-  const landing = mustQuery<HTMLElement>("#landing")
-  const home = mustQuery<HTMLElement>("#home")
-  const app = mustQuery<HTMLElement>("#experience")
-  const visualStack = mustQuery<HTMLDivElement>("#visual-stack")
-  const choiceGrid = mustQuery<HTMLElement>("#choice-grid")
-  const pulseTrack = mustQuery<HTMLDivElement>("#pulse-track")
-  const progressConstellation = mustQuery<HTMLDivElement>("#progress-constellation")
-  const languageGrid = mustQuery<HTMLDivElement>("#language-grid")
-  const mainAudio = mustQuery<HTMLAudioElement>("#main-audio")
-  const choiceAudio = mustQuery<HTMLAudioElement>("#choice-audio")
-  const playButton = mustQuery<HTMLButtonElement>("#play-button")
-  const nextButton = mustQuery<HTMLButtonElement>("#next-button")
-  const backButton = mustQuery<HTMLButtonElement>("#back-button")
-  const homeButton = mustQuery<HTMLButtonElement>("#home-button")
-  const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".mode-button"))
-  const openHomeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-open-home]"))
-  const openLandingButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-open-landing]"))
-  const startModeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-start-mode]"))
+  const app = mustQuery<HTMLElement>("#app")
+  const startScreen = mustQuery<HTMLElement>("#start-screen")
+  const languageScreen = mustQuery<HTMLElement>("#language-screen")
+  const pathScreen = mustQuery<HTMLElement>("#path-screen")
+  const seedButton = mustQuery<HTMLButtonElement>("#seed-button")
+  const startSeedArt = mustQuery<HTMLElement>("#start-seed-art")
+  const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
+  const soundGardenArt = mustQuery<HTMLElement>("#sound-garden-art")
+  const languageSeedbed = mustQuery<HTMLElement>("#language-seedbed")
+  const previewAudio = new Audio()
 
-  let selectedLanguage = getInitialLanguage()
-  let mode: Mode = "vocab"
-  let currentIndex = 0
-  let currentAnswer = ""
-  let storyIndex = 0
-  let learningData: LearningData | null = null
-  const dataCache = new Map<SupportedLanguage, Promise<LearningData>>()
-
-  document.documentElement.dataset.learningLang = selectedLanguage
-
-  function data(): LearningData {
-    if (!learningData) throw new Error("Learning data has not loaded")
-    return learningData
-  }
-
-  function boot(): Promise<LearningData> {
-    if (learningData?.lang === selectedLanguage) return Promise.resolve(learningData)
-
-    let bootPromise = dataCache.get(selectedLanguage)
-    if (!bootPromise) {
-      bootPromise = loadLearningData(selectedLanguage)
-      dataCache.set(selectedLanguage, bootPromise)
-    }
-
-    return bootPromise.then((loaded) => {
-      if (loaded.lang === selectedLanguage) learningData = loaded
-      return loaded
-    })
-  }
+  let surface: Surface = "start"
+  let hasBegun = false
+  let previewRun = 0
+  let activePreview: SupportedLanguage | null = null
+  const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
+    code: language.code,
+    state: "idle"
+  }))
 
   function setSurface(nextSurface: Surface): void {
-    const enteringExperience = nextSurface === "experience"
-    landing.hidden = nextSurface !== "landing"
-    home.hidden = nextSurface !== "home"
-    app.hidden = !enteringExperience
-    document.body.classList.toggle("is-experience", enteringExperience)
-    document.body.classList.toggle("is-landing", nextSurface === "landing")
-    document.body.classList.toggle("is-home", nextSurface === "home")
+    surface = nextSurface
+    startScreen.hidden = surface !== "start"
+    languageScreen.hidden = surface !== "language"
+    pathScreen.hidden = surface !== "path"
+    app.dataset.surface = surface
+  }
 
-    if (enteringExperience) {
-      window.scrollTo({ top: 0 })
-      boot()
-        .then(() => {
-          render()
-          window.setTimeout(playCurrent, 140)
-        })
-        .catch(() => {
-          app.classList.add("is-offline")
-        })
-    } else {
-      mainAudio.pause()
-      choiceAudio.pause()
-      window.scrollTo({ top: 0 })
+  function setLanguageState(code: SupportedLanguage, state: SeedState): void {
+    languageSeeds.forEach((seed) => {
+      if (seed.code === code) seed.state = state
+      else if (state === "selected" && seed.state === "selected") seed.state = "revealed"
+    })
+  }
+
+  function resetActivePreview(): void {
+    previewRun += 1
+    previewAudio.pause()
+    previewAudio.removeAttribute("src")
+    previewAudio.load()
+
+    if (activePreview) {
+      const activeSeed = languageSeeds.find((seed) => seed.code === activePreview)
+      if (activeSeed?.state === "previewing") activeSeed.state = "idle"
     }
+
+    activePreview = null
   }
 
-  function enterMode(nextMode: Mode): void {
-    mode = nextMode
-    setSurface("experience")
+  function revealLanguage(code: SupportedLanguage, run: number): void {
+    if (run !== previewRun) return
+    activePreview = null
+    setLanguageState(code, "revealed")
+    renderLanguageSeeds()
   }
 
-  function renderLanguageOptions(): void {
-    clearNode(languageGrid)
+  function selectLanguage(code: SupportedLanguage): void {
+    resetActivePreview()
+    setLanguageState(code, "selected")
+    saveLanguage(code)
+    document.documentElement.dataset.learningLang = code
+    renderLanguageSeeds()
 
-    languageOptions.forEach((option) => {
+    window.setTimeout(() => {
+      setSurface("path")
+    }, 360)
+  }
+
+  function previewLanguage(code: SupportedLanguage): void {
+    const seed = languageSeeds.find((candidate) => candidate.code === code)
+    if (seed?.state === "revealed" || seed?.state === "selected") {
+      selectLanguage(code)
+      return
+    }
+
+    resetActivePreview()
+    previewRun += 1
+    const run = previewRun
+    activePreview = code
+    setLanguageState(code, "previewing")
+    renderLanguageSeeds()
+
+    previewAudio.src = previewPath(code)
+    previewAudio.currentTime = 0
+
+    previewAudio.onended = () => {
+      revealLanguage(code, run)
+    }
+
+    previewAudio.onerror = () => {
+      revealLanguage(code, run)
+    }
+
+    previewAudio.play().catch(() => {
+      revealLanguage(code, run)
+    })
+  }
+
+  function renderLanguageSeeds(): void {
+    clearNode(languageSeedbed)
+
+    languageSeeds.forEach((languageSeed) => {
+      const option = languageOptions.find((language) => language.code === languageSeed.code)
+      if (!option) return
+
+      const row = document.createElement("div")
+      row.className = "language-seed-row"
+      row.dataset.state = languageSeed.state
+      row.dataset.language = languageSeed.code
+      row.setAttribute("role", "listitem")
+
       const button = document.createElement("button")
+      button.className = "language-seed-button"
       button.type = "button"
-      button.className = "language-card"
-      button.dataset.language = option.code
-      button.setAttribute("role", "radio")
-      button.setAttribute("aria-checked", String(option.code === selectedLanguage))
+      button.setAttribute("aria-label", `${option.name} preview`)
+      button.setAttribute("aria-pressed", String(languageSeed.state === "selected"))
+      button.append(createSeedSvg())
+      button.addEventListener("click", () => {
+        previewLanguage(languageSeed.code)
+      })
 
-      const nativeName = document.createElement("strong")
-      nativeName.textContent = option.nativeName
+      const nameGroup = document.createElement("span")
+      nameGroup.className = "language-name"
+      nameGroup.setAttribute("aria-hidden", String(languageSeed.state === "idle" || languageSeed.state === "previewing"))
 
       const name = document.createElement("span")
-      name.textContent = option.name
+      name.textContent = getDisplayName(languageSeed.code)
 
-      button.append(nativeName, name)
-      button.addEventListener("click", () => {
-        selectLanguage(option.code)
+      const enterButton = document.createElement("button")
+      enterButton.className = "language-enter"
+      enterButton.type = "button"
+      enterButton.setAttribute("aria-label", `Enter ${option.name}`)
+      enterButton.addEventListener("click", () => {
+        selectLanguage(languageSeed.code)
       })
 
-      languageGrid.append(button)
+      const chevron = document.createElement("span")
+      chevron.setAttribute("aria-hidden", "true")
+      enterButton.append(chevron)
+      nameGroup.append(name, enterButton)
+      row.append(button, nameGroup)
+      languageSeedbed.append(row)
     })
   }
 
-  function resetPractice(): void {
-    currentIndex = 0
-    storyIndex = 0
-    currentAnswer = ""
-    learningData = null
-    mainAudio.removeAttribute("src")
-    choiceAudio.removeAttribute("src")
-    mainAudio.load()
-    choiceAudio.load()
-    clearNode(visualStack)
-    clearNode(choiceGrid)
-    clearNode(progressConstellation)
-    clearNode(pulseTrack)
-    app.classList.remove("is-offline")
-  }
-
-  function selectLanguage(nextLanguage: SupportedLanguage): void {
-    if (nextLanguage === selectedLanguage) return
-
-    selectedLanguage = nextLanguage
-    document.documentElement.dataset.learningLang = selectedLanguage
-    saveLanguage(selectedLanguage)
-    resetPractice()
-    renderLanguageOptions()
-
-    if (!app.hidden) {
-      boot()
-        .then(() => {
-          render()
-          window.setTimeout(playCurrent, 140)
-        })
-        .catch(() => {
-          app.classList.add("is-offline")
-        })
-    }
-  }
-
-  function pulse(count = 5): void {
-    clearNode(pulseTrack)
-    for (let i = 0; i < count; i += 1) {
-      const dot = document.createElement("span")
-      dot.style.setProperty("--delay", `${i * 90}ms`)
-      pulseTrack.append(dot)
-    }
-  }
-
-  function markFeedback(button: HTMLElement, ok: boolean): void {
-    button.classList.add(ok ? "is-correct" : "is-wrong")
-    app.dataset.feedback = ok ? "correct" : "wrong"
+  seedButton.addEventListener("click", () => {
+    if (hasBegun) return
+    hasBegun = true
+    app.dataset.audio = "unlocked"
+    makeChime()
 
     window.setTimeout(() => {
-      button.classList.remove("is-correct", "is-wrong")
-      delete app.dataset.feedback
-    }, 650)
-  }
-
-  function renderProgress(): void {
-    clearNode(progressConstellation)
-    const total = 6
-    const filled = mode === "story" ? Math.min(storyIndex + 1, total) : Math.min(currentIndex + 1, total)
-
-    for (let i = 0; i < total; i += 1) {
-      const marker = document.createElement("span")
-      if (i < filled) marker.className = "is-filled"
-      progressConstellation.append(marker)
-    }
-  }
-
-  function getImage(entry: VocabItem): string {
-    return `${data().paths.images}${sample(entry.image).filename}`
-  }
-
-  function getVocabAudio(entry: VocabItem): string {
-    return `${data().paths.vocabAudio}${sample(entry.audio).filename}`
-  }
-
-  function getSoundAudio(sound: SoundItem): string {
-    return `${data().paths.phonemeAudio}${sound.category}/${sound.audio.default}`
-  }
-
-  function renderImage(entry: VocabItem, active = true): HTMLButtonElement {
-    const figure = document.createElement("button")
-    figure.type = "button"
-    figure.className = active ? "image-tile is-focus" : "image-tile"
-    figure.dataset.id = entry.id
-
-    const img = document.createElement("img")
-    img.src = getImage(entry)
-    img.alt = ""
-    img.decoding = "async"
-    figure.append(img)
-
-    return figure
-  }
-
-  function renderVocab(): void {
-    const { vocab } = data()
-    const item = vocab[currentIndex % vocab.length]
-    currentAnswer = item.id
-    clearNode(visualStack)
-    clearNode(choiceGrid)
-    app.dataset.mode = "vocab"
-
-    const focus = renderImage(item)
-    focus.addEventListener("click", () => {
-      void playCurrent()
-    })
-    visualStack.append(focus)
-
-    const choices = shuffle([item, ...shuffle(vocab.filter((entry) => entry.id !== item.id)).slice(0, 2)])
-    choices.forEach((choice) => {
-      const button = renderImage(choice, false)
-      button.addEventListener("click", () => {
-        const ok = choice.id === currentAnswer
-        markFeedback(button, ok)
-        if (ok) window.setTimeout(next, 480)
-        else setAudio(choiceAudio, getVocabAudio(choice))
-        void safePlay(choiceAudio)
-      })
-      choiceGrid.append(button)
-    })
-
-    setAudio(mainAudio, getVocabAudio(item))
-    pulse(4)
-  }
-
-  function renderEar(): void {
-    const { sounds } = data()
-    const question = sample(sounds)
-    const wrong = sample(sounds.filter((sound) => sound.id !== question.id))
-    currentAnswer = question.id
-    clearNode(visualStack)
-    clearNode(choiceGrid)
-    app.dataset.mode = "ear"
-
-    const ring = document.createElement("button")
-    ring.type = "button"
-    ring.className = "sound-ring is-focus"
-    ring.addEventListener("click", () => {
-      void playCurrent()
-    })
-    visualStack.append(ring)
-
-    shuffle([question, wrong]).forEach((sound) => {
-      const button = document.createElement("button")
-      button.type = "button"
-      button.className = "sound-choice"
-      button.dataset.id = sound.id
-      button.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
-      button.addEventListener("click", () => {
-        setAudio(choiceAudio, getSoundAudio(sound))
-        void safePlay(choiceAudio)
-        const ok = sound.id === currentAnswer
-        markFeedback(button, ok)
-        if (ok) window.setTimeout(renderEar, 620)
-      })
-      choiceGrid.append(button)
-    })
-
-    setAudio(mainAudio, getSoundAudio(question))
-    pulse(3)
-  }
-
-  function renderStory(): void {
-    const { stories, storyAudio, vocab } = data()
-    const available = stories.filter((story) => story.coreConcepts.length)
-    const story = available[storyIndex % available.length]
-    clearNode(visualStack)
-    clearNode(choiceGrid)
-    app.dataset.mode = "story"
-
-    const strip = document.createElement("div")
-    strip.className = "story-strip"
-    story.coreConcepts.forEach((id, index) => {
-      const entry = vocab.find((item) => item.id === id)
-      if (!entry) return
-
-      const frame = renderImage(entry, index === 0)
-      frame.addEventListener("click", () => {
-        setAudio(choiceAudio, getVocabAudio(entry))
-        void safePlay(choiceAudio)
-      })
-      strip.append(frame)
-    })
-    visualStack.append(strip)
-
-    setAudio(mainAudio, `${storyAudio}${story.audio}`)
-    pulse(Math.min(story.coreConcepts.length, 7))
-  }
-
-  function renderReplay(): void {
-    const { vocab } = data()
-    const item = vocab[currentIndex % vocab.length]
-    clearNode(visualStack)
-    clearNode(choiceGrid)
-    app.dataset.mode = "replay"
-
-    const focus = renderImage(item)
-    focus.addEventListener("click", () => {
-      void replayLoop()
-    })
-    visualStack.append(focus)
-
-    const echo = document.createElement("button")
-    echo.type = "button"
-    echo.className = "echo-pad"
-    echo.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
-    echo.addEventListener("click", () => {
-      void replayLoop()
-    })
-    choiceGrid.append(echo)
-
-    setAudio(mainAudio, getVocabAudio(item))
-    pulse(6)
-  }
-
-  async function replayLoop(): Promise<void> {
-    await playCurrent()
-    pulse(6)
-    window.setTimeout(() => {
-      void playCurrent()
-    }, 1300)
-  }
-
-  function render(): void {
-    renderProgress()
-    modeButtons.forEach((button) => {
-      button.classList.toggle("is-active", button.dataset.mode === mode)
-    })
-
-    if (mode === "ear") renderEar()
-    if (mode === "vocab") renderVocab()
-    if (mode === "story") renderStory()
-    if (mode === "replay") renderReplay()
-  }
-
-  function playCurrent(): Promise<void | undefined> {
-    pulse(mode === "story" ? 7 : 4)
-    mainAudio.currentTime = 0
-    return safePlay(mainAudio)
-  }
-
-  function next(): void {
-    if (mode === "story") storyIndex += 1
-    else currentIndex = (currentIndex + 1) % data().vocab.length
-    render()
-    window.setTimeout(() => {
-      void playCurrent()
-    }, 120)
-  }
-
-  function back(): void {
-    if (mode === "story") storyIndex = Math.max(0, storyIndex - 1)
-    else currentIndex = (currentIndex - 1 + data().vocab.length) % data().vocab.length
-    render()
-  }
-
-  modeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextMode = button.dataset.mode
-      if (!modeSequence.includes(nextMode as Mode)) return
-      mode = nextMode as Mode
-      render()
-      window.setTimeout(() => {
-        void playCurrent()
-      }, 120)
-    })
+      setSurface("language")
+    }, 980)
   })
 
-  playButton.addEventListener("click", () => {
-    if (mode === "replay") void replayLoop()
-    else void playCurrent()
-  })
-  nextButton.addEventListener("click", next)
-  backButton.addEventListener("click", back)
-  homeButton.addEventListener("click", () => setSurface("home"))
-  openHomeButtons.forEach((button) => {
-    button.addEventListener("click", () => setSurface("home"))
-  })
-  openLandingButtons.forEach((button) => {
-    button.addEventListener("click", () => setSurface("landing"))
-  })
-  startModeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextMode = button.dataset.startMode
-      if (!modeSequence.includes(nextMode as Mode)) return
-      enterMode(nextMode as Mode)
-    })
-  })
-
-  renderLanguageOptions()
-  boot().catch(() => {
-    app.classList.add("is-offline")
-  })
+  startSeedArt.innerHTML = seedSvgMarkup.trim()
+  startSeedArt.querySelector("svg")?.setAttribute("focusable", "false")
+  meaningTreeArt.innerHTML = meaningTreeSvgMarkup.trim()
+  meaningTreeArt.querySelector("svg")?.setAttribute("focusable", "false")
+  soundGardenArt.innerHTML = soundGardenSvgMarkup.trim()
+  soundGardenArt.querySelector("svg")?.setAttribute("focusable", "false")
+  renderLanguageSeeds()
+  setSurface(surface)
 }
