@@ -28,12 +28,37 @@
 
       <section class="path-screen" id="path-screen" aria-label="Learning paths" hidden>
         <div class="path-gate">
-          <button class="path-choice" type="button" aria-label="Meaning Tree">
+          <button class="path-choice" id="meaning-tree-button" type="button" aria-label="Meaning Tree">
             <span class="path-mark path-mark-tree" id="meaning-tree-art" aria-hidden="true"></span>
           </button>
-          <button class="path-choice" type="button" aria-label="Sound Garden">
+          <button class="path-choice" id="sound-garden-button" type="button" aria-label="Sound Garden">
             <span class="path-mark path-mark-garden" id="sound-garden-art" aria-hidden="true"></span>
           </button>
+        </div>
+      </section>
+
+      <section class="meaning-arc-screen" id="meaning-arc-screen" aria-label="Meaning arcs" hidden>
+        <ul class="arc-list" id="arc-list" role="list"></ul>
+      </section>
+
+      <section class="story-branch-screen" id="story-branch-screen" aria-label="Story branches" hidden>
+        <div class="meaning-tree-map" aria-hidden="true">
+          <span class="tree-trunk"></span>
+          <span class="tree-branch tree-branch-a"></span>
+          <span class="tree-branch tree-branch-b"></span>
+          <span class="tree-branch tree-branch-c"></span>
+        </div>
+
+        <div class="story-pod-bed" id="story-pod-bed" role="list"></div>
+      </section>
+
+      <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning Tree preview" hidden>
+        <div class="preview-world" aria-hidden="true">
+          <span class="preview-moon"></span>
+          <span class="preview-ground"></span>
+          <span class="preview-symbol" id="preview-symbol-a"></span>
+          <span class="preview-symbol" id="preview-symbol-b"></span>
+          <span class="preview-symbol" id="preview-symbol-c"></span>
         </div>
       </section>
     </main>

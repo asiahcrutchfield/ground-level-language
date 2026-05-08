@@ -66,9 +66,11 @@ export type PhonemeFile = Record<"vowels" | "consonants", Record<string, SoundEn
 export type Story = {
   id: string
   title: string
+  arcId?: string
   arc: string
   perspective: string
   coreConcepts: string[]
+  visualSignature?: string[]
   lines: string[]
   audio: string
 }

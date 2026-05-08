@@ -3,10 +3,16 @@
     {
       "id": "s0-001",
       "title": "Food on the Ground",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [
-        
+        "cat",
+        "food",
+        "ground",
+        "night",
+        "grass",
+        "sleep"
       ],
       "lines": [
         "I wake up.",
@@ -46,11 +52,13 @@
         "I close my eyes.",
         "I sleep."
       ],
+      "visualSignature": ["cat", "food", "night"],
       "audio": "s0-001.mp3"
     },
     {
       "id": "s0-002",
       "title": "Rain",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -86,11 +94,13 @@
         "I close my eyes.",
         "I fall asleep."
       ],
+      "visualSignature": ["cat", "rain", "shelter"],
       "audio": "s0-002.mp3"
     },
     {
       "id": "s0-003",
       "title": "Fish on the Table",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -131,11 +141,13 @@
         "I turn.",
         "I walk."
       ],
+      "visualSignature": ["cat", "fish", "table"],
       "audio": "s0-003.mp3"
     },
     {
       "id": "s0-004",
       "title": "The Box",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -167,11 +179,13 @@
         "I close my eyes.",
         "I go to sleep."
       ],
+      "visualSignature": ["cat", "box", "rain"],
       "audio": "s0-004.mp3"
     },
     {
       "id": "s0-005",
       "title": "The Bowl",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -201,11 +215,13 @@
         "I lick the bowl.",
         "I walk away."
       ],
+      "visualSignature": ["cat", "bowl", "meat"],
       "audio": "s0-005.mp3"
     },
     {
       "id": "s0-006",
       "title": "The Human and the Bowl",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -235,11 +251,13 @@
         "I look back.",
         "The human is still."
       ],
+      "visualSignature": ["cat", "human", "bowl"],
       "audio": "s0-006.mp3"
     },
     {
       "id": "s0-007",
       "title": "The Hand",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -270,11 +288,13 @@
         "I move back.",
         "I sit."
       ],
+      "visualSignature": ["cat", "hand", "human"],
       "audio": "s0-007.mp3"
     },
     {
       "id": "s0-008",
       "title": "Touch",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -305,11 +325,13 @@
         "I open my eyes.",
         "I sit."
       ],
+      "visualSignature": ["cat", "hand", "touch"],
       "audio": "s0-008.mp3"
     },
     {
       "id": "s0-009",
       "title": "Under the Car",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -350,11 +372,13 @@
         "The hands hold my body.",
         "I am out."
       ],
+      "visualSignature": ["cat", "car", "hands"],
       "audio": "s0-009.mp3"
     },
     {
       "id": "s0-010",
       "title": "Inside",
+      "arcId": "cat-stray",
       "arc": "stray",
       "perspective": "cat",
       "coreConcepts": [],
@@ -378,6 +402,7 @@
         "I close my eyes.",
         "I stay here."
       ],
+      "visualSignature": ["cat", "home", "human"],
       "audio": "s0-010.mp3"
     }
   ]

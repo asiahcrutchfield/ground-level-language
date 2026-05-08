@@ -1,24 +1,103 @@
-import seedSvgMarkup from "../../assets/symbols/start_page/start.html?raw"
+import catArcSvgMarkup from "../../assets/symbols/arc_screen/cat.html?raw"
 import meaningTreeSvgMarkup from "../../assets/symbols/path_screen/meaning_tree.html?raw"
 import soundGardenSvgMarkup from "../../assets/symbols/path_screen/sound_garden.html?raw"
-import { languageOptions, saveLanguage } from "./data"
+import seedSvgMarkup from "../../assets/symbols/start_page/start.html?raw"
+import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
-import type { SupportedLanguage } from "./types"
+import type { Story, SupportedLanguage } from "./types"
 
-type Surface = "start" | "language" | "path"
+type Surface = "start" | "language" | "path" | "meaningArc" | "storyBranch" | "meaningPreview"
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
+type PathId = "meaning-tree" | "sound-garden"
 
 type LanguageSeed = {
   code: SupportedLanguage
   state: SeedState
 }
 
+type MeaningArc = {
+  id: string
+  subject: string
+  ariaLabel: string
+  svg?: string
+  fallbackSymbol: string
+  unlocked: boolean
+}
+
 const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
+
+const conceptIcons: Record<string, string> = {
+  cat: "🐈",
+  dog: "🐕",
+  bird: "🐦",
+  rabbit: "🐇",
+  food: "🍖",
+  night: "🌙",
+  rain: "🌧",
+  shelter: "▰",
+  fish: "🐟",
+  table: "▔",
+  box: "□",
+  bowl: "◡",
+  meat: "🍖",
+  human: "◯",
+  hand: "✋",
+  touch: "◌",
+  car: "▭",
+  hands: "✋",
+  home: "⌂",
+  day: "○",
+  tree: "♧",
+  sun: "☼"
+}
+
+const defaultSignature = ["cat", "food", "night"]
+
+const meaningArcs: MeaningArc[] = [
+  {
+    id: "cat-stray",
+    subject: "cat",
+    ariaLabel: "Cat arc",
+    svg: catArcSvgMarkup,
+    fallbackSymbol: "🐈",
+    unlocked: true
+  },
+  {
+    id: "dog-stray",
+    subject: "dog",
+    ariaLabel: "Dog arc",
+    fallbackSymbol: "🐕",
+    unlocked: false
+  },
+  {
+    id: "bird",
+    subject: "bird",
+    ariaLabel: "Bird arc",
+    fallbackSymbol: "🐦",
+    unlocked: false
+  },
+  {
+    id: "rabbit",
+    subject: "rabbit",
+    ariaLabel: "Rabbit arc",
+    fallbackSymbol: "🐇",
+    unlocked: false
+  }
+]
 
 const getDisplayName = (code: SupportedLanguage): string => {
   const option = languageOptions.find((language) => language.code === code)
   if (!option) return code
   return option.nativeName === option.name ? option.nativeName : `${option.nativeName} (${option.name})`
+}
+
+const getStoryArcId = (story: Story): string => story.arcId ?? `${story.perspective}-${story.arc}`
+
+function getFallbackVisualSignature(story: Story): string[] {
+  if (story.perspective === "cat") return ["cat", "food", "night"]
+  if (story.perspective === "dog") return ["dog", "food", "day"]
+  if (story.perspective === "bird") return ["bird", "tree", "sun"]
+  return ["○", "○", "○"]
 }
 
 function makeChime(): void {
@@ -69,17 +148,33 @@ export function createExperience(): void {
   const startScreen = mustQuery<HTMLElement>("#start-screen")
   const languageScreen = mustQuery<HTMLElement>("#language-screen")
   const pathScreen = mustQuery<HTMLElement>("#path-screen")
+  const meaningArcScreen = mustQuery<HTMLElement>("#meaning-arc-screen")
+  const storyBranchScreen = mustQuery<HTMLElement>("#story-branch-screen")
+  const meaningPreviewScreen = mustQuery<HTMLElement>("#meaning-preview-screen")
   const seedButton = mustQuery<HTMLButtonElement>("#seed-button")
   const startSeedArt = mustQuery<HTMLElement>("#start-seed-art")
   const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
   const soundGardenArt = mustQuery<HTMLElement>("#sound-garden-art")
+  const meaningTreeButton = mustQuery<HTMLButtonElement>("#meaning-tree-button")
   const languageSeedbed = mustQuery<HTMLElement>("#language-seedbed")
+  const arcList = mustQuery<HTMLUListElement>("#arc-list")
+  const storyPodBed = mustQuery<HTMLElement>("#story-pod-bed")
+  const previewSymbols = [
+    mustQuery<HTMLElement>("#preview-symbol-a"),
+    mustQuery<HTMLElement>("#preview-symbol-b"),
+    mustQuery<HTMLElement>("#preview-symbol-c")
+  ]
   const previewAudio = new Audio()
 
   let surface: Surface = "start"
   let hasBegun = false
   let previewRun = 0
   let activePreview: SupportedLanguage | null = null
+  let selectedLanguage = getInitialLanguage()
+  let selectedPath: PathId | null = null
+  let selectedArcId: string | null = null
+  let selectedStoryId: string | null = null
+  let allStories: Story[] = []
   const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
     code: language.code,
     state: "idle"
@@ -90,6 +185,9 @@ export function createExperience(): void {
     startScreen.hidden = surface !== "start"
     languageScreen.hidden = surface !== "language"
     pathScreen.hidden = surface !== "path"
+    meaningArcScreen.hidden = surface !== "meaningArc"
+    storyBranchScreen.hidden = surface !== "storyBranch"
+    meaningPreviewScreen.hidden = surface !== "meaningPreview"
     app.dataset.surface = surface
   }
 
@@ -123,6 +221,10 @@ export function createExperience(): void {
 
   function selectLanguage(code: SupportedLanguage): void {
     resetActivePreview()
+    selectedLanguage = code
+    selectedArcId = null
+    selectedStoryId = null
+    allStories = []
     setLanguageState(code, "selected")
     saveLanguage(code)
     document.documentElement.dataset.learningLang = code
@@ -131,6 +233,127 @@ export function createExperience(): void {
     window.setTimeout(() => {
       setSurface("path")
     }, 360)
+  }
+
+  function getStorySignature(story: Story): string[] {
+    if (story.visualSignature?.length) return story.visualSignature.slice(0, 3)
+    return getFallbackVisualSignature(story)
+  }
+
+  function renderMeaningPreview(story: Story): void {
+    getStorySignature(story).forEach((concept, index) => {
+      const symbol = previewSymbols[index]
+      if (!symbol) return
+      symbol.textContent = conceptIcons[concept] ?? "○"
+    })
+  }
+
+  function getStoriesForArc(arcId: string): Story[] {
+    return allStories.filter((story) => getStoryArcId(story) === arcId)
+  }
+
+  function renderArcButtons(): void {
+    clearNode(arcList)
+
+    meaningArcs.forEach((arc) => {
+      const item = document.createElement("li")
+      const button = document.createElement("button")
+      button.className = arc.unlocked ? "arc-button" : "arc-button is-locked"
+      button.type = "button"
+      button.dataset.arcId = arc.id
+      button.setAttribute("aria-label", arc.ariaLabel)
+      button.disabled = !arc.unlocked
+
+      const icon = document.createElement("span")
+      icon.className = "arc-icon"
+      icon.setAttribute("aria-hidden", "true")
+
+      if (arc.svg) {
+        icon.innerHTML = arc.svg.trim()
+        icon.querySelector("svg")?.setAttribute("focusable", "false")
+      } else {
+        icon.textContent = arc.fallbackSymbol
+      }
+
+      button.append(icon)
+      button.addEventListener("click", () => {
+        selectedArcId = arc.id
+        renderStoryPods(getStoriesForArc(arc.id))
+        setSurface("storyBranch")
+      })
+
+      item.append(button)
+      arcList.append(item)
+    })
+  }
+
+  function renderStoryPods(stories: Story[]): void {
+    clearNode(storyPodBed)
+
+    stories.forEach((story) => {
+      const button = document.createElement("button")
+      button.className = "story-pod"
+      button.type = "button"
+      button.setAttribute("role", "listitem")
+      button.setAttribute("aria-label", story.title)
+
+      const symbols = document.createElement("span")
+      symbols.className = "story-symbols"
+      symbols.setAttribute("aria-hidden", "true")
+
+      getStorySignature(story).forEach((concept) => {
+        const symbol = document.createElement("span")
+        symbol.className = "story-symbol"
+        symbol.textContent = conceptIcons[concept] ?? "○"
+        symbols.append(symbol)
+      })
+
+      const progress = document.createElement("span")
+      progress.className = "story-progress"
+      progress.setAttribute("aria-hidden", "true")
+      progress.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+
+      button.append(symbols, progress)
+      button.addEventListener("click", () => {
+        selectedStoryId = story.id
+        renderMeaningPreview(story)
+        setSurface("meaningPreview")
+      })
+
+      storyPodBed.append(button)
+    })
+  }
+
+  function openMeaningArcs(): void {
+    selectedPath = "meaning-tree"
+    selectedArcId = null
+    selectedStoryId = null
+    clearNode(arcList)
+    clearNode(storyPodBed)
+
+    loadLearningData(selectedLanguage)
+      .then((data) => {
+        allStories = data.stories
+        renderArcButtons()
+        setSurface("meaningArc")
+      })
+      .catch(() => {
+        allStories = [
+          {
+            id: "fallback-story",
+            title: "Food on the Ground",
+            arcId: "cat-stray",
+            arc: "stray",
+            perspective: "cat",
+            coreConcepts: [],
+            visualSignature: defaultSignature,
+            lines: [],
+            audio: ""
+          }
+        ]
+        renderArcButtons()
+        setSurface("meaningArc")
+      })
   }
 
   function previewLanguage(code: SupportedLanguage): void {
@@ -219,6 +442,10 @@ export function createExperience(): void {
     window.setTimeout(() => {
       setSurface("language")
     }, 980)
+  })
+
+  meaningTreeButton.addEventListener("click", () => {
+    openMeaningArcs()
   })
 
   startSeedArt.innerHTML = seedSvgMarkup.trim()
