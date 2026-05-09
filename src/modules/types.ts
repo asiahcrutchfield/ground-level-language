@@ -73,6 +73,7 @@ export type Story = {
   visualSignature?: string[]
   previewMoments?: PreviewMoment[]
   primerItems?: PrimerItem[]
+  scenes?: StoryScene[]
   lines: string[]
   audio: string
 }
@@ -98,6 +99,14 @@ export type PrimerItem = {
   syllables?: SoundPiece[]
   toneOrPitch?: SoundPiece[]
   features?: SoundPiece[]
+}
+
+export type StoryScene = {
+  id: string
+  image?: string
+  audio?: string
+  start?: number
+  end?: number
 }
 
 export type StoryFile = Story[] | Story[][]

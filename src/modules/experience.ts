@@ -4,11 +4,22 @@ import soundGardenSvgMarkup from "../../assets/symbols/path_screen/sound_garden.
 import seedSvgMarkup from "../../assets/symbols/start_page/start.html?raw"
 import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
-import type { PreviewMoment, PrimerItem, SoundPiece, Story, SupportedLanguage } from "./types"
+import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
-type Surface = "start" | "language" | "path" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story"
+type Surface = "start" | "language" | "path" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
 type PathId = "meaning-tree" | "sound-garden"
+type StoryMode = "auto" | "manual"
+type RecallChoice =
+  | { kind: "meaning"; image?: string; symbol?: string; id: string }
+  | { kind: "perception"; pattern: number[]; id: string }
+type RecallPrompt = {
+  id: string
+  family: "perception" | "meaning"
+  audio?: string
+  choices: RecallChoice[]
+  correctIndex: number
+}
 
 type LanguageSeed = {
   code: SupportedLanguage
@@ -199,10 +210,39 @@ export function createExperience(): void {
   const primerEcho = mustQuery<HTMLElement>("#primer-echo")
   const primerBackButton = mustQuery<HTMLButtonElement>("#primer-back-button")
   const primerNextButton = mustQuery<HTMLButtonElement>("#primer-next-button")
-  const storyScreen = mustQuery<HTMLElement>("#story-screen")
+  const storyScreen = mustQuery<HTMLElement>("#meaning-story-screen")
+  const storyModeGate = mustQuery<HTMLElement>("#story-mode-gate")
+  const storyAutoButton = mustQuery<HTMLButtonElement>("#story-auto-button")
+  const storyManualButton = mustQuery<HTMLButtonElement>("#story-manual-button")
+  const storyStage = mustQuery<HTMLElement>("#story-stage")
+  const storyImage = mustQuery<HTMLImageElement>("#story-image")
+  const storyAudioButton = mustQuery<HTMLButtonElement>("#story-audio-button")
+  const storyEcho = mustQuery<HTMLElement>("#story-echo")
+  const storyProgress = mustQuery<HTMLElement>("#story-progress")
+  const storyControls = mustQuery<HTMLElement>("#story-controls")
+  const storyBackButton = mustQuery<HTMLButtonElement>("#story-back-button")
+  const storyPrevButton = mustQuery<HTMLButtonElement>("#story-prev-button")
+  const storyNextButton = mustQuery<HTMLButtonElement>("#story-next-button")
+  const storyReplayButton = mustQuery<HTMLButtonElement>("#story-replay-button")
+  const storyForwardButton = mustQuery<HTMLButtonElement>("#story-forward-button")
+  const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
+  const recallPromptOrb = mustQuery<HTMLElement>("#recall-prompt-orb")
+  const recallAudioButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
+  const recallChoiceBed = mustQuery<HTMLElement>("#recall-choice-bed")
+  const recallProgress = mustQuery<HTMLElement>("#recall-progress")
+  const recallStoryButton = mustQuery<HTMLButtonElement>("#recall-story-button")
+  const recallPrevButton = mustQuery<HTMLButtonElement>("#recall-prev-button")
+  const recallNextQuestionButton = mustQuery<HTMLButtonElement>("#recall-next-question-button")
+  const recallContinueButton = mustQuery<HTMLButtonElement>("#recall-continue-button")
+  const reflectionScreen = mustQuery<HTMLElement>("#meaning-reflection-screen")
+  const reflectionStorySymbols = mustQuery<HTMLElement>("#reflection-story-symbols")
+  const reflectionReplayButton = mustQuery<HTMLButtonElement>("#reflection-replay-button")
+  const reflectionPathsButton = mustQuery<HTMLButtonElement>("#reflection-paths-button")
+  const reflectionSoundGardenButton = mustQuery<HTMLButtonElement>("#reflection-sound-garden-button")
   const previewAudio = new Audio()
   const previewMomentAudio = new Audio()
   const primerAudio = new Audio()
+  const recallAudio = new Audio()
   const primerBackdrop = document.createElement("button")
 
   let surface: Surface = "start"
@@ -214,6 +254,15 @@ export function createExperience(): void {
   let selectedArcId: string | null = null
   let selectedStoryId: string | null = null
   let expandedPrimerCard: HTMLElement | null = null
+  let selectedStoryMode: StoryMode | null = null
+  let currentStorySceneIndex = 0
+  let currentStoryAudio: HTMLAudioElement | null = null
+  let currentStory: Story | null = null
+  let storySceneTimer = 0
+  let storyAudioBase = ""
+  let currentRecallPrompts: RecallPrompt[] = []
+  let currentRecallIndex = 0
+  const completedStoryIds = new Set<string>()
   let allStories: Story[] = []
   const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
     code: language.code,
@@ -222,6 +271,8 @@ export function createExperience(): void {
 
   function setSurface(nextSurface: Surface): void {
     if (surface === "meaningPreview" && nextSurface !== "meaningPreview") stopPreviewMomentAudio()
+    if (surface === "story" && nextSurface !== "story") stopStoryAudio()
+    if (surface === "recall" && nextSurface !== "recall") stopRecallAudio()
     surface = nextSurface
     startScreen.hidden = surface !== "start"
     languageScreen.hidden = surface !== "language"
@@ -231,6 +282,8 @@ export function createExperience(): void {
     meaningPreviewScreen.hidden = surface !== "meaningPreview"
     primerScreen.hidden = surface !== "primer"
     storyScreen.hidden = surface !== "story"
+    recallScreen.hidden = surface !== "recall"
+    reflectionScreen.hidden = surface !== "reflection"
     app.dataset.surface = surface
   }
 
@@ -595,6 +648,500 @@ export function createExperience(): void {
     })
   }
 
+  function resolveStoryAsset(path: string | undefined, base = storyAudioBase): string {
+    if (!path) return ""
+    if (/^(https?:|data:|blob:|\/|engine\/|stories\/|assets\/)/.test(path)) return path
+    return `${base}${path}`
+  }
+
+  function getStoryById(storyId: string): Story | undefined {
+    return allStories.find((candidate) => candidate.id === storyId)
+  }
+
+  function getStoryScenes(story: Story): StoryScene[] {
+    const providedScenes = story.scenes?.filter((scene) => scene.image || scene.audio || scene.start !== undefined)
+    const sourceScenes: StoryScene[] = providedScenes?.length
+      ? providedScenes
+      : [
+          ...getPrimerItems(story).map((item) => ({
+            id: item.id,
+            image: item.image,
+            audio: item.wholeAudio
+          })),
+          ...universalImages.map((image, index) => ({
+            id: `fallback-scene-${index + 1}`,
+            image: `engine/universal/images/${image}`
+          }))
+        ] satisfies StoryScene[]
+
+    return sourceScenes.slice(0, 5).map((scene, index) => {
+      const start = scene.start ?? index * 3.8
+      const end = scene.end ?? start + 3.8
+
+      return {
+        id: scene.id || `scene-${index + 1}`,
+        image: scene.image ? resolveStoryAsset(scene.image) : `engine/universal/images/${universalImages[index % universalImages.length]}`,
+        audio: scene.audio ? resolveStoryAsset(scene.audio) : undefined,
+        start,
+        end
+      }
+    })
+  }
+
+  function getSceneIndexFromTime(scenes: StoryScene[], time: number): number {
+    const sceneIndex = scenes.findIndex((scene, index) => {
+      const start = scene.start ?? index * 3.8
+      const end = scene.end ?? start + 3.8
+      return time >= start && time < end
+    })
+
+    if (sceneIndex >= 0) return sceneIndex
+    return time >= (scenes.at(-1)?.end ?? 0) ? Math.max(0, scenes.length - 1) : 0
+  }
+
+  function renderStoryProgress(scenes: StoryScene[]): void {
+    clearNode(storyProgress)
+
+    scenes.forEach((_, index) => {
+      const dot = document.createElement("span")
+      dot.className = index === currentStorySceneIndex ? "is-active" : ""
+      storyProgress.append(dot)
+    })
+  }
+
+  function updateStoryProgress(story: Story, sceneIndex: number): void {
+    const scenes = getStoryScenes(story)
+    if (storyProgress.children.length !== scenes.length) renderStoryProgress(scenes)
+
+    Array.from(storyProgress.children).forEach((dot, index) => {
+      dot.classList.toggle("is-active", index === sceneIndex)
+    })
+  }
+
+  function updateStoryModeButtons(): void {
+    storyAutoButton.classList.toggle("is-active", selectedStoryMode === "auto")
+    storyManualButton.classList.toggle("is-active", selectedStoryMode === "manual")
+    storyAutoButton.setAttribute("aria-pressed", String(selectedStoryMode === "auto"))
+    storyManualButton.setAttribute("aria-pressed", String(selectedStoryMode === "manual"))
+  }
+
+  function showStoryScene(story: Story, sceneIndex: number): void {
+    const scenes = getStoryScenes(story)
+    const scene = scenes[sceneIndex]
+    if (!scene) return
+
+    currentStorySceneIndex = sceneIndex
+    storyImage.classList.add("is-changing")
+
+    window.setTimeout(() => {
+      storyImage.src = scene.image || ""
+      storyImage.classList.remove("is-changing")
+    }, 180)
+
+    storyPrevButton.disabled = sceneIndex <= 0
+    storyNextButton.disabled = sceneIndex >= scenes.length - 1
+    updateStoryProgress(story, sceneIndex)
+  }
+
+  function runStoryEcho(duration = 1200): void {
+    storyEcho.classList.add("is-echoing")
+    window.setTimeout(() => {
+      storyEcho.classList.remove("is-echoing")
+    }, duration)
+  }
+
+  function stopStoryAudio(): void {
+    window.clearTimeout(storySceneTimer)
+    storyStage.classList.remove("is-playing")
+    storyAudioButton.classList.remove("is-playing")
+
+    if (!currentStoryAudio) return
+
+    currentStoryAudio.pause()
+    currentStoryAudio.removeAttribute("src")
+    currentStoryAudio.load()
+    currentStoryAudio = null
+  }
+
+  function finishStory(): void {
+    window.clearTimeout(storySceneTimer)
+    storyStage.classList.remove("is-playing")
+    storyAudioButton.classList.remove("is-playing")
+    currentStoryAudio = null
+    storyModeGate.hidden = false
+    updateStoryModeButtons()
+    storyReplayButton.hidden = false
+    storyAudioButton.hidden = false
+  }
+
+  function runTimedAutoStory(story: Story, sceneIndex = 0): void {
+    const scenes = getStoryScenes(story)
+    const scene = scenes[sceneIndex]
+    if (!scene) {
+      finishStory()
+      return
+    }
+
+    showStoryScene(story, sceneIndex)
+    const duration = Math.max(1200, ((scene.end ?? sceneIndex * 3.8 + 3.8) - (scene.start ?? sceneIndex * 3.8)) * 1000)
+    storySceneTimer = window.setTimeout(() => {
+      runTimedAutoStory(story, sceneIndex + 1)
+    }, duration)
+  }
+
+  function playFullStoryAudio(story: Story): void {
+    const scenes = getStoryScenes(story)
+    const src = resolveStoryAsset(story.audio)
+
+    if (!src) {
+      runTimedAutoStory(story)
+      return
+    }
+
+    const audio = new Audio(src)
+    currentStoryAudio = audio
+
+    audio.addEventListener("timeupdate", () => {
+      const sceneIndex = getSceneIndexFromTime(scenes, audio.currentTime)
+      if (sceneIndex !== currentStorySceneIndex) showStoryScene(story, sceneIndex)
+    })
+
+    audio.addEventListener("ended", finishStory)
+    audio.addEventListener("error", () => {
+      currentStoryAudio = null
+      runTimedAutoStory(story, currentStorySceneIndex)
+    })
+
+    audio.play().catch(() => {
+      currentStoryAudio = null
+      runTimedAutoStory(story, currentStorySceneIndex)
+    })
+  }
+
+  function startAutoStory(story: Story): void {
+    selectedStoryMode = "auto"
+    stopStoryAudio()
+    updateStoryModeButtons()
+    storyStage.classList.add("is-playing")
+    storyAudioButton.classList.add("is-playing")
+    storyModeGate.hidden = false
+    storyAudioButton.hidden = false
+    storyPrevButton.hidden = true
+    storyNextButton.hidden = true
+    storyReplayButton.hidden = true
+    storyForwardButton.hidden = false
+    currentStorySceneIndex = 0
+    showStoryScene(story, 0)
+    playFullStoryAudio(story)
+  }
+
+  function playSceneAudio(story: Story, sceneIndex: number): void {
+    const scene = getStoryScenes(story)[sceneIndex]
+    if (!scene) return
+
+    stopStoryAudio()
+    storyStage.classList.add("is-playing")
+    storyAudioButton.classList.add("is-playing")
+
+    const sceneAudio = scene.audio
+    const fullStoryAudio = resolveStoryAsset(story.audio)
+    const audio = new Audio(sceneAudio || fullStoryAudio)
+
+    if (!sceneAudio && !fullStoryAudio) {
+      storyStage.classList.remove("is-playing")
+      storyAudioButton.classList.remove("is-playing")
+      runStoryEcho()
+      return
+    }
+
+    currentStoryAudio = audio
+    const sceneEnd = scene.end
+
+    if (!sceneAudio && scene.start !== undefined) {
+      audio.addEventListener("loadedmetadata", () => {
+        audio.currentTime = scene.start ?? 0
+      })
+      audio.addEventListener("timeupdate", () => {
+        if (sceneEnd !== undefined && audio.currentTime >= sceneEnd) {
+          stopStoryAudio()
+          runStoryEcho()
+        }
+      })
+    }
+
+    audio.addEventListener("ended", () => {
+      storyStage.classList.remove("is-playing")
+      storyAudioButton.classList.remove("is-playing")
+      currentStoryAudio = null
+      runStoryEcho(Number.isFinite(audio.duration) ? Math.min(1800, Math.max(900, audio.duration * 360)) : 1200)
+    })
+    audio.addEventListener("error", () => {
+      storyStage.classList.remove("is-playing")
+      storyAudioButton.classList.remove("is-playing")
+      currentStoryAudio = null
+      runStoryEcho()
+    })
+
+    audio.play().catch(() => {
+      storyStage.classList.remove("is-playing")
+      storyAudioButton.classList.remove("is-playing")
+      currentStoryAudio = null
+      runStoryEcho()
+    })
+  }
+
+  function startManualStory(story: Story): void {
+    selectedStoryMode = "manual"
+    stopStoryAudio()
+    updateStoryModeButtons()
+    currentStorySceneIndex = Math.min(currentStorySceneIndex, getStoryScenes(story).length - 1)
+    storyModeGate.hidden = false
+    storyAudioButton.hidden = false
+    storyPrevButton.hidden = false
+    storyNextButton.hidden = false
+    storyReplayButton.hidden = false
+    storyForwardButton.hidden = false
+    showStoryScene(story, currentStorySceneIndex)
+    updateStoryProgress(story, currentStorySceneIndex)
+  }
+
+  function renderMeaningStory(storyId: string): void {
+    const story = getStoryById(storyId)
+    if (!story) return
+
+    stopStoryAudio()
+    currentStory = story
+    currentStorySceneIndex = 0
+    selectedStoryMode = "manual"
+    storyBackButton.hidden = false
+    storyControls.hidden = false
+    startManualStory(story)
+  }
+
+  function goBackToPrimer(): void {
+    stopStoryAudio()
+    if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
+    setSurface("primer")
+  }
+
+  function goForwardFromStory(): void {
+    stopStoryAudio()
+    if (selectedStoryId) renderMeaningRecall(selectedStoryId)
+    setSurface("recall")
+  }
+
+  function stopRecallAudio(): void {
+    recallPromptOrb.classList.remove("is-playing")
+    recallAudioButton.classList.remove("is-playing")
+    recallAudio.pause()
+    recallAudio.removeAttribute("src")
+    recallAudio.load()
+  }
+
+  function playRecallPrompt(): void {
+    const prompt = currentRecallPrompts[currentRecallIndex]
+    stopRecallAudio()
+    if (!prompt?.audio) return
+
+    recallPromptOrb.classList.add("is-playing")
+    recallAudioButton.classList.add("is-playing")
+    recallAudio.src = prompt.audio
+    recallAudio.currentTime = 0
+    recallAudio.onended = () => {
+      recallPromptOrb.classList.remove("is-playing")
+      recallAudioButton.classList.remove("is-playing")
+    }
+    recallAudio.onerror = () => {
+      recallPromptOrb.classList.remove("is-playing")
+      recallAudioButton.classList.remove("is-playing")
+    }
+    recallAudio.play().catch(() => {
+      recallPromptOrb.classList.remove("is-playing")
+      recallAudioButton.classList.remove("is-playing")
+    })
+  }
+
+  function getRecallPattern(item: PrimerItem, fallbackIndex: number): number[] {
+    const phonemeCount = Math.max(2, item.phonemes?.length ?? 2 + (fallbackIndex % 3))
+    return Array.from({ length: Math.min(5, phonemeCount) }, (_, index) => (index % 2 === 0 ? 1 : 0.64))
+  }
+
+  function getRecallPrompts(story: Story): RecallPrompt[] {
+    const primerItems = getPrimerItems(story).slice(0, 4)
+    const scenes = getStoryScenes(story)
+    const items = primerItems.length ? primerItems : scenes.map((scene) => ({ id: scene.id, image: scene.image, wholeAudio: scene.audio }))
+    const first = items[0]
+    const second = items[1] ?? items[0]
+    const third = items[2] ?? items[0]
+    if (!first || !second || !third) return []
+
+    const meaningChoices = items.slice(0, 3).map((item) => ({
+      kind: "meaning" as const,
+      id: item.id,
+      image: item.image,
+      symbol: conceptIcons[item.id]
+    }))
+
+    const perceptionChoices = [first, second, third].map((item, index) => ({
+      kind: "perception" as const,
+      id: item.id,
+      pattern: getRecallPattern(item, index)
+    }))
+
+    return [
+      {
+        id: `${first.id}-hear-shape`,
+        family: "perception",
+        audio: first.wholeAudio,
+        choices: perceptionChoices,
+        correctIndex: 0
+      },
+      {
+        id: `${second.id}-meaning`,
+        family: "meaning",
+        audio: second.wholeAudio,
+        choices: meaningChoices,
+        correctIndex: Math.min(1, meaningChoices.length - 1)
+      },
+      {
+        id: `${third.id}-hear-shape`,
+        family: "perception",
+        audio: third.wholeAudio,
+        choices: [...perceptionChoices].reverse(),
+        correctIndex: Math.max(0, perceptionChoices.length - 1 - 2)
+      },
+      {
+        id: `${first.id}-meaning-return`,
+        family: "meaning",
+        audio: first.wholeAudio,
+        choices: [...meaningChoices].reverse(),
+        correctIndex: Math.max(0, meaningChoices.length - 1)
+      }
+    ]
+  }
+
+  function renderRecallProgress(): void {
+    clearNode(recallProgress)
+    currentRecallPrompts.forEach((_, index) => {
+      const dot = document.createElement("span")
+      dot.className = index === currentRecallIndex ? "is-active" : ""
+      recallProgress.append(dot)
+    })
+  }
+
+  function renderPerceptionChoice(choice: Extract<RecallChoice, { kind: "perception" }>, button: HTMLButtonElement): void {
+    const track = document.createElement("span")
+    track.className = "recall-perception-track"
+    choice.pattern.forEach((scale) => {
+      const particle = document.createElement("span")
+      particle.style.setProperty("--scale", String(scale))
+      track.append(particle)
+    })
+    button.append(track)
+  }
+
+  function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" }>, button: HTMLButtonElement): void {
+    if (choice.image) {
+      const img = document.createElement("img")
+      img.src = choice.image
+      img.alt = ""
+      img.setAttribute("aria-hidden", "true")
+      button.append(img)
+      return
+    }
+
+    const symbol = document.createElement("span")
+    symbol.className = "recall-choice-symbol"
+    symbol.textContent = choice.symbol ?? conceptIcons[choice.id] ?? "â—‹"
+    symbol.setAttribute("aria-hidden", "true")
+    button.append(symbol)
+  }
+
+  function renderRecallPrompt(): void {
+    const prompt = currentRecallPrompts[currentRecallIndex]
+    clearNode(recallChoiceBed)
+    renderRecallProgress()
+    recallPrevButton.disabled = currentRecallIndex <= 0
+    recallNextQuestionButton.disabled = currentRecallIndex >= currentRecallPrompts.length - 1
+    recallContinueButton.disabled = !currentRecallPrompts.length
+    recallPromptOrb.dataset.family = prompt?.family ?? "meaning"
+    if (!prompt) return
+
+    prompt.choices.forEach((choice, index) => {
+      const button = document.createElement("button")
+      button.className = `recall-choice recall-choice-${choice.kind}`
+      button.type = "button"
+      button.setAttribute("role", "listitem")
+      button.setAttribute("aria-label", choice.kind === "meaning" ? "Meaning choice" : "Sound shape choice")
+
+      if (choice.kind === "meaning") renderMeaningChoice(choice, button)
+      else renderPerceptionChoice(choice, button)
+
+      button.addEventListener("click", () => {
+        recallChoiceBed.querySelectorAll(".recall-choice").forEach((element) => {
+          element.classList.remove("is-selected", "is-correct")
+        })
+        button.classList.add("is-selected")
+        if (index === prompt.correctIndex) button.classList.add("is-correct")
+      })
+
+      recallChoiceBed.append(button)
+    })
+  }
+
+  function renderMeaningRecall(storyId: string): void {
+    const story = getStoryById(storyId)
+    if (!story) return
+
+    stopRecallAudio()
+    currentStory = story
+    currentRecallPrompts = getRecallPrompts(story)
+    currentRecallIndex = 0
+    renderRecallPrompt()
+    window.setTimeout(playRecallPrompt, 180)
+  }
+
+  function goBackToStory(): void {
+    stopRecallAudio()
+    if (selectedStoryId) renderMeaningStory(selectedStoryId)
+    setSurface("story")
+  }
+
+  function continueFromRecall(): void {
+    stopRecallAudio()
+    if (selectedStoryId) renderMeaningReflection(selectedStoryId)
+    setSurface("reflection")
+  }
+
+  function renderMeaningReflection(storyId: string): void {
+    const story = getStoryById(storyId)
+    if (!story) return
+
+    completedStoryIds.add(storyId)
+    clearNode(reflectionStorySymbols)
+    getStorySignature(story).forEach((concept) => {
+      const symbol = document.createElement("span")
+      symbol.textContent = conceptIcons[concept] ?? "â—‹"
+      reflectionStorySymbols.append(symbol)
+    })
+  }
+
+  function replayStoryFromReflection(): void {
+    if (selectedStoryId) renderMeaningStory(selectedStoryId)
+    setSurface("story")
+  }
+
+  function returnToPathSelection(): void {
+    selectedArcId = null
+    selectedStoryId = null
+    setSurface("path")
+  }
+
+  function enterSoundGardenFromReflection(): void {
+    selectedPath = "sound-garden"
+    setSurface("path")
+  }
+
   function getStoriesForArc(arcId: string): Story[] {
     return allStories.filter((story) => getStoryArcId(story) === arcId)
   }
@@ -681,10 +1228,12 @@ export function createExperience(): void {
     loadLearningData(selectedLanguage)
       .then((data) => {
         allStories = data.stories
+        storyAudioBase = data.storyAudio
         renderArcButtons()
         setSurface("meaningArc")
       })
       .catch(() => {
+        storyAudioBase = ""
         allStories = [
           {
             id: "fallback-story",
@@ -816,8 +1365,75 @@ export function createExperience(): void {
   primerNextButton.addEventListener("click", () => {
     collapsePrimerCard()
     stopPrimerAudio()
+    if (selectedStoryId) renderMeaningStory(selectedStoryId)
     setSurface("story")
   })
+
+  storyAutoButton.addEventListener("click", () => {
+    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    if (story) startAutoStory(story)
+  })
+
+  storyManualButton.addEventListener("click", () => {
+    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    if (story) startManualStory(story)
+  })
+
+  storyAudioButton.addEventListener("click", () => {
+    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    if (!story) return
+    if (selectedStoryMode === "manual") playSceneAudio(story, currentStorySceneIndex)
+    else startAutoStory(story)
+  })
+
+  storyPrevButton.addEventListener("click", () => {
+    if (!currentStory) return
+    stopStoryAudio()
+    showStoryScene(currentStory, Math.max(0, currentStorySceneIndex - 1))
+  })
+
+  storyNextButton.addEventListener("click", () => {
+    if (!currentStory) return
+    const scenes = getStoryScenes(currentStory)
+    stopStoryAudio()
+    showStoryScene(currentStory, Math.min(scenes.length - 1, currentStorySceneIndex + 1))
+  })
+
+  storyReplayButton.addEventListener("click", () => {
+    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    if (!story) return
+    if (selectedStoryMode === "manual") playSceneAudio(story, currentStorySceneIndex)
+    else startAutoStory(story)
+  })
+
+  storyBackButton.addEventListener("click", goBackToPrimer)
+  storyForwardButton.addEventListener("click", goForwardFromStory)
+
+  recallAudioButton.addEventListener("click", playRecallPrompt)
+
+  recallStoryButton.addEventListener("click", goBackToStory)
+
+  recallPrevButton.addEventListener("click", () => {
+    if (currentRecallIndex <= 0) return
+    stopRecallAudio()
+    currentRecallIndex -= 1
+    renderRecallPrompt()
+    playRecallPrompt()
+  })
+
+  recallNextQuestionButton.addEventListener("click", () => {
+    if (currentRecallIndex >= currentRecallPrompts.length - 1) return
+    stopRecallAudio()
+    currentRecallIndex += 1
+    renderRecallPrompt()
+    playRecallPrompt()
+  })
+
+  recallContinueButton.addEventListener("click", continueFromRecall)
+
+  reflectionReplayButton.addEventListener("click", replayStoryFromReflection)
+  reflectionPathsButton.addEventListener("click", returnToPathSelection)
+  reflectionSoundGardenButton.addEventListener("click", enterSoundGardenFromReflection)
 
   primerBackdrop.className = "primer-backdrop"
   primerBackdrop.type = "button"
