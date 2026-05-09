@@ -52,14 +52,50 @@
         <div class="story-pod-bed" id="story-pod-bed" role="list"></div>
       </section>
 
-      <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning Tree preview" hidden>
-        <div class="preview-world" aria-hidden="true">
-          <span class="preview-moon"></span>
-          <span class="preview-ground"></span>
-          <span class="preview-symbol" id="preview-symbol-a"></span>
-          <span class="preview-symbol" id="preview-symbol-b"></span>
-          <span class="preview-symbol" id="preview-symbol-c"></span>
+      <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning preview" hidden>
+        <div class="preview-world" id="preview-world">
+          <div class="preview-signature" id="preview-signature" aria-hidden="true"></div>
+
+          <div class="preview-moment-track" id="preview-image-track" aria-label="Story preview images"></div>
+
+          <div class="preview-audio-track" id="preview-audio-track" aria-label="Story preview sounds"></div>
+
+          <div class="preview-actions">
+            <button class="preview-back-button" id="preview-back-button" type="button" aria-label="Back to stories">
+              <span aria-hidden="true"></span>
+            </button>
+
+            <button class="preview-enter-button" id="preview-enter-button" type="button" aria-label="Enter primer">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
+      </section>
+
+      <section class="meaning-primer-screen" id="meaning-primer-screen" aria-label="Meaning primer" hidden>
+        <div class="primer-world" id="primer-world">
+          <div class="primer-card-track" id="primer-card-track" aria-label="Primer items"></div>
+
+          <div class="primer-echo" id="primer-echo" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="primer-actions">
+            <button class="primer-back-button" id="primer-back-button" type="button" aria-label="Back to preview">
+              <span aria-hidden="true"></span>
+            </button>
+
+            <button class="primer-next-button" id="primer-next-button" type="button" aria-label="Continue to story">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-screen" id="story-screen" aria-label="Story" hidden>
+        <div class="story-orb" aria-hidden="true"></div>
       </section>
     </main>
 

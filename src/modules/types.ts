@@ -71,8 +71,33 @@ export type Story = {
   perspective: string
   coreConcepts: string[]
   visualSignature?: string[]
+  previewMoments?: PreviewMoment[]
+  primerItems?: PrimerItem[]
   lines: string[]
   audio: string
+}
+
+export type PreviewMoment = {
+  id: string
+  image?: string
+  audio?: string
+  symbol?: string
+}
+
+export type SoundPiece = {
+  id: string
+  audio?: string
+  shape?: string
+}
+
+export type PrimerItem = {
+  id: string
+  image?: string
+  wholeAudio?: string
+  phonemes?: SoundPiece[]
+  syllables?: SoundPiece[]
+  toneOrPitch?: SoundPiece[]
+  features?: SoundPiece[]
 }
 
 export type StoryFile = Story[] | Story[][]
