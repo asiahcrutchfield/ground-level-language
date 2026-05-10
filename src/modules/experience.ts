@@ -6,10 +6,59 @@ import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } f
 import { clearNode, mustQuery } from "./dom"
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
-type Surface = "start" | "language" | "path" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
+type Surface = "start" | "language" | "path" | "soundGarden" | "soundLessonList" | "soundPath" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
 type PathId = "meaning-tree" | "sound-garden"
 type StoryMode = "auto" | "manual"
+type SoundPathStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
+type SoundVisualType = "contour" | "particle" | "pulse" | "rhythm" | "resonance" | "phrase"
+type SoundPreview = {
+  id: string
+  ariaLabel: string
+  visual: string
+  audio: string
+}
+type SoundSection = {
+  id: string
+  ariaLabel: string
+  kind: string
+  iconType: string
+  previews: SoundPreview[]
+}
+type SoundChoice = {
+  id: string
+  kind: SoundVisualType
+  visualShape?: string
+  correct?: boolean
+}
+type SoundGardenItem = {
+  id: string
+  visualType: SoundVisualType
+  visualShape?: string
+  audio?: string
+  compareAudio?: string
+  choices?: SoundChoice[]
+}
+type SoundGardenSection = {
+  id: string
+  ariaLabel: string
+  visualType: SoundVisualType
+  items: SoundGardenItem[]
+}
+type SoundLessonPreviewItem = {
+  id: string
+  visual: string
+  audio: string
+}
+type SoundLesson = {
+  id: string
+  sectionId: string
+  ariaLabel: string
+  visualType: SoundVisualType
+  previewItems: SoundLessonPreviewItem[]
+  unlocked: boolean
+  completed: boolean
+}
 type RecallChoice =
   | { kind: "meaning"; image?: string; symbol?: string; id: string }
   | { kind: "perception"; pattern: number[]; id: string }
@@ -81,6 +130,285 @@ const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
   nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
   zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
 }
+
+const soundSections: SoundSection[] = [
+  {
+    id: "tones",
+    ariaLabel: "Tones and pitch",
+    kind: "contour",
+    iconType: "tone",
+    previews: [
+      { id: "tone-flat", ariaLabel: "Play flat tone preview", visual: "flat", audio: "/audio/placeholders/tone-flat.mp3" },
+      { id: "tone-rising", ariaLabel: "Play rising tone preview", visual: "rising", audio: "/audio/placeholders/tone-rising.mp3" },
+      { id: "tone-falling", ariaLabel: "Play falling tone preview", visual: "falling", audio: "/audio/placeholders/tone-falling.mp3" }
+    ]
+  },
+  {
+    id: "phonemes",
+    ariaLabel: "Phonemes",
+    kind: "particles",
+    iconType: "phoneme",
+    previews: [
+      { id: "phoneme-1", ariaLabel: "Play first phoneme preview", visual: "dot", audio: "/audio/placeholders/phoneme-1.mp3" },
+      { id: "phoneme-2", ariaLabel: "Play second phoneme preview", visual: "dot", audio: "/audio/placeholders/phoneme-2.mp3" },
+      { id: "phoneme-3", ariaLabel: "Play third phoneme preview", visual: "dot", audio: "/audio/placeholders/phoneme-3.mp3" }
+    ]
+  },
+  {
+    id: "syllables",
+    ariaLabel: "Syllables",
+    kind: "pulses",
+    iconType: "syllable",
+    previews: [
+      { id: "syllable-1", ariaLabel: "Play first syllable preview", visual: "single-pulse", audio: "/audio/placeholders/syllable-1.mp3" },
+      { id: "syllable-2", ariaLabel: "Play second syllable preview", visual: "double-pulse", audio: "/audio/placeholders/syllable-2.mp3" },
+      { id: "syllable-3", ariaLabel: "Play third syllable preview", visual: "long-pulse", audio: "/audio/placeholders/syllable-3.mp3" }
+    ]
+  },
+  {
+    id: "rhythm",
+    ariaLabel: "Rhythm and stress",
+    kind: "rhythm",
+    iconType: "rhythm",
+    previews: [
+      { id: "rhythm-1", ariaLabel: "Play first rhythm preview", visual: "strong-weak", audio: "/audio/placeholders/rhythm-1.mp3" },
+      { id: "rhythm-2", ariaLabel: "Play second rhythm preview", visual: "weak-strong", audio: "/audio/placeholders/rhythm-2.mp3" },
+      { id: "rhythm-3", ariaLabel: "Play third rhythm preview", visual: "strong-weak-weak", audio: "/audio/placeholders/rhythm-3.mp3" }
+    ]
+  },
+  {
+    id: "features",
+    ariaLabel: "Special sound features",
+    kind: "resonance",
+    iconType: "feature",
+    previews: [
+      { id: "feature-1", ariaLabel: "Play first feature preview", visual: "ring", audio: "/audio/placeholders/feature-1.mp3" },
+      { id: "feature-2", ariaLabel: "Play second feature preview", visual: "clip", audio: "/audio/placeholders/feature-2.mp3" },
+      { id: "feature-3", ariaLabel: "Play third feature preview", visual: "chime", audio: "/audio/placeholders/feature-3.mp3" }
+    ]
+  },
+  {
+    id: "phrase-tuning",
+    ariaLabel: "Phrase tuning",
+    kind: "phrase",
+    iconType: "phrase",
+    previews: [
+      { id: "phrase-1", ariaLabel: "Play first phrase preview", visual: "wave", audio: "/audio/placeholders/phrase-1.mp3" },
+      { id: "phrase-2", ariaLabel: "Play second phrase preview", visual: "wave", audio: "/audio/placeholders/phrase-2.mp3" },
+      { id: "phrase-3", ariaLabel: "Play third phrase preview", visual: "wave", audio: "/audio/placeholders/phrase-3.mp3" }
+    ]
+  }
+]
+
+const soundPathSteps: SoundPathStepId[] = ["preview", "primer", "guided-tuning", "perception-recall", "reflection"]
+
+const soundGardenSections: SoundGardenSection[] = [
+  {
+    id: "tones",
+    ariaLabel: "Tones and pitch",
+    visualType: "contour",
+    items: [
+      {
+        id: "tone-flat",
+        visualType: "contour",
+        visualShape: "flat",
+        audio: "/audio/placeholders/tone-flat.mp3",
+        choices: [
+          { id: "flat", kind: "contour", visualShape: "flat", correct: true },
+          { id: "rising", kind: "contour", visualShape: "rising" },
+          { id: "falling", kind: "contour", visualShape: "falling" }
+        ]
+      },
+      {
+        id: "tone-rising",
+        visualType: "contour",
+        visualShape: "rising",
+        audio: "/audio/placeholders/tone-rising.mp3",
+        compareAudio: "/audio/placeholders/tone-falling.mp3",
+        choices: [
+          { id: "flat", kind: "contour", visualShape: "flat" },
+          { id: "rising", kind: "contour", visualShape: "rising", correct: true },
+          { id: "falling", kind: "contour", visualShape: "falling" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "phonemes",
+    ariaLabel: "Phonemes",
+    visualType: "particle",
+    items: [
+      {
+        id: "phoneme-1",
+        visualType: "particle",
+        visualShape: "small-dot",
+        audio: "/audio/placeholders/phoneme-1.mp3",
+        compareAudio: "/audio/placeholders/phoneme-2.mp3",
+        choices: [
+          { id: "particle-a", kind: "particle", visualShape: "small-dot", correct: true },
+          { id: "particle-b", kind: "particle", visualShape: "large-dot" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "syllables",
+    ariaLabel: "Syllables",
+    visualType: "pulse",
+    items: [
+      {
+        id: "syllable-1",
+        visualType: "pulse",
+        visualShape: "single-pulse",
+        audio: "/audio/placeholders/syllable-1.mp3",
+        choices: [
+          { id: "single-pulse", kind: "pulse", visualShape: "single-pulse", correct: true },
+          { id: "double-pulse", kind: "pulse", visualShape: "double-pulse" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "rhythm",
+    ariaLabel: "Rhythm and stress",
+    visualType: "rhythm",
+    items: [
+      {
+        id: "rhythm-1",
+        visualType: "rhythm",
+        visualShape: "strong-weak-weak",
+        audio: "/audio/placeholders/rhythm-1.mp3",
+        choices: [
+          { id: "strong-weak-weak", kind: "rhythm", visualShape: "strong-weak-weak", correct: true },
+          { id: "weak-strong", kind: "rhythm", visualShape: "weak-strong" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "features",
+    ariaLabel: "Special sound features",
+    visualType: "resonance",
+    items: [
+      {
+        id: "feature-1",
+        visualType: "resonance",
+        visualShape: "ring",
+        audio: "/audio/placeholders/feature-1.mp3",
+        choices: [
+          { id: "ring", kind: "resonance", visualShape: "ring", correct: true },
+          { id: "clip", kind: "resonance", visualShape: "clip" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "phrase-tuning",
+    ariaLabel: "Phrase tuning",
+    visualType: "phrase",
+    items: [
+      {
+        id: "phrase-1",
+        visualType: "phrase",
+        visualShape: "wave",
+        audio: "/audio/placeholders/phrase-full.mp3",
+        compareAudio: "/audio/placeholders/phrase-chunked.mp3",
+        choices: [
+          { id: "wave", kind: "phrase", visualShape: "wave", correct: true },
+          { id: "broken-wave", kind: "phrase", visualShape: "broken-wave" }
+        ]
+      }
+    ]
+  }
+]
+
+const soundLessons: SoundLesson[] = [
+  {
+    id: "tone-001",
+    sectionId: "tones",
+    ariaLabel: "Tone lesson one",
+    visualType: "contour",
+    previewItems: [
+      { id: "tone-flat", visual: "flat", audio: "/audio/placeholders/tone-flat.mp3" },
+      { id: "tone-rising", visual: "rising", audio: "/audio/placeholders/tone-rising.mp3" },
+      { id: "tone-falling", visual: "falling", audio: "/audio/placeholders/tone-falling.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "tone-002",
+    sectionId: "tones",
+    ariaLabel: "Tone lesson two",
+    visualType: "contour",
+    previewItems: [
+      { id: "tone-dipping", visual: "dipping", audio: "/audio/placeholders/tone-dipping.mp3" },
+      { id: "tone-flat", visual: "flat", audio: "/audio/placeholders/tone-flat.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "phoneme-001",
+    sectionId: "phonemes",
+    ariaLabel: "Phoneme lesson one",
+    visualType: "particle",
+    previewItems: [
+      { id: "phoneme-1", visual: "dot", audio: "/audio/placeholders/phoneme-1.mp3" },
+      { id: "phoneme-2", visual: "dot", audio: "/audio/placeholders/phoneme-2.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "syllable-001",
+    sectionId: "syllables",
+    ariaLabel: "Syllable lesson one",
+    visualType: "pulse",
+    previewItems: [
+      { id: "single-pulse", visual: "single-pulse", audio: "/audio/placeholders/syllable-1.mp3" },
+      { id: "double-pulse", visual: "double-pulse", audio: "/audio/placeholders/syllable-2.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "rhythm-001",
+    sectionId: "rhythm",
+    ariaLabel: "Rhythm lesson one",
+    visualType: "rhythm",
+    previewItems: [
+      { id: "strong-weak", visual: "strong-weak", audio: "/audio/placeholders/rhythm-1.mp3" },
+      { id: "weak-strong", visual: "weak-strong", audio: "/audio/placeholders/rhythm-2.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "feature-001",
+    sectionId: "features",
+    ariaLabel: "Feature lesson one",
+    visualType: "resonance",
+    previewItems: [
+      { id: "ring", visual: "ring", audio: "/audio/placeholders/feature-1.mp3" },
+      { id: "clip", visual: "clip", audio: "/audio/placeholders/feature-2.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  },
+  {
+    id: "phrase-001",
+    sectionId: "phrase-tuning",
+    ariaLabel: "Phrase lesson one",
+    visualType: "phrase",
+    previewItems: [
+      { id: "phrase-wave", visual: "wave", audio: "/audio/placeholders/phrase-full.mp3" },
+      { id: "phrase-chunked", visual: "broken-wave", audio: "/audio/placeholders/phrase-chunked.mp3" }
+    ],
+    unlocked: true,
+    completed: false
+  }
+]
 
 const meaningArcs: MeaningArc[] = [
   {
@@ -197,8 +525,28 @@ export function createExperience(): void {
   const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
   const soundGardenArt = mustQuery<HTMLElement>("#sound-garden-art")
   const meaningTreeButton = mustQuery<HTMLButtonElement>("#meaning-tree-button")
+  const soundGardenButton = mustQuery<HTMLButtonElement>("#sound-garden-button")
+  const soundGardenScreen = mustQuery<HTMLElement>("#sound-garden-screen")
+  const soundGardenReturnButton = mustQuery<HTMLButtonElement>("#sound-garden-return-button")
+  const soundPreviewList = mustQuery<HTMLUListElement>("#sound-preview-list")
+  const soundLessonListScreen = mustQuery<HTMLElement>("#sound-lesson-list-screen")
+  const lessonBackButton = mustQuery<HTMLButtonElement>("#lesson-back-button")
+  const lessonHeader = mustQuery<HTMLElement>("#lesson-header")
+  const soundLessonList = mustQuery<HTMLOListElement>("#sound-lesson-list")
+  const soundPathScreen = mustQuery<HTMLElement>("#sound-path-screen")
+  const soundPathVisual = mustQuery<HTMLElement>("#sound-path-visual")
+  const soundPathContent = mustQuery<HTMLElement>("#sound-path-content")
+  const soundPathEcho = mustQuery<HTMLElement>("#sound-path-echo")
+  const soundPathProgress = mustQuery<HTMLElement>("#sound-path-progress")
+  const soundPathSectionBackButton = mustQuery<HTMLButtonElement>("#sound-path-section-back-button")
+  const soundPathBackButton = mustQuery<HTMLButtonElement>("#sound-path-back-button")
+  const soundPathReplayButton = mustQuery<HTMLButtonElement>("#sound-path-replay-button")
+  const soundPathNextButton = mustQuery<HTMLButtonElement>("#sound-path-next-button")
+  const soundPathSectionNextButton = mustQuery<HTMLButtonElement>("#sound-path-section-next-button")
   const languageSeedbed = mustQuery<HTMLElement>("#language-seedbed")
   const arcList = mustQuery<HTMLUListElement>("#arc-list")
+  const meaningArcReturnButton = mustQuery<HTMLButtonElement>("#meaning-arc-return-button")
+  const storyBranchReturnButton = mustQuery<HTMLButtonElement>("#story-branch-return-button")
   const storyPodBed = mustQuery<HTMLElement>("#story-pod-bed")
   const previewSignature = mustQuery<HTMLElement>("#preview-signature")
   const previewImageTrack = mustQuery<HTMLElement>("#preview-image-track")
@@ -251,6 +599,16 @@ export function createExperience(): void {
   let activePreview: SupportedLanguage | null = null
   let selectedLanguage = getInitialLanguage()
   let selectedPath: PathId | null = null
+  let selectedSoundSectionId: string | null = null
+  let selectedSoundLessonId: string | null = null
+  let currentSoundPreviewAudio: HTMLAudioElement | null = null
+  let currentLessonPreviewAudio: HTMLAudioElement | null = null
+  let currentSoundPathStep: SoundPathStepId | null = null
+  let currentSoundItemIndex = 0
+  let currentSoundPairIndex = 0
+  let currentRecallItemIndex = 0
+  let currentSoundAudio: HTMLAudioElement | null = null
+  const completedSoundSectionIds = new Set<string>()
   let selectedArcId: string | null = null
   let selectedStoryId: string | null = null
   let expandedPrimerCard: HTMLElement | null = null
@@ -273,10 +631,16 @@ export function createExperience(): void {
     if (surface === "meaningPreview" && nextSurface !== "meaningPreview") stopPreviewMomentAudio()
     if (surface === "story" && nextSurface !== "story") stopStoryAudio()
     if (surface === "recall" && nextSurface !== "recall") stopRecallAudio()
+    if (surface === "soundGarden" && nextSurface !== "soundGarden") stopCurrentSoundPreview()
+    if (surface === "soundLessonList" && nextSurface !== "soundLessonList") stopLessonPreviewAudio()
+    if (surface === "soundPath" && nextSurface !== "soundPath") stopSoundPathAudio()
     surface = nextSurface
     startScreen.hidden = surface !== "start"
     languageScreen.hidden = surface !== "language"
     pathScreen.hidden = surface !== "path"
+    soundGardenScreen.hidden = surface !== "soundGarden"
+    soundLessonListScreen.hidden = surface !== "soundLessonList"
+    soundPathScreen.hidden = surface !== "soundPath"
     meaningArcScreen.hidden = surface !== "meaningArc"
     storyBranchScreen.hidden = surface !== "storyBranch"
     meaningPreviewScreen.hidden = surface !== "meaningPreview"
@@ -285,6 +649,7 @@ export function createExperience(): void {
     recallScreen.hidden = surface !== "recall"
     reflectionScreen.hidden = surface !== "reflection"
     app.dataset.surface = surface
+    if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
   }
 
   function setLanguageState(code: SupportedLanguage, state: SeedState): void {
@@ -1139,6 +1504,1366 @@ export function createExperience(): void {
 
   function enterSoundGardenFromReflection(): void {
     selectedPath = "sound-garden"
+    renderSoundGarden()
+    setSurface("soundGarden")
+  }
+
+  function createSectionIcon(section: SoundSection): string {
+    return `<span class="sound-section-icon sound-section-icon-${section.iconType}" aria-hidden="true"></span>`
+  }
+
+  function createSoundVisual(section: SoundSection, preview: SoundPreview): HTMLElement {
+    const visual = document.createElement("span")
+    visual.className = `sound-preview-visual sound-preview-visual-${section.kind} sound-preview-visual-${preview.visual}`
+    visual.setAttribute("aria-hidden", "true")
+    return visual
+  }
+
+  function renderSoundPreviewExample(section: SoundSection, preview: SoundPreview): HTMLLIElement {
+    const item = document.createElement("li")
+    const visual = createSoundVisual(section, preview)
+
+    const button = document.createElement("button")
+    button.className = "sound-preview-play"
+    button.type = "button"
+    button.dataset.previewSound = preview.id
+    button.setAttribute("aria-label", preview.ariaLabel)
+    button.innerHTML = "<span aria-hidden=\"true\"></span>"
+    button.addEventListener("click", () => {
+      playSoundPreview(preview, item)
+    })
+
+    item.append(visual, button)
+    return item
+  }
+
+  function renderSoundPreviewSection(section: SoundSection): HTMLLIElement {
+    const item = document.createElement("li")
+    item.className = "sound-preview-item"
+
+    const article = document.createElement("article")
+    article.className = "sound-preview"
+    article.dataset.soundSection = section.id
+
+    const mark = document.createElement("div")
+    mark.className = `sound-preview-mark sound-preview-mark-${section.id}`
+    mark.setAttribute("aria-hidden", "true")
+    mark.innerHTML = createSectionIcon(section)
+
+    const trackWrap = document.createElement("div")
+    trackWrap.className = "sound-preview-track-wrap"
+
+    const track = document.createElement("ul")
+    track.className = `sound-preview-track sound-preview-track-${section.id}`
+
+    section.previews.forEach((preview) => {
+      track.append(renderSoundPreviewExample(section, preview))
+    })
+
+    trackWrap.append(track)
+    trackWrap.scrollLeft = 0
+
+    const enterButton = document.createElement("button")
+    enterButton.className = "sound-preview-enter"
+    enterButton.type = "button"
+    enterButton.dataset.enterSection = section.id
+    enterButton.setAttribute("aria-label", `Enter ${section.ariaLabel} section`)
+    enterButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    enterButton.addEventListener("click", () => {
+      enterSoundSection(section.id)
+    })
+
+    article.append(mark, trackWrap, enterButton)
+    item.append(article)
+    return item
+  }
+
+  function renderSoundGarden(): void {
+    clearNode(soundPreviewList)
+    soundSections.forEach((section) => {
+      soundPreviewList.append(renderSoundPreviewSection(section))
+    })
+    updateSoundGardenPreviewAlignment()
+  }
+
+  function updateSoundGardenPreviewAlignment(): void {
+    window.requestAnimationFrame(() => {
+      soundPreviewList.querySelectorAll<HTMLElement>(".sound-preview-track-wrap").forEach((trackWrap) => {
+        const track = trackWrap.querySelector<HTMLElement>(".sound-preview-track")
+        if (!track || !trackWrap.clientWidth) return
+
+        trackWrap.classList.remove("has-overflow")
+        trackWrap.scrollLeft = 0
+        if (track.scrollWidth > trackWrap.clientWidth) {
+          trackWrap.classList.add("has-overflow")
+          trackWrap.scrollLeft = 0
+        }
+      })
+    })
+  }
+
+  function stopCurrentSoundPreview(): void {
+    if (currentSoundPreviewAudio) {
+      currentSoundPreviewAudio.pause()
+      currentSoundPreviewAudio.currentTime = 0
+      currentSoundPreviewAudio = null
+    }
+
+    document.querySelectorAll(".sound-preview-track li.is-playing").forEach((item) => {
+      item.classList.remove("is-playing")
+    })
+  }
+
+  function playSoundPreview(preview: SoundPreview, element: HTMLElement): void {
+    stopCurrentSoundPreview()
+    element.classList.add("is-playing")
+
+    const audio = new Audio(preview.audio)
+    currentSoundPreviewAudio = audio
+
+    const clearPlaying = () => {
+      element.classList.remove("is-playing")
+      currentSoundPreviewAudio = null
+    }
+
+    audio.addEventListener("ended", clearPlaying)
+    audio.addEventListener("error", () => {
+      window.setTimeout(clearPlaying, 900)
+    })
+    audio.play().catch(() => {
+      window.setTimeout(clearPlaying, 900)
+    })
+  }
+
+  function enterSoundSection(sectionId: string): void {
+    selectedSoundSectionId = sectionId
+    selectedSoundLessonId = null
+    stopCurrentSoundPreview()
+    stopLessonPreviewAudio()
+    renderSoundLessonList()
+    setSurface("soundLessonList")
+  }
+
+  function renderLessonHeader(sectionId: string): void {
+    const section = soundSections.find((candidate) => candidate.id === sectionId)
+    clearNode(lessonHeader)
+    if (!section) return
+    lessonHeader.innerHTML = createSectionIcon(section)
+  }
+
+  function renderLessonPreviewVisual(item: SoundLessonPreviewItem, visualType: SoundVisualType): HTMLElement {
+    const visual = document.createElement("span")
+    visual.className = `lesson-preview-visual lesson-preview-visual-${visualType} lesson-preview-visual-${item.visual}`
+    visual.setAttribute("aria-hidden", "true")
+    return visual
+  }
+
+  function renderSoundLessonCard(lesson: SoundLesson): HTMLLIElement {
+    const item = document.createElement("li")
+    item.className = "sound-lesson-item"
+
+    const article = document.createElement("article")
+    article.className = "sound-lesson-card"
+    article.dataset.soundLessonId = lesson.id
+    article.setAttribute("aria-label", lesson.ariaLabel)
+    if (!lesson.unlocked) article.classList.add("is-locked")
+    if (lesson.completed) article.classList.add("is-complete")
+
+    const mark = document.createElement("div")
+    mark.className = "lesson-card-mark"
+    mark.setAttribute("aria-hidden", "true")
+    const markVisual = document.createElement("span")
+    markVisual.className = `lesson-preview-visual lesson-preview-visual-${lesson.visualType} lesson-preview-visual-${lesson.previewItems[0]?.visual ?? "soft"}`
+    mark.append(markVisual)
+
+    const previewTrackWrap = document.createElement("div")
+    previewTrackWrap.className = "lesson-preview-track-wrap"
+
+    const previewTrack = document.createElement("ul")
+    previewTrack.className = "lesson-preview-track"
+
+    lesson.previewItems.forEach((previewItem) => {
+      const previewLi = document.createElement("li")
+      previewLi.className = "lesson-preview-item"
+
+      const playButton = document.createElement("button")
+      playButton.className = "lesson-preview-play"
+      playButton.type = "button"
+      playButton.setAttribute("aria-label", "Play lesson preview sound")
+      playButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+      playButton.addEventListener("click", (event) => {
+        event.stopPropagation()
+        playLessonPreviewAudio(previewItem.audio, previewLi)
+      })
+
+      previewLi.append(renderLessonPreviewVisual(previewItem, lesson.visualType), playButton)
+      previewTrack.append(previewLi)
+    })
+    previewTrackWrap.append(previewTrack)
+    previewTrackWrap.scrollLeft = 0
+
+    const enterButton = document.createElement("button")
+    enterButton.className = "lesson-enter-button"
+    enterButton.type = "button"
+    enterButton.setAttribute("aria-label", "Enter lesson")
+    enterButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    enterButton.addEventListener("click", () => {
+      if (!lesson.unlocked) return
+      enterSoundLesson(lesson.id)
+    })
+
+    article.append(mark, previewTrackWrap, enterButton)
+    item.append(article)
+    return item
+  }
+
+  function renderSoundLessonList(): void {
+    clearNode(soundLessonList)
+    if (!selectedSoundSectionId) return
+    renderLessonHeader(selectedSoundSectionId)
+
+    soundLessons
+      .filter((lesson) => lesson.sectionId === selectedSoundSectionId)
+      .forEach((lesson) => soundLessonList.append(renderSoundLessonCard(lesson)))
+  }
+
+  function stopLessonPreviewAudio(): void {
+    if (currentLessonPreviewAudio) {
+      currentLessonPreviewAudio.pause()
+      currentLessonPreviewAudio.currentTime = 0
+      currentLessonPreviewAudio = null
+    }
+
+    document.querySelectorAll(".lesson-preview-item.is-playing").forEach((item) => {
+      item.classList.remove("is-playing")
+    })
+  }
+
+  function playLessonPreviewAudio(audioSrc: string | undefined, activeElement?: HTMLElement): void {
+    stopLessonPreviewAudio()
+    activeElement?.classList.add("is-playing")
+    if (!audioSrc) {
+      window.setTimeout(() => activeElement?.classList.remove("is-playing"), 900)
+      return
+    }
+
+    const audio = new Audio(audioSrc)
+    currentLessonPreviewAudio = audio
+    const clearPlaying = () => {
+      activeElement?.classList.remove("is-playing")
+      currentLessonPreviewAudio = null
+    }
+    audio.addEventListener("ended", clearPlaying)
+    audio.addEventListener("error", () => window.setTimeout(clearPlaying, 900))
+    audio.play().catch(() => window.setTimeout(clearPlaying, 900))
+  }
+
+  function getSoundLessonById(lessonId: string | null): SoundLesson | undefined {
+    return soundLessons.find((lesson) => lesson.id === lessonId)
+  }
+
+  function markSoundLessonComplete(lessonId: string): void {
+    const lesson = getSoundLessonById(lessonId)
+    if (!lesson) return
+
+    lesson.completed = true
+    app.dataset.completedSoundLessons = String(soundLessons.filter((candidate) => candidate.completed).length)
+  }
+
+  function getLessonsForCurrentSection(): SoundLesson[] {
+    if (!selectedSoundSectionId) return []
+    return soundLessons.filter((lesson) => lesson.sectionId === selectedSoundSectionId)
+  }
+
+  function getNextSoundLesson(currentLessonId: string | null): SoundLesson | undefined {
+    if (!currentLessonId) return undefined
+
+    const lessons = getLessonsForCurrentSection()
+    const currentIndex = lessons.findIndex((lesson) => lesson.id === currentLessonId)
+
+    if (currentIndex < 0) return undefined
+
+    return lessons[currentIndex + 1]
+  }
+
+  function enterSoundLesson(lessonId: string): void {
+    selectedSoundLessonId = lessonId
+    currentSoundPathStep = "preview"
+    currentSoundItemIndex = 0
+    currentSoundPairIndex = 0
+    currentRecallItemIndex = 0
+    stopLessonPreviewAudio()
+    stopSoundPathAudio()
+    app.dataset.soundLesson = lessonId
+    renderSoundLessonPreview(lessonId)
+    setSurface("soundPath")
+  }
+
+  function renderSoundLessonPreview(lessonId: string): void {
+    const lesson = getSoundLessonById(lessonId)
+    if (!lesson) return
+
+    clearNode(soundPathContent)
+    clearNode(soundPathVisual)
+
+    currentSoundPathStep = "preview"
+    currentSoundItemIndex = 0
+    app.dataset.soundStep = "preview"
+    soundPathVisual.hidden = true
+
+    renderSoundLessonPreviewCards(lesson)
+    renderSoundPathProgress("preview")
+
+    soundPathReplayButton.disabled = false
+    soundPathBackButton.disabled = true
+    soundPathNextButton.disabled = false
+  }
+
+  function renderSoundLessonPreviewHero(lesson: SoundLesson): void {
+    clearNode(soundPathVisual)
+    const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
+
+    const visual = document.createElement("span")
+    visual.className = [
+      "sound-path-shape",
+      `sound-path-shape-${lesson.visualType}`,
+      `sound-path-shape-${item?.visual ?? "soft"}`
+    ].join(" ")
+    visual.setAttribute("aria-hidden", "true")
+    soundPathVisual.append(visual)
+  }
+
+  function renderSoundLessonPreviewCards(lesson: SoundLesson): void {
+    const preview = document.createElement("div")
+    preview.className = "sound-lesson-preview"
+
+    const trackWrap = document.createElement("div")
+    trackWrap.className = "sound-lesson-preview-track-wrap"
+
+    const track = document.createElement("ul")
+    track.className = "sound-lesson-preview-track"
+
+    lesson.previewItems.forEach((item, index) => {
+      const previewItem = document.createElement("li")
+      previewItem.className = "sound-lesson-preview-item"
+
+      const card = document.createElement("button")
+      card.className = "sound-lesson-preview-card"
+      card.type = "button"
+      card.setAttribute("aria-label", "Play lesson preview sound")
+
+      const visual = document.createElement("span")
+      visual.className = [
+        "sound-lesson-preview-visual",
+        `sound-lesson-preview-visual-${lesson.visualType}`,
+        `sound-lesson-preview-visual-${item.visual}`
+      ].join(" ")
+      visual.setAttribute("aria-hidden", "true")
+
+      const playDot = document.createElement("span")
+      playDot.className = "sound-lesson-preview-play-dot"
+      playDot.setAttribute("aria-hidden", "true")
+
+      card.append(visual, playDot)
+      card.addEventListener("click", () => {
+        currentSoundItemIndex = index
+        playSoundPathAudio(item.audio, card)
+      })
+
+      previewItem.append(card)
+      track.append(previewItem)
+    })
+
+    trackWrap.append(track)
+    trackWrap.scrollLeft = 0
+
+    const playAllButton = document.createElement("button")
+    playAllButton.className = "sound-lesson-preview-main-play"
+    playAllButton.type = "button"
+    playAllButton.setAttribute("aria-label", "Play all preview sounds")
+    playAllButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    playAllButton.addEventListener("click", () => {
+      void playLessonPreviewSequence(lesson)
+    })
+
+    preview.append(trackWrap, playAllButton)
+    soundPathContent.append(preview)
+  }
+
+  function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, ms))
+  }
+
+  async function playLessonPreviewSequence(lesson: SoundLesson): Promise<void> {
+    stopSoundPathAudio()
+    const cards = Array.from(soundPathContent.querySelectorAll<HTMLElement>(".sound-lesson-preview-card"))
+
+    for (let index = 0; index < lesson.previewItems.length; index += 1) {
+      const item = lesson.previewItems[index]
+      currentSoundItemIndex = index
+      await playSoundPathAudioAsPromise(item.audio, cards[index])
+      await wait(450)
+    }
+  }
+
+  function renderSoundLessonPrimer(): void {
+    const lesson = getSoundLessonById(selectedSoundLessonId)
+    if (!lesson) return
+
+    const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
+    if (!item) return
+
+    stopSoundPathAudio()
+
+    app.dataset.soundStep = "primer"
+    soundPathVisual.hidden = false
+
+    clearNode(soundPathVisual)
+    clearNode(soundPathContent)
+
+    renderSoundLessonPrimerVisual(lesson, item)
+    renderSoundLessonPrimerContent(lesson, item)
+    renderSoundPathProgress("primer")
+
+    soundPathBackButton.disabled = false
+    soundPathNextButton.disabled = false
+    soundPathReplayButton.disabled = false
+  }
+
+  function renderSoundLessonPrimerVisual(lesson: SoundLesson, item: SoundLessonPreviewItem): void {
+    const visual = document.createElement("span")
+
+    visual.className = [
+      "sound-path-shape",
+      `sound-path-shape-${lesson.visualType}`,
+      `sound-path-shape-${item.visual}`
+    ].join(" ")
+
+    visual.setAttribute("aria-hidden", "true")
+    soundPathVisual.append(visual)
+  }
+
+  function renderSoundLessonPrimerContent(lesson: SoundLesson, item: SoundLessonPreviewItem): void {
+    const primer = document.createElement("div")
+    primer.className = "sound-lesson-primer"
+
+    const focusCard = document.createElement("div")
+    focusCard.className = "sound-lesson-primer-focus"
+
+    const playButton = document.createElement("button")
+    playButton.className = "sound-lesson-primer-play"
+    playButton.type = "button"
+    playButton.setAttribute("aria-label", "Play primer sound")
+    playButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    playButton.addEventListener("click", () => {
+      playSoundPathAudio(item.audio, playButton)
+    })
+
+    const itemProgress = document.createElement("div")
+    itemProgress.className = "sound-lesson-primer-item-progress"
+    itemProgress.setAttribute("aria-hidden", "true")
+
+    lesson.previewItems.forEach((_, index) => {
+      const dot = document.createElement("span")
+      dot.className = index === currentSoundItemIndex ? "is-active" : ""
+      itemProgress.append(dot)
+    })
+
+    const itemControls = document.createElement("div")
+    itemControls.className = "sound-lesson-primer-item-controls"
+
+    const previousItemButton = document.createElement("button")
+    previousItemButton.className = "sound-lesson-primer-item-back"
+    previousItemButton.type = "button"
+    previousItemButton.setAttribute("aria-label", "Previous primer sound")
+    previousItemButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    previousItemButton.disabled = currentSoundItemIndex <= 0
+
+    previousItemButton.addEventListener("click", () => {
+      if (currentSoundItemIndex <= 0) return
+      currentSoundItemIndex -= 1
+      renderSoundLessonPrimer()
+    })
+
+    const nextItemButton = document.createElement("button")
+    nextItemButton.className = "sound-lesson-primer-item-next"
+    nextItemButton.type = "button"
+    nextItemButton.setAttribute("aria-label", "Next primer sound")
+    nextItemButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    nextItemButton.disabled = currentSoundItemIndex >= lesson.previewItems.length - 1
+
+    nextItemButton.addEventListener("click", () => {
+      if (currentSoundItemIndex >= lesson.previewItems.length - 1) return
+      currentSoundItemIndex += 1
+      renderSoundLessonPrimer()
+    })
+
+    itemControls.append(previousItemButton, nextItemButton)
+    focusCard.append(playButton, itemProgress, itemControls)
+    primer.append(focusCard)
+    soundPathContent.append(primer)
+  }
+
+  function getGuidedTuningPairs(lesson: SoundLesson): Array<{ first: SoundLessonPreviewItem; second: SoundLessonPreviewItem }> {
+    const items = lesson.previewItems
+
+    if (items.length < 2) return []
+
+    return items.slice(0, -1).map((item, index) => ({
+      first: item,
+      second: items[index + 1]
+    }))
+  }
+
+  function renderSoundGuidedTuning(): void {
+    const lesson = getSoundLessonById(selectedSoundLessonId)
+    if (!lesson) return
+
+    const pairs = getGuidedTuningPairs(lesson)
+    const pair = pairs[currentSoundPairIndex]
+
+    if (!pair) {
+      currentRecallItemIndex = 0
+      renderSoundPerceptionRecall()
+      return
+    }
+
+    stopSoundPathAudio()
+
+    currentSoundPathStep = "guided-tuning"
+    app.dataset.soundStep = "guided-tuning"
+    soundPathVisual.hidden = false
+
+    clearNode(soundPathVisual)
+    clearNode(soundPathContent)
+
+    renderGuidedTuningVisual(lesson, pair)
+    renderGuidedTuningContent(lesson, pair, pairs.length)
+    renderSoundPathProgress("guided-tuning")
+
+    soundPathBackButton.disabled = false
+    soundPathNextButton.disabled = false
+    soundPathReplayButton.disabled = false
+  }
+
+  function renderGuidedTuningVisual(
+    lesson: SoundLesson,
+    pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem }
+  ): void {
+    const bridge = document.createElement("div")
+    bridge.className = "sound-guided-bridge"
+
+    const firstVisual = document.createElement("span")
+    firstVisual.className = [
+      "sound-guided-bridge-visual",
+      `sound-guided-bridge-visual-${lesson.visualType}`,
+      `sound-guided-bridge-visual-${pair.first.visual}`
+    ].join(" ")
+    firstVisual.setAttribute("aria-hidden", "true")
+
+    const line = document.createElement("span")
+    line.className = "sound-guided-bridge-line"
+    line.setAttribute("aria-hidden", "true")
+
+    const secondVisual = document.createElement("span")
+    secondVisual.className = [
+      "sound-guided-bridge-visual",
+      `sound-guided-bridge-visual-${lesson.visualType}`,
+      `sound-guided-bridge-visual-${pair.second.visual}`
+    ].join(" ")
+    secondVisual.setAttribute("aria-hidden", "true")
+
+    bridge.append(firstVisual, line, secondVisual)
+    soundPathVisual.append(bridge)
+  }
+
+  function renderGuidedTuningContent(
+    lesson: SoundLesson,
+    pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem },
+    pairCount: number
+  ): void {
+    const tuning = document.createElement("div")
+    tuning.className = "sound-guided-tuning"
+
+    const pairGrid = document.createElement("div")
+    pairGrid.className = "sound-guided-pair"
+
+    const firstCard = createGuidedTuningCard(lesson, pair.first, "first")
+    const secondCard = createGuidedTuningCard(lesson, pair.second, "second")
+
+    pairGrid.append(firstCard, secondCard)
+
+    const sequenceButton = document.createElement("button")
+    sequenceButton.className = "sound-guided-sequence-button"
+    sequenceButton.type = "button"
+    sequenceButton.setAttribute("aria-label", "Play sound pair sequence")
+    sequenceButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    sequenceButton.addEventListener("click", () => {
+      void playGuidedTuningSequence(pair, sequenceButton)
+    })
+
+    const pairProgress = document.createElement("div")
+    pairProgress.className = "sound-guided-pair-progress"
+    pairProgress.setAttribute("aria-hidden", "true")
+
+    for (let index = 0; index < pairCount; index += 1) {
+      const dot = document.createElement("span")
+      dot.className = index === currentSoundPairIndex ? "is-active" : ""
+      pairProgress.append(dot)
+    }
+
+    const pairControls = document.createElement("div")
+    pairControls.className = "sound-guided-pair-controls"
+
+    const previousPairButton = document.createElement("button")
+    previousPairButton.className = "sound-guided-pair-back"
+    previousPairButton.type = "button"
+    previousPairButton.setAttribute("aria-label", "Previous sound pair")
+    previousPairButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    previousPairButton.disabled = currentSoundPairIndex <= 0
+
+    previousPairButton.addEventListener("click", () => {
+      if (currentSoundPairIndex <= 0) return
+      currentSoundPairIndex -= 1
+      renderSoundGuidedTuning()
+    })
+
+    const nextPairButton = document.createElement("button")
+    nextPairButton.className = "sound-guided-pair-next"
+    nextPairButton.type = "button"
+    nextPairButton.setAttribute("aria-label", "Next sound pair")
+    nextPairButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    nextPairButton.disabled = currentSoundPairIndex >= pairCount - 1
+
+    nextPairButton.addEventListener("click", () => {
+      if (currentSoundPairIndex >= pairCount - 1) return
+      currentSoundPairIndex += 1
+      renderSoundGuidedTuning()
+    })
+
+    pairControls.append(previousPairButton, nextPairButton)
+
+    tuning.append(pairGrid, sequenceButton, pairProgress, pairControls)
+    soundPathContent.append(tuning)
+  }
+
+  function createGuidedTuningCard(lesson: SoundLesson, item: SoundLessonPreviewItem, position: "first" | "second"): HTMLButtonElement {
+    const card = document.createElement("button")
+    card.className = `sound-guided-card sound-guided-card-${position}`
+    card.type = "button"
+    card.setAttribute("aria-label", "Play comparison sound")
+
+    const visual = document.createElement("span")
+    visual.className = [
+      "sound-guided-card-visual",
+      `sound-guided-card-visual-${lesson.visualType}`,
+      `sound-guided-card-visual-${item.visual}`
+    ].join(" ")
+    visual.setAttribute("aria-hidden", "true")
+
+    const playDot = document.createElement("span")
+    playDot.className = "sound-guided-card-play-dot"
+    playDot.setAttribute("aria-hidden", "true")
+
+    card.append(visual, playDot)
+
+    card.addEventListener("click", () => {
+      playSoundPathAudio(item.audio, card)
+    })
+
+    return card
+  }
+
+  async function playGuidedTuningSequence(
+    pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem },
+    activeElement?: HTMLElement
+  ): Promise<void> {
+    stopSoundPathAudio()
+
+    activeElement?.classList.add("is-playing")
+    await playSoundPathAudioAsPromise(pair.first.audio)
+    activeElement?.classList.add("is-playing")
+    await wait(350)
+    await playSoundPathAudioAsPromise(pair.second.audio)
+
+    activeElement?.classList.remove("is-playing")
+  }
+
+  function getShuffledSoundChoices(lesson: SoundLesson, correctItem: SoundLessonPreviewItem): SoundLessonPreviewItem[] {
+    const otherItems = lesson.previewItems.filter((item) => item.id !== correctItem.id)
+    const choices = [correctItem, ...otherItems].slice(0, 3)
+
+    return choices.sort(() => Math.random() - 0.5)
+  }
+
+  function renderSoundPerceptionRecall(): void {
+    const lesson = getSoundLessonById(selectedSoundLessonId)
+    if (!lesson) return
+
+    const item = lesson.previewItems[currentRecallItemIndex] ?? lesson.previewItems[0]
+    if (!item) return
+
+    stopSoundPathAudio()
+
+    currentSoundPathStep = "perception-recall"
+    app.dataset.soundStep = "perception-recall"
+    soundPathVisual.hidden = false
+
+    clearNode(soundPathVisual)
+    clearNode(soundPathContent)
+
+    renderPerceptionRecallPromptVisual()
+    renderPerceptionRecallContent(lesson, item)
+    renderSoundPathProgress("perception-recall")
+
+    soundPathBackButton.disabled = false
+    soundPathNextButton.disabled = false
+    soundPathReplayButton.disabled = false
+
+    const recallIndexAtRender = currentRecallItemIndex
+    window.setTimeout(() => {
+      if (currentSoundPathStep !== "perception-recall" || currentRecallItemIndex !== recallIndexAtRender) return
+      playSoundPathAudio(item.audio, soundPathVisual)
+    }, 180)
+  }
+
+  function renderPerceptionRecallPromptVisual(): void {
+    const prompt = document.createElement("span")
+    prompt.className = "sound-recall-prompt-orb"
+    prompt.setAttribute("aria-hidden", "true")
+
+    soundPathVisual.append(prompt)
+  }
+
+  function renderPerceptionRecallContent(lesson: SoundLesson, correctItem: SoundLessonPreviewItem): void {
+    const recall = document.createElement("div")
+    recall.className = "sound-perception-recall"
+
+    const replayButton = document.createElement("button")
+    replayButton.className = "sound-recall-prompt-play"
+    replayButton.type = "button"
+    replayButton.setAttribute("aria-label", "Replay recall prompt")
+    replayButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    replayButton.addEventListener("click", () => {
+      playSoundPathAudio(correctItem.audio, replayButton)
+    })
+
+    const choiceGrid = document.createElement("div")
+    choiceGrid.className = "sound-recall-choice-grid"
+
+    const choices = getShuffledSoundChoices(lesson, correctItem)
+
+    choices.forEach((choice) => {
+      const button = createSoundRecallChoice(lesson, choice, correctItem)
+      choiceGrid.append(button)
+    })
+
+    const recallProgress = document.createElement("div")
+    recallProgress.className = "sound-recall-item-progress"
+    recallProgress.setAttribute("aria-hidden", "true")
+
+    lesson.previewItems.forEach((_, index) => {
+      const dot = document.createElement("span")
+      dot.className = index === currentRecallItemIndex ? "is-active" : ""
+      recallProgress.append(dot)
+    })
+
+    const recallControls = document.createElement("div")
+    recallControls.className = "sound-recall-item-controls"
+
+    const previousRecallButton = document.createElement("button")
+    previousRecallButton.className = "sound-recall-item-back"
+    previousRecallButton.type = "button"
+    previousRecallButton.setAttribute("aria-label", "Previous recall sound")
+    previousRecallButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    previousRecallButton.disabled = currentRecallItemIndex <= 0
+
+    previousRecallButton.addEventListener("click", () => {
+      if (currentRecallItemIndex <= 0) return
+      currentRecallItemIndex -= 1
+      renderSoundPerceptionRecall()
+    })
+
+    const nextRecallButton = document.createElement("button")
+    nextRecallButton.className = "sound-recall-item-next"
+    nextRecallButton.type = "button"
+    nextRecallButton.setAttribute("aria-label", "Next recall sound")
+    nextRecallButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    nextRecallButton.disabled = currentRecallItemIndex >= lesson.previewItems.length - 1
+
+    nextRecallButton.addEventListener("click", () => {
+      if (currentRecallItemIndex >= lesson.previewItems.length - 1) return
+      currentRecallItemIndex += 1
+      renderSoundPerceptionRecall()
+    })
+
+    recallControls.append(previousRecallButton, nextRecallButton)
+    recall.append(replayButton, choiceGrid, recallProgress, recallControls)
+    soundPathContent.append(recall)
+  }
+
+  function createSoundRecallChoice(
+    lesson: SoundLesson,
+    choice: SoundLessonPreviewItem,
+    correctItem: SoundLessonPreviewItem
+  ): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = "sound-recall-choice-card"
+    button.type = "button"
+    button.setAttribute("aria-label", "Choose sound shape")
+
+    const visual = document.createElement("span")
+    visual.className = [
+      "sound-recall-choice-visual",
+      `sound-recall-choice-visual-${lesson.visualType}`,
+      `sound-recall-choice-visual-${choice.visual}`
+    ].join(" ")
+    visual.setAttribute("aria-hidden", "true")
+
+    button.append(visual)
+
+    button.addEventListener("click", () => {
+      handleSoundRecallSelection(choice, correctItem, button)
+    })
+
+    return button
+  }
+
+  function handleSoundRecallSelection(
+    choice: SoundLessonPreviewItem,
+    correctItem: SoundLessonPreviewItem,
+    button: HTMLElement
+  ): void {
+    soundPathContent.querySelectorAll(".sound-recall-choice-card").forEach((element) => {
+      element.classList.remove("is-selected", "is-correct", "is-soft-miss")
+    })
+
+    button.classList.add("is-selected")
+
+    if (choice.id === correctItem.id) {
+      button.classList.add("is-correct")
+      runSoundEchoGap(700)
+      return
+    }
+
+    button.classList.add("is-soft-miss")
+    runSoundEchoGap(500)
+  }
+
+  function playSoundPathAudioAsPromise(audioSrc: string | undefined, activeElement?: HTMLElement): Promise<void> {
+    return new Promise((resolve) => {
+      stopSoundPathAudio()
+      activeElement?.classList.add("is-playing")
+      soundPathVisual.classList.add("is-playing")
+
+      if (!audioSrc) {
+        window.setTimeout(() => {
+          activeElement?.classList.remove("is-playing")
+          soundPathVisual.classList.remove("is-playing")
+          runSoundEchoGap(700)
+          resolve()
+        }, 700)
+        return
+      }
+
+      const audio = new Audio(audioSrc)
+      currentSoundAudio = audio
+
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        activeElement?.classList.remove("is-playing")
+        soundPathVisual.classList.remove("is-playing")
+        currentSoundAudio = null
+        runSoundEchoGap(700)
+        resolve()
+      }
+
+      audio.addEventListener("ended", finish, { once: true })
+      audio.addEventListener("error", finish, { once: true })
+      audio.play().catch(finish)
+    })
+  }
+
+  function goBackToSoundGarden(): void {
+    stopLessonPreviewAudio()
+    selectedSoundLessonId = null
+    renderSoundGarden()
+    setSurface("soundGarden")
+  }
+
+  function getSoundGardenSectionById(sectionId: string | null): SoundGardenSection | undefined {
+    return soundGardenSections.find((section) => section.id === sectionId)
+  }
+
+  function renderSoundPath(sectionId: string | null): void {
+    const section = getSoundGardenSectionById(sectionId)
+    if (!section || !currentSoundPathStep) return
+    renderSoundPathStep(section, currentSoundPathStep)
+  }
+
+  function renderSoundPathStep(section: SoundGardenSection, step: SoundPathStepId): void {
+    stopSoundPathAudio()
+    app.dataset.soundStep = step
+    soundPathVisual.hidden = false
+    renderSoundPathVisual(section.items[currentSoundItemIndex] ?? section.items[0] ?? { id: section.id, visualType: section.visualType })
+    clearNode(soundPathContent)
+
+    if (step === "preview") renderSoundPreviewStep(section)
+    if (step === "primer") renderSoundPrimerStep(section)
+    if (step === "guided-tuning") renderGuidedTuningStep(section)
+    if (step === "perception-recall") renderPerceptionRecallStep(section)
+    if (step === "reflection") renderSoundReflectionStep(section)
+
+    renderSoundPathProgress(step)
+  }
+
+  function getSoundVisualKind(itemOrChoice: SoundGardenItem | SoundChoice): SoundVisualType {
+    return "kind" in itemOrChoice ? itemOrChoice.kind : itemOrChoice.visualType
+  }
+
+  function renderSoundPathVisual(itemOrChoice: SoundGardenItem | SoundChoice): HTMLElement {
+    clearNode(soundPathVisual)
+    const visual = document.createElement("span")
+    visual.className = `sound-path-shape sound-path-shape-${getSoundVisualKind(itemOrChoice)} sound-path-shape-${itemOrChoice.visualShape ?? "soft"}`
+    soundPathVisual.append(visual)
+    return visual
+  }
+
+  function renderSoundPathProgress(step: SoundPathStepId): void {
+    clearNode(soundPathProgress)
+    soundPathSteps.forEach((candidate) => {
+      const dot = document.createElement("span")
+      dot.className = candidate === step ? "is-active" : ""
+      soundPathProgress.append(dot)
+    })
+    soundPathBackButton.disabled = soundPathSteps.indexOf(step) <= 0
+  }
+
+  function renderSoundPathPreviewItem(item: SoundGardenItem): HTMLLIElement {
+    const rowItem = document.createElement("li")
+    rowItem.append(renderSoundPathMiniVisual(item))
+
+    const button = document.createElement("button")
+    button.className = "sound-path-play-button"
+    button.type = "button"
+    button.setAttribute("aria-label", `Play ${item.id}`)
+    button.innerHTML = "<span aria-hidden=\"true\"></span>"
+    button.addEventListener("click", () => {
+      currentSoundItemIndex = Math.max(0, getCurrentSoundSectionItems().findIndex((candidate) => candidate.id === item.id))
+      renderSoundPathVisual(item)
+      playSoundPathAudio(item.audio, rowItem)
+    })
+    rowItem.append(button)
+    return rowItem
+  }
+
+  function renderSoundPathMiniVisual(itemOrChoice: SoundGardenItem | SoundChoice): HTMLElement {
+    const visual = document.createElement("span")
+    visual.className = `sound-path-mini-visual sound-path-mini-${getSoundVisualKind(itemOrChoice)} sound-path-mini-${itemOrChoice.visualShape ?? "soft"}`
+    visual.setAttribute("aria-hidden", "true")
+    return visual
+  }
+
+  function renderSoundPreviewStep(section: SoundGardenSection): void {
+    const trackWrap = document.createElement("div")
+    trackWrap.className = "sound-path-preview-track-wrap"
+
+    const track = document.createElement("ul")
+    track.className = "sound-path-preview-track"
+    section.items.forEach((item) => track.append(renderSoundPathPreviewItem(item)))
+    trackWrap.append(track)
+    trackWrap.scrollLeft = 0
+    soundPathContent.append(trackWrap)
+  }
+
+  function renderSoundPrimerStep(section: SoundGardenSection): void {
+    const item = section.items[currentSoundItemIndex] ?? section.items[0]
+    if (!item) return
+
+    const card = document.createElement("div")
+    card.className = "sound-path-primer-card"
+    card.append(renderSoundPathMiniVisual(item))
+
+    const nextItemButton = document.createElement("button")
+    nextItemButton.className = "sound-path-small-next"
+    nextItemButton.type = "button"
+    nextItemButton.setAttribute("aria-label", "Next sound")
+    nextItemButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    nextItemButton.addEventListener("click", () => {
+      currentSoundItemIndex = (currentSoundItemIndex + 1) % section.items.length
+      renderSoundPathStep(section, "primer")
+    })
+
+    card.append(nextItemButton)
+    soundPathContent.append(card)
+  }
+
+  function renderGuidedTuningStep(section: SoundGardenSection): void {
+    const item = section.items[currentSoundItemIndex] ?? section.items[0]
+    const nextItem = section.items[(currentSoundItemIndex + 1) % section.items.length] ?? item
+    if (!item) return
+
+    const grid = document.createElement("div")
+    grid.className = "sound-compare-grid"
+    ;[
+      { item, audio: item.audio },
+      { item: nextItem, audio: item.compareAudio ?? nextItem.audio }
+    ].forEach(({ item: compareItem, audio }) => {
+      const card = document.createElement("button")
+      card.className = "sound-compare-card"
+      card.type = "button"
+      card.setAttribute("aria-label", "Play comparison sound")
+      card.append(renderSoundPathMiniVisual(compareItem))
+      card.addEventListener("click", () => playSoundPathAudio(audio, card))
+      grid.append(card)
+    })
+    soundPathContent.append(grid)
+  }
+
+  function renderPerceptionRecallStep(section: SoundGardenSection): void {
+    const item = section.items[currentSoundItemIndex] ?? section.items[0]
+    if (!item) return
+
+    const choices = item.choices?.length ? item.choices : [{ id: item.id, kind: item.visualType, visualShape: item.visualShape, correct: true }]
+    const bed = document.createElement("div")
+    bed.className = "sound-recall-choice-bed"
+
+    choices.forEach((choice) => {
+      const button = document.createElement("button")
+      button.className = "sound-recall-choice"
+      button.type = "button"
+      button.setAttribute("aria-label", "Choose sound shape")
+      button.append(renderSoundPathMiniVisual(choice))
+      button.addEventListener("click", () => handleSoundRecallChoice(choice, button))
+      bed.append(button)
+    })
+    soundPathContent.append(bed)
+  }
+
+  function renderSoundReflectionStep(section: SoundGardenSection): void {
+    markSoundSectionComplete(section.id)
+    const growth = document.createElement("div")
+    growth.className = "sound-reflection-growth"
+    growth.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+
+    const actions = document.createElement("div")
+    actions.className = "sound-reflection-actions"
+    ;[
+      { label: "Repeat sound path", action: () => enterSoundSection(section.id), className: "repeat" },
+      { label: "Continue to next sound path", action: () => enterNextSoundSection(section.id), className: "next" },
+      { label: "Enter Meaning Tree", action: openMeaningArcs, className: "tree" }
+    ].forEach(({ label, action, className }) => {
+      const button = document.createElement("button")
+      button.className = `sound-reflection-action sound-reflection-action-${className}`
+      button.type = "button"
+      button.setAttribute("aria-label", label)
+      button.innerHTML = "<span aria-hidden=\"true\"></span>"
+      button.addEventListener("click", action)
+      actions.append(button)
+    })
+
+    soundPathContent.append(growth, actions)
+  }
+
+  function getCurrentSoundSectionItems(): SoundGardenItem[] {
+    return getSoundGardenSectionById(selectedSoundSectionId)?.items ?? []
+  }
+
+  function playSoundPathAudio(audioSrc: string | undefined, activeElement?: HTMLElement): void {
+    stopSoundPathAudio()
+    if (!audioSrc) {
+      activeElement?.classList.add("is-playing")
+      window.setTimeout(() => {
+        activeElement?.classList.remove("is-playing")
+        runSoundEchoGap()
+      }, 900)
+      return
+    }
+
+    const audio = new Audio(audioSrc)
+    currentSoundAudio = audio
+    activeElement?.classList.add("is-playing")
+    soundPathVisual.classList.add("is-playing")
+
+    const clearPlaying = () => {
+      activeElement?.classList.remove("is-playing")
+      soundPathVisual.classList.remove("is-playing")
+      currentSoundAudio = null
+    }
+
+    audio.addEventListener("ended", () => {
+      clearPlaying()
+      runSoundEchoGap(Number.isFinite(audio.duration) ? Math.min(1800, Math.max(900, audio.duration * 420)) : 1200)
+    })
+    audio.addEventListener("error", () => {
+      clearPlaying()
+      runSoundEchoGap()
+    })
+    audio.play().catch(() => {
+      window.setTimeout(() => {
+        clearPlaying()
+        runSoundEchoGap()
+      }, 900)
+    })
+  }
+
+  function stopSoundPathAudio(): void {
+    if (currentSoundAudio) {
+      currentSoundAudio.pause()
+      currentSoundAudio.currentTime = 0
+      currentSoundAudio = null
+    }
+    soundPathVisual.classList.remove("is-playing")
+    soundPathContent.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
+  }
+
+  function runSoundEchoGap(duration = 1200): void {
+    soundPathEcho.classList.add("is-echoing")
+    window.setTimeout(() => soundPathEcho.classList.remove("is-echoing"), duration)
+  }
+
+  function handleSoundRecallChoice(choice: SoundChoice, button: HTMLElement): void {
+    soundPathContent.querySelectorAll(".sound-recall-choice").forEach((element) => element.classList.remove("is-selected", "is-correct", "is-soft-miss"))
+    button.classList.add("is-selected")
+    button.classList.add(choice.correct ? "is-correct" : "is-soft-miss")
+    if (!choice.correct) runSoundEchoGap(700)
+  }
+
+  function goToNextSoundPathStep(): void {
+    if (!currentSoundPathStep) return
+    if (selectedSoundLessonId) {
+      if (currentSoundPathStep === "preview") {
+        currentSoundPathStep = "primer"
+        currentSoundItemIndex = 0
+        renderSoundLessonPrimer()
+        return
+      }
+
+      if (currentSoundPathStep === "primer") {
+        currentSoundPathStep = "guided-tuning"
+        currentSoundPairIndex = 0
+        renderSoundGuidedTuning()
+        return
+      }
+
+      if (currentSoundPathStep === "guided-tuning") {
+        currentSoundPathStep = "perception-recall"
+        currentRecallItemIndex = 0
+        renderSoundPerceptionRecall()
+        return
+      }
+
+      if (currentSoundPathStep === "perception-recall") {
+        currentSoundPathStep = "reflection"
+        renderSoundReflection()
+        return
+      }
+
+      if (currentSoundPathStep === "reflection") {
+        const nextLesson = getNextSoundLesson(selectedSoundLessonId)
+
+        if (nextLesson) {
+          enterSoundLesson(nextLesson.id)
+          return
+        }
+
+        if (selectedSoundSectionId) renderSoundLessonList()
+        setSurface("soundLessonList")
+        return
+      }
+
+      return
+    }
+
+    const nextStep = soundPathSteps[soundPathSteps.indexOf(currentSoundPathStep) + 1]
+    if (!nextStep) {
+      renderSoundGarden()
+      setSurface("soundGarden")
+      return
+    }
+    currentSoundPathStep = nextStep
+    renderSoundPath(selectedSoundSectionId)
+  }
+
+  function renderSoundReflection(): void {
+    const lesson = getSoundLessonById(selectedSoundLessonId)
+    if (!lesson) return
+
+    stopSoundPathAudio()
+
+    currentSoundPathStep = "reflection"
+    app.dataset.soundStep = "reflection"
+    soundPathVisual.hidden = false
+
+    markSoundLessonComplete(lesson.id)
+
+    clearNode(soundPathVisual)
+    clearNode(soundPathContent)
+
+    renderSoundReflectionVisual()
+    renderSoundReflectionContent(lesson)
+    renderSoundPathProgress("reflection")
+
+    soundPathBackButton.disabled = false
+    soundPathNextButton.disabled = false
+    soundPathReplayButton.disabled = false
+  }
+
+  function renderSoundReflectionVisual(): void {
+    const bloom = document.createElement("div")
+    bloom.className = "sound-lesson-reflection-bloom"
+    bloom.setAttribute("aria-hidden", "true")
+
+    bloom.append(
+      document.createElement("span"),
+      document.createElement("span"),
+      document.createElement("span"),
+      document.createElement("span")
+    )
+
+    soundPathVisual.append(bloom)
+  }
+
+  function renderSoundReflectionContent(lesson: SoundLesson): void {
+    const reflection = document.createElement("div")
+    reflection.className = "sound-lesson-reflection"
+
+    const resonance = document.createElement("div")
+    resonance.className = "sound-lesson-reflection-resonance"
+    resonance.setAttribute("aria-hidden", "true")
+
+    resonance.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+
+    const actions = document.createElement("div")
+    actions.className = "sound-lesson-reflection-actions"
+
+    const repeatButton = document.createElement("button")
+    repeatButton.className = "sound-lesson-reflection-action sound-lesson-reflection-repeat"
+    repeatButton.type = "button"
+    repeatButton.setAttribute("aria-label", "Repeat lesson")
+    repeatButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    repeatButton.addEventListener("click", () => {
+      currentSoundPathStep = "preview"
+      currentSoundItemIndex = 0
+      currentSoundPairIndex = 0
+      currentRecallItemIndex = 0
+      renderSoundLessonPreview(lesson.id)
+    })
+
+    const lessonListButton = document.createElement("button")
+    lessonListButton.className = "sound-lesson-reflection-action sound-lesson-reflection-list"
+    lessonListButton.type = "button"
+    lessonListButton.setAttribute("aria-label", "Return to lesson list")
+    lessonListButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    lessonListButton.addEventListener("click", () => {
+      stopSoundPathAudio()
+      if (selectedSoundSectionId) renderSoundLessonList()
+      setSurface("soundLessonList")
+    })
+
+    const nextLesson = getNextSoundLesson(lesson.id)
+
+    const nextLessonButton = document.createElement("button")
+    nextLessonButton.className = "sound-lesson-reflection-action sound-lesson-reflection-next"
+    nextLessonButton.type = "button"
+    nextLessonButton.setAttribute("aria-label", "Continue to next lesson")
+    nextLessonButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    nextLessonButton.disabled = !nextLesson
+
+    nextLessonButton.addEventListener("click", () => {
+      if (!nextLesson) return
+      enterSoundLesson(nextLesson.id)
+    })
+
+    const gardenButton = document.createElement("button")
+    gardenButton.className = "sound-lesson-reflection-action sound-lesson-reflection-garden"
+    gardenButton.type = "button"
+    gardenButton.setAttribute("aria-label", "Return to Sound Garden")
+    gardenButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+
+    gardenButton.addEventListener("click", () => {
+      stopSoundPathAudio()
+      selectedSoundLessonId = null
+      renderSoundGarden()
+      setSurface("soundGarden")
+    })
+
+    actions.append(repeatButton, lessonListButton, nextLessonButton, gardenButton)
+    reflection.append(resonance, actions)
+    soundPathContent.append(reflection)
+  }
+
+  function goToPreviousSoundPathStep(): void {
+    if (!currentSoundPathStep) return
+    if (selectedSoundLessonId) {
+      if (currentSoundPathStep === "primer") {
+        renderSoundLessonPreview(selectedSoundLessonId)
+      }
+
+      if (currentSoundPathStep === "guided-tuning") {
+        currentSoundPathStep = "primer"
+        renderSoundLessonPrimer()
+        return
+      }
+
+      if (currentSoundPathStep === "perception-recall") {
+        currentSoundPathStep = "guided-tuning"
+        renderSoundGuidedTuning()
+        return
+      }
+
+      if (currentSoundPathStep === "reflection") {
+        currentSoundPathStep = "perception-recall"
+        renderSoundPerceptionRecall()
+        return
+      }
+
+      return
+    }
+
+    const previousStep = soundPathSteps[soundPathSteps.indexOf(currentSoundPathStep) - 1]
+    if (!previousStep) return
+    currentSoundPathStep = previousStep
+    renderSoundPath(selectedSoundSectionId)
+  }
+
+  function returnToSoundGardenSelection(): void {
+    stopSoundPathAudio()
+    renderSoundGarden()
+    setSurface("soundGarden")
+  }
+
+  function returnToSoundLessonList(): void {
+    stopSoundPathAudio()
+    if (selectedSoundSectionId) renderSoundLessonList()
+    setSurface("soundLessonList")
+  }
+
+  function markSoundSectionComplete(sectionId: string): void {
+    completedSoundSectionIds.add(sectionId)
+    app.dataset.completedSoundSections = String(completedSoundSectionIds.size)
+  }
+
+  function enterNextSoundSection(sectionId: string): void {
+    const index = soundGardenSections.findIndex((section) => section.id === sectionId)
+    const nextSection = soundGardenSections[(index + 1) % soundGardenSections.length]
+    if (nextSection) enterSoundSection(nextSection.id)
+  }
+
+  function returnToPathGate(): void {
+    stopCurrentSoundPreview()
+    stopSoundPathAudio()
+    stopLessonPreviewAudio()
+    selectedArcId = null
+    selectedSoundSectionId = null
+    selectedSoundLessonId = null
     setSurface("path")
   }
 
@@ -1216,6 +2941,13 @@ export function createExperience(): void {
 
       storyPodBed.append(button)
     })
+  }
+
+  function returnToMeaningArcs(): void {
+    selectedArcId = null
+    selectedStoryId = null
+    renderArcButtons()
+    setSurface("meaningArc")
   }
 
   function openMeaningArcs(): void {
@@ -1342,6 +3074,72 @@ export function createExperience(): void {
 
   meaningTreeButton.addEventListener("click", () => {
     openMeaningArcs()
+  })
+
+  soundGardenButton.addEventListener("click", () => {
+    selectedPath = "sound-garden"
+    renderSoundGarden()
+    setSurface("soundGarden")
+  })
+
+  soundGardenReturnButton.addEventListener("click", returnToPathGate)
+
+  window.addEventListener("resize", updateSoundGardenPreviewAlignment)
+
+  lessonBackButton.addEventListener("click", goBackToSoundGarden)
+
+  meaningArcReturnButton.addEventListener("click", returnToPathGate)
+
+  storyBranchReturnButton.addEventListener("click", (event) => {
+    event.stopPropagation()
+    returnToMeaningArcs()
+  })
+
+  soundPathSectionBackButton.addEventListener("click", returnToSoundLessonList)
+
+  soundPathBackButton.addEventListener("click", goToPreviousSoundPathStep)
+
+  soundPathReplayButton.addEventListener("click", () => {
+    const lesson = getSoundLessonById(selectedSoundLessonId)
+    if (lesson && currentSoundPathStep === "preview") {
+      void playLessonPreviewSequence(lesson)
+      return
+    }
+
+    if (lesson && currentSoundPathStep === "primer") {
+      const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
+      if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+      return
+    }
+
+    if (lesson && currentSoundPathStep === "guided-tuning") {
+      const pairs = getGuidedTuningPairs(lesson)
+      const pair = pairs[currentSoundPairIndex]
+      if (pair) void playGuidedTuningSequence(pair, soundPathReplayButton)
+      return
+    }
+
+    if (lesson && currentSoundPathStep === "perception-recall") {
+      const item = lesson.previewItems[currentRecallItemIndex] ?? lesson.previewItems[0]
+      if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+      return
+    }
+
+    if (lesson && currentSoundPathStep === "reflection") {
+      makeChime()
+      runSoundEchoGap(900)
+      return
+    }
+
+    const section = getSoundGardenSectionById(selectedSoundSectionId)
+    const item = section?.items[currentSoundItemIndex] ?? section?.items[0]
+    if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+  })
+
+  soundPathNextButton.addEventListener("click", goToNextSoundPathStep)
+
+  soundPathSectionNextButton.addEventListener("click", () => {
+    if (selectedSoundSectionId) enterNextSoundSection(selectedSoundSectionId)
   })
 
   previewBackButton.addEventListener("click", () => {

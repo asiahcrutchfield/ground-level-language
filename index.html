@@ -1,218 +1,300 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ground Level Language</title>
-  </head>
-  <body>
-    <main class="app" id="app">
-      <section class="start-screen" id="start-screen" aria-label="Ground Level Language">
-        <div class="air" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
 
-        <button class="seed-button" id="seed-button" type="button" aria-label="Begin">
-          <span class="seed-field" aria-hidden="true">
-            <span class="seed-halo"></span>
-            <span class="start-seed-art" id="start-seed-art"></span>
-          </span>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ground Level Language</title>
+</head>
+
+<body>
+  <main class="app" id="app">
+    <section class="start-screen" id="start-screen" aria-label="Ground Level Language">
+      <div class="air" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <button class="seed-button" id="seed-button" type="button" aria-label="Begin">
+        <span class="seed-field" aria-hidden="true">
+          <span class="seed-halo"></span>
+          <span class="start-seed-art" id="start-seed-art"></span>
+        </span>
+      </button>
+    </section>
+
+    <section class="language-screen" id="language-screen" aria-label="Language seeds" hidden>
+      <div class="language-seedbed" id="language-seedbed" role="list"></div>
+    </section>
+
+    <section class="path-screen" id="path-screen" aria-label="Learning paths" hidden>
+      <div class="path-gate">
+        <button class="path-choice" id="meaning-tree-button" type="button" aria-label="Meaning Tree">
+          <span class="path-mark path-mark-tree" id="meaning-tree-art" aria-hidden="true"></span>
         </button>
-      </section>
+        <button class="path-choice" id="sound-garden-button" type="button" aria-label="Sound Garden">
+          <span class="path-mark path-mark-garden" id="sound-garden-art" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
 
-      <section class="language-screen" id="language-screen" aria-label="Language seeds" hidden>
-        <div class="language-seedbed" id="language-seedbed" role="list"></div>
-      </section>
+    <section class="sound-garden-screen" id="sound-garden-screen" aria-label="Sound Garden" hidden>
+      <div class="sound-garden" id="sound-garden">
+        <button class="path-return-button sound-garden-return-button" id="sound-garden-return-button" type="button"
+          aria-label="Back to path selection">
+          <span aria-hidden="true"></span>
+        </button>
 
-      <section class="path-screen" id="path-screen" aria-label="Learning paths" hidden>
-        <div class="path-gate">
-          <button class="path-choice" id="meaning-tree-button" type="button" aria-label="Meaning Tree">
-            <span class="path-mark path-mark-tree" id="meaning-tree-art" aria-hidden="true"></span>
-          </button>
-          <button class="path-choice" id="sound-garden-button" type="button" aria-label="Sound Garden">
-            <span class="path-mark path-mark-garden" id="sound-garden-art" aria-hidden="true"></span>
-          </button>
+        <ul class="sound-preview-list" id="sound-preview-list"></ul>
+      </div>
+    </section>
+
+    <section class="sound-lesson-list-screen" id="sound-lesson-list-screen" aria-label="Sound lessons" hidden>
+      <button class="lesson-back-button" id="lesson-back-button" type="button" aria-label="Back to Sound Garden">
+        <span aria-hidden="true"></span>
+      </button>
+
+      <div class="lesson-header" id="lesson-header" aria-hidden="true"></div>
+
+      <ol class="sound-lesson-list" id="sound-lesson-list"></ol>
+    </section>
+
+    <section class="sound-path-screen" id="sound-path-screen" aria-label="Sound path" hidden>
+      <div class="sound-path" id="sound-path">
+        <div class="sound-path-visual" id="sound-path-visual" aria-hidden="true"></div>
+
+        <div class="sound-path-content" id="sound-path-content"></div>
+
+        <div class="sound-path-echo" id="sound-path-echo" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
         </div>
-      </section>
 
-      <section class="meaning-arc-screen" id="meaning-arc-screen" aria-label="Meaning arcs" hidden>
-        <ul class="arc-list" id="arc-list" role="list"></ul>
-      </section>
+        <div class="sound-path-progress" id="sound-path-progress" aria-hidden="true"></div>
 
-      <section class="story-branch-screen" id="story-branch-screen" aria-label="Story branches" hidden>
-        <div class="meaning-tree-map" aria-hidden="true">
-          <span class="tree-trunk"></span>
-          <span class="tree-branch tree-branch-a"></span>
-          <span class="tree-branch tree-branch-b"></span>
-          <span class="tree-branch tree-branch-c"></span>
-        </div>
-
-        <div class="story-pod-bed" id="story-pod-bed" role="list"></div>
-      </section>
-
-      <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning preview" hidden>
-        <div class="preview-world" id="preview-world">
-          <div class="preview-signature" id="preview-signature" aria-hidden="true"></div>
-
-          <div class="preview-moment-track" id="preview-image-track" aria-label="Story preview images"></div>
-
-          <div class="preview-audio-track" id="preview-audio-track" aria-label="Story preview sounds"></div>
-
-          <div class="preview-actions">
-            <button class="preview-back-button" id="preview-back-button" type="button" aria-label="Back to stories">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="preview-enter-button" id="preview-enter-button" type="button" aria-label="Enter primer">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="meaning-primer-screen" id="meaning-primer-screen" aria-label="Meaning primer" hidden>
-        <div class="primer-world" id="primer-world">
-          <div class="primer-card-track" id="primer-card-track" aria-label="Primer items"></div>
-
-          <div class="primer-echo" id="primer-echo" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="primer-actions">
-            <button class="primer-back-button" id="primer-back-button" type="button" aria-label="Back to preview">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="primer-next-button" id="primer-next-button" type="button" aria-label="Continue to story">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="meaning-story-screen" id="meaning-story-screen" aria-label="Meaning story" hidden>
-        <div class="story-world" id="story-world">
-          <div class="story-mode-gate" id="story-mode-gate" aria-label="Story playback mode">
-            <button class="story-mode-button story-mode-auto" id="story-auto-button" type="button" aria-label="Play story automatically">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-mode-button story-mode-manual" id="story-manual-button" type="button" aria-label="Go through story manually">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="story-stage" id="story-stage">
-            <img class="story-image" id="story-image" src="" alt="" aria-hidden="true" />
-          </div>
-
-          <button class="story-audio-button" id="story-audio-button" type="button" aria-label="Play story audio">
+        <div class="sound-path-actions">
+          <button class="sound-path-section-back-button" id="sound-path-section-back-button" type="button"
+            aria-label="Back to sound lessons">
             <span aria-hidden="true"></span>
           </button>
 
-          <div class="story-echo" id="story-echo" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="story-progress" id="story-progress" aria-hidden="true"></div>
-
-          <div class="story-controls" id="story-controls">
-            <button class="story-back-button" id="story-back-button" type="button" aria-label="Back to primer">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-prev-button" id="story-prev-button" type="button" aria-label="Previous scene">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-next-button" id="story-next-button" type="button" aria-label="Next scene">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-replay-button" id="story-replay-button" type="button" aria-label="Replay story">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-forward-button" id="story-forward-button" type="button" aria-label="Continue">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="meaning-recall-screen" id="meaning-recall-screen" aria-label="Recall" hidden>
-        <div class="recall-world" id="recall-world">
-          <div class="recall-prompt-orb" id="recall-prompt-orb" aria-hidden="true">
-            <span class="recall-pulse"></span>
-          </div>
-
-          <button class="recall-audio-button" id="recall-audio-button" type="button" aria-label="Replay prompt">
+          <button class="sound-path-back-button" id="sound-path-back-button" type="button" aria-label="Back">
             <span aria-hidden="true"></span>
           </button>
 
-          <div class="recall-choice-bed" id="recall-choice-bed" role="list"></div>
+          <button class="sound-path-replay-button" id="sound-path-replay-button" type="button"
+            aria-label="Replay sound">
+            <span aria-hidden="true"></span>
+          </button>
 
-          <div class="recall-progress" id="recall-progress" aria-hidden="true"></div>
+          <button class="sound-path-next-button" id="sound-path-next-button" type="button" aria-label="Continue">
+            <span aria-hidden="true"></span>
+          </button>
 
-          <div class="recall-actions">
-            <button class="recall-story-button" id="recall-story-button" type="button" aria-label="Back to story">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-prev-button" id="recall-prev-button" type="button" aria-label="Previous recall prompt">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-next-question-button" id="recall-next-question-button" type="button" aria-label="Next recall prompt">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-continue-button" id="recall-continue-button" type="button" aria-label="Continue">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
+          <button class="sound-path-section-next-button" id="sound-path-section-next-button" type="button"
+            aria-label="Next sound section">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="meaning-reflection-screen" id="meaning-reflection-screen" aria-label="Reflection" hidden>
-        <div class="reflection-world" id="reflection-world">
-          <div class="reflection-growth" id="reflection-growth" aria-hidden="true">
-            <span class="reflection-root"></span>
-            <span class="reflection-stem"></span>
-            <span class="reflection-leaf reflection-leaf-a"></span>
-            <span class="reflection-leaf reflection-leaf-b"></span>
-            <span class="reflection-bloom"></span>
-            <span class="reflection-ring reflection-ring-a"></span>
-            <span class="reflection-ring reflection-ring-b"></span>
-          </div>
+    <section class="meaning-arc-screen" id="meaning-arc-screen" aria-label="Meaning arcs" hidden>
+      <button class="path-return-button meaning-arc-return-button" id="meaning-arc-return-button" type="button"
+        aria-label="Back to path selection">
+        <span aria-hidden="true"></span>
+      </button>
 
-          <div class="reflection-story-pod" id="reflection-story-pod" aria-hidden="true">
-            <span class="reflection-story-symbols" id="reflection-story-symbols"></span>
-          </div>
+      <ul class="arc-list" id="arc-list" role="list"></ul>
+    </section>
 
-          <div class="reflection-actions">
-            <button class="reflection-action reflection-replay-button" id="reflection-replay-button" type="button" aria-label="Replay story">
-              <span aria-hidden="true"></span>
-            </button>
+    <section class="story-branch-screen" id="story-branch-screen" aria-label="Story branches" hidden>
+      <button class="path-return-button story-branch-return-button" id="story-branch-return-button" type="button"
+        aria-label="Back to meaning arcs">
+        <span aria-hidden="true"></span>
+      </button>
 
-            <button class="reflection-action reflection-paths-button" id="reflection-paths-button" type="button" aria-label="Return to path selection">
-              <span aria-hidden="true"></span>
-            </button>
+      <div class="meaning-tree-map" aria-hidden="true">
+        <span class="tree-trunk"></span>
+        <span class="tree-branch tree-branch-a"></span>
+        <span class="tree-branch tree-branch-b"></span>
+        <span class="tree-branch tree-branch-c"></span>
+      </div>
 
-            <button class="reflection-action reflection-sound-garden-button" id="reflection-sound-garden-button" type="button" aria-label="Enter Sound Garden">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
+      <div class="story-pod-bed" id="story-pod-bed" role="list"></div>
+    </section>
+
+    <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning preview" hidden>
+      <div class="preview-world" id="preview-world">
+        <div class="preview-signature" id="preview-signature" aria-hidden="true"></div>
+
+        <div class="preview-moment-track" id="preview-image-track" aria-label="Story preview images"></div>
+
+        <div class="preview-audio-track" id="preview-audio-track" aria-label="Story preview sounds"></div>
+
+        <div class="preview-actions">
+          <button class="preview-back-button" id="preview-back-button" type="button" aria-label="Back to stories">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="preview-enter-button" id="preview-enter-button" type="button" aria-label="Enter primer">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
-    <script src="/src/main.ts" type="module"></script>
-  </body>
+    <section class="meaning-primer-screen" id="meaning-primer-screen" aria-label="Meaning primer" hidden>
+      <div class="primer-world" id="primer-world">
+        <div class="primer-card-track" id="primer-card-track" aria-label="Primer items"></div>
+
+        <div class="primer-echo" id="primer-echo" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="primer-actions">
+          <button class="primer-back-button" id="primer-back-button" type="button" aria-label="Back to preview">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="primer-next-button" id="primer-next-button" type="button" aria-label="Continue to story">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="meaning-story-screen" id="meaning-story-screen" aria-label="Meaning story" hidden>
+      <div class="story-world" id="story-world">
+        <div class="story-mode-gate" id="story-mode-gate" aria-label="Story playback mode">
+          <button class="story-mode-button story-mode-auto" id="story-auto-button" type="button"
+            aria-label="Play story automatically">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="story-mode-button story-mode-manual" id="story-manual-button" type="button"
+            aria-label="Go through story manually">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="story-stage" id="story-stage">
+          <img class="story-image" id="story-image" src="" alt="" aria-hidden="true" />
+        </div>
+
+        <button class="story-audio-button" id="story-audio-button" type="button" aria-label="Play story audio">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <div class="story-echo" id="story-echo" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="story-progress" id="story-progress" aria-hidden="true"></div>
+
+        <div class="story-controls" id="story-controls">
+          <button class="story-back-button" id="story-back-button" type="button" aria-label="Back to primer">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="story-prev-button" id="story-prev-button" type="button" aria-label="Previous scene">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="story-next-button" id="story-next-button" type="button" aria-label="Next scene">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="story-replay-button" id="story-replay-button" type="button" aria-label="Replay story">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="story-forward-button" id="story-forward-button" type="button" aria-label="Continue">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="meaning-recall-screen" id="meaning-recall-screen" aria-label="Recall" hidden>
+      <div class="recall-world" id="recall-world">
+        <div class="recall-prompt-orb" id="recall-prompt-orb" aria-hidden="true">
+          <span class="recall-pulse"></span>
+        </div>
+
+        <button class="recall-audio-button" id="recall-audio-button" type="button" aria-label="Replay prompt">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <div class="recall-choice-bed" id="recall-choice-bed" role="list"></div>
+
+        <div class="recall-progress" id="recall-progress" aria-hidden="true"></div>
+
+        <div class="recall-actions">
+          <button class="recall-story-button" id="recall-story-button" type="button" aria-label="Back to story">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-prev-button" id="recall-prev-button" type="button" aria-label="Previous recall prompt">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-next-question-button" id="recall-next-question-button" type="button"
+            aria-label="Next recall prompt">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-continue-button" id="recall-continue-button" type="button" aria-label="Continue">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="meaning-reflection-screen" id="meaning-reflection-screen" aria-label="Reflection" hidden>
+      <div class="reflection-world" id="reflection-world">
+        <div class="reflection-growth" id="reflection-growth" aria-hidden="true">
+          <span class="reflection-root"></span>
+          <span class="reflection-stem"></span>
+          <span class="reflection-leaf reflection-leaf-a"></span>
+          <span class="reflection-leaf reflection-leaf-b"></span>
+          <span class="reflection-bloom"></span>
+          <span class="reflection-ring reflection-ring-a"></span>
+          <span class="reflection-ring reflection-ring-b"></span>
+        </div>
+
+        <div class="reflection-story-pod" id="reflection-story-pod" aria-hidden="true">
+          <span class="reflection-story-symbols" id="reflection-story-symbols"></span>
+        </div>
+
+        <div class="reflection-actions">
+          <button class="reflection-action reflection-replay-button" id="reflection-replay-button" type="button"
+            aria-label="Replay story">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="reflection-action reflection-paths-button" id="reflection-paths-button" type="button"
+            aria-label="Return to path selection">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="reflection-action reflection-sound-garden-button" id="reflection-sound-garden-button"
+            type="button" aria-label="Enter Sound Garden">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/src/main.ts" type="module"></script>
+</body>
+
 </html>
