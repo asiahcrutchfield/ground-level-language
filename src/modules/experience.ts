@@ -1,5 +1,6 @@
 import catArcSvgMarkup from "../../assets/arc_screen/cat.html?raw"
 import englishSeedSvgMarkup from "../../assets/language_select/lang_en.html?raw"
+import languageSelectMoundSvgMarkup from "../../assets/language_select/select_mound.html?raw"
 import taiwaneseSeedSvgMarkup from "../../assets/language_select/lang_nan.html?raw"
 import mandarinSeedSvgMarkup from "../../assets/language_select/lang_zh.html?raw"
 import autoplaySvgMarkup from "../../assets/path_screen/meaning_tree/autoplay.html?raw"
@@ -25,6 +26,20 @@ import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, Supporte
 
 type Surface = "start" | "language" | "path" | "soundGarden" | "soundLessonList" | "soundPath" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
+type LanguageSeedDrag = {
+  code: SupportedLanguage
+  ghost: HTMLElement | null
+  hasDragged: boolean
+  offsetX: number
+  offsetY: number
+  pointerId: number
+  sourceSeed: HTMLElement | null
+  sourceRectLeft: number
+  sourceRectTop: number
+  sourceWidth: number
+  startX: number
+  startY: number
+}
 type PathId = "meaning-tree" | "sound-garden"
 type StoryMode = "auto" | "manual"
 type SoundPathStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
@@ -610,6 +625,9 @@ export function createExperience(): void {
   const soundPathNextButton = mustQuery<HTMLButtonElement>("#sound-path-next-button")
   const soundPathSectionNextButton = mustQuery<HTMLButtonElement>("#sound-path-section-next-button")
   const languageSeedbed = mustQuery<HTMLElement>("#language-seedbed")
+  const languageSelectGarden = mustQuery<HTMLElement>("#language-select-garden")
+  const languageMoundButton = mustQuery<HTMLButtonElement>("#language-mound-button")
+  const languageMoundArt = mustQuery<HTMLElement>("#language-mound-art")
   const arcList = mustQuery<HTMLUListElement>("#arc-list")
   const meaningArcReturnButton = mustQuery<HTMLButtonElement>("#meaning-arc-return-button")
   const storyBranchReturnButton = mustQuery<HTMLButtonElement>("#story-branch-return-button")
@@ -664,6 +682,14 @@ export function createExperience(): void {
   let hasBegun = false
   let previewRun = 0
   let activePreview: SupportedLanguage | null = null
+  let previewRelease: SupportedLanguage | null = null
+  let previewReleaseTimer = 0
+  let pendingLanguage: SupportedLanguage | null = null
+  let visibleLanguageName: SupportedLanguage | null = null
+  let languageNameTimer = 0
+  let isPlantingLanguage = false
+  let languageSeedDrag: LanguageSeedDrag | null = null
+  let suppressNextLanguageSeedClick = false
   let selectedLanguage = getInitialLanguage()
   let selectedPath: PathId | null = null
   let selectedSoundSectionId: string | null = null
@@ -722,41 +748,94 @@ export function createExperience(): void {
   function setLanguageState(code: SupportedLanguage, state: SeedState): void {
     languageSeeds.forEach((seed) => {
       if (seed.code === code) seed.state = state
-      else if (state === "selected" && seed.state === "selected") seed.state = "revealed"
+      else if (state === "selected") seed.state = "idle"
     })
+  }
+
+  function syncLanguageSeedStates(): void {
+    languageSeeds.forEach((seed) => {
+      const row = languageSeedbed.querySelector<HTMLElement>(`.language-seed-row[data-language="${seed.code}"]`)
+      if (!row) return
+
+      row.dataset.state = seed.state
+      row.dataset.previewing = String(activePreview === seed.code)
+      row.dataset.previewRelease = String(previewRelease === seed.code)
+      row.dataset.nameVisible = String(visibleLanguageName === seed.code)
+      row.querySelector(".language-seed-button")?.setAttribute("aria-pressed", String(seed.state === "selected"))
+      row
+        .querySelector(".language-name")
+        ?.setAttribute("aria-hidden", String(visibleLanguageName !== seed.code))
+    })
+
+    const moundActive = Boolean(pendingLanguage)
+    languageMoundButton.dataset.active = String(moundActive)
+    languageMoundButton.disabled = isPlantingLanguage
+    languageMoundButton.setAttribute("aria-disabled", String(!moundActive || isPlantingLanguage))
   }
 
   function resetActivePreview(): void {
     previewRun += 1
+    window.clearTimeout(previewReleaseTimer)
+    window.clearTimeout(languageNameTimer)
     previewAudio.pause()
     previewAudio.removeAttribute("src")
     previewAudio.load()
 
-    if (activePreview) {
-      const activeSeed = languageSeeds.find((seed) => seed.code === activePreview)
-      if (activeSeed?.state === "previewing") activeSeed.state = "idle"
-    }
-
     activePreview = null
+    previewRelease = null
+    visibleLanguageName = null
+    syncLanguageSeedStates()
+  }
+
+  function releaseLanguagePreview(code: SupportedLanguage): void {
+    activePreview = null
+    previewRelease = code
+    syncLanguageSeedStates()
+
+    window.clearTimeout(previewReleaseTimer)
+    previewReleaseTimer = window.setTimeout(() => {
+      if (previewRelease !== code) return
+      previewRelease = null
+      syncLanguageSeedStates()
+    }, 520)
   }
 
   function revealLanguage(code: SupportedLanguage, run: number): void {
     if (run !== previewRun) return
-    activePreview = null
-    setLanguageState(code, "revealed")
-    renderLanguageSeeds()
+    releaseLanguagePreview(code)
+  }
+
+  function finishLanguagePreview(code: SupportedLanguage, run: number, shouldShowName: boolean): void {
+    if (run !== previewRun) return
+    if (shouldShowName) revealLanguageNameTemporarily(code)
+    releaseLanguagePreview(code)
+  }
+
+  function revealLanguageNameTemporarily(code: SupportedLanguage): void {
+    visibleLanguageName = code
+    syncLanguageSeedStates()
+
+    window.clearTimeout(languageNameTimer)
+    languageNameTimer = window.setTimeout(() => {
+      if (visibleLanguageName !== code) return
+      visibleLanguageName = null
+      syncLanguageSeedStates()
+    }, 1500)
   }
 
   function selectLanguage(code: SupportedLanguage): void {
     resetActivePreview()
+    window.clearTimeout(languageNameTimer)
     selectedLanguage = code
+    pendingLanguage = null
+    visibleLanguageName = null
     selectedArcId = null
     selectedStoryId = null
     allStories = []
     setLanguageState(code, "selected")
     saveLanguage(code)
     document.documentElement.dataset.learningLang = code
-    renderLanguageSeeds()
+    syncLanguageSeedStates()
 
     window.setTimeout(() => {
       setSurface("path")
@@ -3057,33 +3136,188 @@ export function createExperience(): void {
   }
 
   function previewLanguage(code: SupportedLanguage): void {
-    const seed = languageSeeds.find((candidate) => candidate.code === code)
-    if (seed?.state === "revealed" || seed?.state === "selected") {
-      selectLanguage(code)
-      return
-    }
+    if (activePreview === code && !previewAudio.paused) return
 
     resetActivePreview()
+    pendingLanguage = code
+    setLanguageState(code, "selected")
     previewRun += 1
     const run = previewRun
     activePreview = code
-    setLanguageState(code, "previewing")
-    renderLanguageSeeds()
+    syncLanguageSeedStates()
 
     previewAudio.src = previewPath(code)
     previewAudio.currentTime = 0
 
     previewAudio.onended = () => {
-      revealLanguage(code, run)
+      finishLanguagePreview(code, run, true)
     }
 
     previewAudio.onerror = () => {
-      revealLanguage(code, run)
+      finishLanguagePreview(code, run, true)
     }
 
     previewAudio.play().catch(() => {
-      revealLanguage(code, run)
+      finishLanguagePreview(code, run, true)
     })
+  }
+
+  function plantSelectedLanguage(startRectOverride?: DOMRect): void {
+    if (!pendingLanguage || isPlantingLanguage) return
+
+    const code = pendingLanguage
+    const sourceRow = languageSeedbed.querySelector<HTMLElement>(`.language-seed-row[data-language="${code}"]`)
+    const sourceSeed = sourceRow?.querySelector<HTMLElement>(".language-seed-art")
+    const gardenRect = languageSelectGarden.getBoundingClientRect()
+    const sourceRect = startRectOverride ?? sourceSeed?.getBoundingClientRect()
+    const moundRect = languageMoundButton.getBoundingClientRect()
+
+    isPlantingLanguage = true
+    languageSelectGarden.dataset.planting = "true"
+    languageMoundButton.dataset.planting = "true"
+    syncLanguageSeedStates()
+
+    if (sourceRect && !prefersReducedMotion()) {
+      const plantedSeed = createSeedSvg(code)
+      plantedSeed.classList.add("language-planting-seed")
+      plantedSeed.style.setProperty("--plant-start-x", `${sourceRect.left - gardenRect.left}px`)
+      plantedSeed.style.setProperty("--plant-start-y", `${sourceRect.top - gardenRect.top}px`)
+      plantedSeed.style.setProperty("--plant-end-x", `${moundRect.left + moundRect.width * 0.45 - gardenRect.left}px`)
+      plantedSeed.style.setProperty("--plant-end-y", `${moundRect.top + moundRect.height * 0.44 - gardenRect.top}px`)
+      plantedSeed.style.setProperty("--plant-start-w", `${sourceRect.width}px`)
+      languageSelectGarden.append(plantedSeed)
+    }
+
+    window.setTimeout(() => {
+      languageSelectGarden.dataset.planting = "false"
+      languageMoundButton.dataset.planting = "false"
+      languageSelectGarden.querySelector(".language-planting-seed")?.remove()
+      isPlantingLanguage = false
+      selectLanguage(code)
+    }, prefersReducedMotion() ? 80 : 920)
+  }
+
+  function isPointInMound(clientX: number, clientY: number): boolean {
+    const rect = languageMoundButton.getBoundingClientRect()
+    const leeway = 24
+    return (
+      clientX >= rect.left - leeway &&
+      clientX <= rect.right + leeway &&
+      clientY >= rect.top - leeway &&
+      clientY <= rect.bottom + leeway
+    )
+  }
+
+  function moveLanguageDragGhost(clientX: number, clientY: number): void {
+    if (!languageSeedDrag?.ghost) return
+
+    const nextX = clientX - languageSeedDrag.offsetX
+    const nextY = clientY - languageSeedDrag.offsetY
+    languageSeedDrag.ghost.style.setProperty("--drag-x", `${nextX}px`)
+    languageSeedDrag.ghost.style.setProperty("--drag-y", `${nextY}px`)
+  }
+
+  function startLanguageSeedDrag(event: PointerEvent, code: SupportedLanguage): void {
+    if (isPlantingLanguage) return
+    if (event.button !== 0) return
+
+    const sourceSeed = (event.currentTarget as HTMLElement).querySelector<HTMLElement>(".language-seed-art")
+    const sourceRect = sourceSeed?.getBoundingClientRect()
+    languageSeedDrag = {
+      code,
+      ghost: null,
+      hasDragged: false,
+      offsetX: sourceRect ? event.clientX - sourceRect.left : 0,
+      offsetY: sourceRect ? event.clientY - sourceRect.top : 0,
+      pointerId: event.pointerId,
+      sourceSeed,
+      sourceRectLeft: sourceRect ? sourceRect.left : 0,
+      sourceRectTop: sourceRect ? sourceRect.top : 0,
+      sourceWidth: sourceRect?.width ?? 58,
+      startX: event.clientX,
+      startY: event.clientY
+    }
+
+    if (sourceRect) {
+      languageSeedDrag.offsetX = Math.min(Math.max(languageSeedDrag.offsetX, 0), sourceRect.width)
+      languageSeedDrag.offsetY = Math.min(Math.max(languageSeedDrag.offsetY, 0), sourceRect.height)
+    }
+
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+  }
+
+  function updateLanguageSeedDrag(event: PointerEvent): void {
+    if (!languageSeedDrag || languageSeedDrag.pointerId !== event.pointerId) return
+
+    const distance = Math.hypot(event.clientX - languageSeedDrag.startX, event.clientY - languageSeedDrag.startY)
+    if (!languageSeedDrag.hasDragged && distance < 8) return
+
+    if (event.cancelable) {
+      event.preventDefault()
+    }
+
+    if (!languageSeedDrag.hasDragged) {
+      suppressNextLanguageSeedClick = true
+      languageSeedDrag.hasDragged = true
+      resetActivePreview()
+      pendingLanguage = languageSeedDrag.code
+      setLanguageState(languageSeedDrag.code, "selected")
+      visibleLanguageName = null
+      syncLanguageSeedStates()
+
+      const ghost = createSeedSvg(languageSeedDrag.code)
+      ghost.classList.remove("language-seed-art")
+      ghost.classList.add("language-drag-seed")
+      ghost.style.setProperty("--drag-w", `${languageSeedDrag.sourceWidth}px`)
+      
+      const initialX = languageSeedDrag.startX - languageSeedDrag.offsetX
+      const initialY = languageSeedDrag.startY - languageSeedDrag.offsetY
+      
+      ghost.style.setProperty("--drag-x", `${initialX}px`)
+      ghost.style.setProperty("--drag-y", `${initialY}px`)
+      ghost.style.setProperty("--drag-return-x", `${languageSeedDrag.sourceRectLeft}px`)
+      ghost.style.setProperty("--drag-return-y", `${languageSeedDrag.sourceRectTop}px`)
+      document.body.append(ghost)
+      languageSeedDrag.ghost = ghost
+      languageSeedDrag.sourceSeed?.classList.add("is-being-dragged")
+      languageSelectGarden.dataset.dragging = "true"
+    }
+
+    moveLanguageDragGhost(event.clientX, event.clientY)
+    languageMoundButton.dataset.dragOver = String(isPointInMound(event.clientX, event.clientY))
+  }
+
+  function endLanguageSeedDrag(event: PointerEvent): void {
+    if (!languageSeedDrag || languageSeedDrag.pointerId !== event.pointerId) return
+
+    const shouldPlant = languageSeedDrag.hasDragged && isPointInMound(event.clientX, event.clientY)
+    const endedDrag = languageSeedDrag
+    const ghostRect = endedDrag.ghost?.getBoundingClientRect()
+    languageSeedDrag = null
+    languageSelectGarden.dataset.dragging = "false"
+    languageMoundButton.dataset.dragOver = "false"
+
+    if (shouldPlant) {
+      endedDrag.sourceSeed?.classList.remove("is-being-dragged")
+      endedDrag.ghost?.remove()
+      plantSelectedLanguage(ghostRect)
+      return
+    }
+
+    if (endedDrag.hasDragged && endedDrag.ghost && !prefersReducedMotion()) {
+      endedDrag.ghost.classList.add("is-returning")
+      window.setTimeout(() => {
+        endedDrag.ghost?.remove()
+        endedDrag.sourceSeed?.classList.remove("is-being-dragged")
+      }, 260)
+    } else {
+      endedDrag.ghost?.remove()
+      endedDrag.sourceSeed?.classList.remove("is-being-dragged")
+    }
+
+    syncLanguageSeedStates()
   }
 
   function renderLanguageSeeds(): void {
@@ -3107,8 +3341,18 @@ export function createExperience(): void {
       button.setAttribute("aria-pressed", String(languageSeed.state === "selected"))
       button.append(createSeedSvg(languageSeed.code))
       button.addEventListener("click", () => {
+        if (suppressNextLanguageSeedClick) {
+          suppressNextLanguageSeedClick = false
+          return
+        }
         previewLanguage(languageSeed.code)
       })
+      button.addEventListener("pointerdown", (event) => {
+        startLanguageSeedDrag(event, languageSeed.code)
+      })
+      button.addEventListener("pointermove", updateLanguageSeedDrag)
+      button.addEventListener("pointerup", endLanguageSeedDrag)
+      button.addEventListener("pointercancel", endLanguageSeedDrag)
 
       const nameGroup = document.createElement("span")
       nameGroup.className = "language-name"
@@ -3117,21 +3361,12 @@ export function createExperience(): void {
       const name = document.createElement("span")
       name.textContent = getDisplayName(languageSeed.code)
 
-      const enterButton = document.createElement("button")
-      enterButton.className = "language-enter"
-      enterButton.type = "button"
-      enterButton.setAttribute("aria-label", `Enter ${option.name}`)
-      enterButton.addEventListener("click", () => {
-        selectLanguage(languageSeed.code)
-      })
-
-      const chevron = document.createElement("span")
-      chevron.setAttribute("aria-hidden", "true")
-      enterButton.append(chevron)
-      nameGroup.append(name, enterButton)
+      nameGroup.append(name)
       row.append(button, nameGroup)
       languageSeedbed.append(row)
     })
+
+    syncLanguageSeedStates()
   }
 
   seedButton.addEventListener("click", () => {
@@ -3145,6 +3380,18 @@ export function createExperience(): void {
       delete app.dataset.opening
       setSurface("language")
     }, prefersReducedMotion() ? 120 : 4400)
+  })
+
+  languageMoundButton.addEventListener("click", () => {
+    if (!pendingLanguage) {
+      languageMoundButton.dataset.inactiveTap = "true"
+      window.setTimeout(() => {
+        delete languageMoundButton.dataset.inactiveTap
+      }, 360)
+      return
+    }
+
+    plantSelectedLanguage()
   })
 
   meaningTreeButton.addEventListener("click", () => {
@@ -3319,6 +3566,12 @@ export function createExperience(): void {
     if (event.key === "Escape" && surface === "primer") collapsePrimerCard()
   })
 
+  document.addEventListener("touchmove", (event) => {
+    if (languageSeedDrag?.hasDragged) {
+      if (event.cancelable) event.preventDefault()
+    }
+  }, { passive: false })
+
   setAssetIcon(soundGardenReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(lessonBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(soundPathSectionBackButton, sectionNavBackSvgMarkup)
@@ -3351,6 +3604,11 @@ export function createExperience(): void {
 
   startSeedArt.innerHTML = createOpeningStageMarkup()
   startSeedArt.querySelectorAll("svg").forEach((svg) => {
+    svg.setAttribute("focusable", "false")
+    svg.setAttribute("aria-hidden", "true")
+  })
+  languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()
+  languageMoundArt.querySelectorAll("svg").forEach((svg) => {
     svg.setAttribute("focusable", "false")
     svg.setAttribute("aria-hidden", "true")
   })
