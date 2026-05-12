@@ -9,7 +9,10 @@ import activePlayButtonSvgMarkup from "../../assets/path_screen/meaning_tree/pla
 import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
 import meaningTreeSvgMarkup from "../../assets/path_screen/meaning_tree.html?raw"
 import soundGardenSvgMarkup from "../../assets/path_screen/sound_garden.html?raw"
-import seedSvgMarkup from "../../assets/start_page/start.html?raw"
+import seedSvgMarkup from "../../assets/start_page/seed.html?raw"
+import seedLogoSvgMarkup from "../../assets/start_page/seed_logo.html?raw"
+import seedPacketSvgMarkup from "../../assets/start_page/seed_packet.html?raw"
+import seedPacketOpenSvgMarkup from "../../assets/start_page/seed_packet_open.html?raw"
 import currentLessonBackNavSvgMarkup from "../../assets/ui/current_lesson_back_nav.html?raw"
 import currentLessonForwardNavSvgMarkup from "../../assets/ui/current_lesson_forward_nav.html?raw"
 import replaySvgMarkup from "../../assets/ui/replay.html?raw"
@@ -105,6 +108,9 @@ const languageSeedMarkup: Record<SupportedLanguage, string> = {
   nan: taiwaneseSeedSvgMarkup,
   zh: mandarinSeedSvgMarkup
 }
+
+const prefersReducedMotion = (): boolean =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
 
 const conceptIcons: Record<string, string> = {
   cat: "🐈",
@@ -530,6 +536,34 @@ function createSeedSvg(code: SupportedLanguage): HTMLElement {
   wrapper.innerHTML = languageSeedMarkup[code].trim()
   wrapper.querySelector("svg")?.setAttribute("focusable", "false")
   return wrapper
+}
+
+function createOpeningStageMarkup(): string {
+  const seed = seedSvgMarkup.trim()
+
+  return `
+    <span class="opening-stage" aria-hidden="true">
+      <span class="packet-stack">
+        <span class="packet-closed">${seedPacketSvgMarkup.trim()}</span>
+        <span class="packet-open">${seedPacketOpenSvgMarkup.trim()}</span>
+        <span class="packet-logo">${seedLogoSvgMarkup.trim()}</span>
+        <span class="tear-line">
+          <svg viewBox="0 0 463 463" aria-hidden="true" focusable="false">
+            <path
+              pathLength="1"
+              d="M340 0 C348 13 355 25 363 35 L356 44 L374 54 L369 66 L390 74 L386 88 C393 92 399 98 405 104"
+            />
+          </svg>
+        </span>
+        <span class="corner-piece"></span>
+      </span>
+      <span class="seed-spill-layer">
+        <span class="spilled-seed spilled-seed-a">${seed}</span>
+        <span class="spilled-seed spilled-seed-b">${seed}</span>
+        <span class="spilled-seed spilled-seed-c">${seed}</span>
+      </span>
+    </span>
+  `
 }
 
 function setAssetIcon(element: HTMLElement, markup: string, modifier = ""): void {
@@ -3054,13 +3088,14 @@ export function createExperience(): void {
 
   function renderLanguageSeeds(): void {
     clearNode(languageSeedbed)
+    languageSeedbed.classList.add("language-seed-layer")
 
-    languageSeeds.forEach((languageSeed) => {
+    languageSeeds.forEach((languageSeed, index) => {
       const option = languageOptions.find((language) => language.code === languageSeed.code)
       if (!option) return
 
       const row = document.createElement("div")
-      row.className = "language-seed-row"
+      row.className = `language-seed-row language-seed-${["a", "b", "c"][index] ?? "a"}`
       row.dataset.state = languageSeed.state
       row.dataset.language = languageSeed.code
       row.setAttribute("role", "listitem")
@@ -3103,11 +3138,13 @@ export function createExperience(): void {
     if (hasBegun) return
     hasBegun = true
     app.dataset.audio = "unlocked"
+    app.dataset.opening = "spilling"
     makeChime()
 
     window.setTimeout(() => {
+      delete app.dataset.opening
       setSurface("language")
-    }, 980)
+    }, prefersReducedMotion() ? 120 : 4400)
   })
 
   meaningTreeButton.addEventListener("click", () => {
@@ -3312,8 +3349,11 @@ export function createExperience(): void {
   setAssetIcon(reflectionPathsButton, returnToMainNavSvgMarkup)
   setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
 
-  startSeedArt.innerHTML = seedSvgMarkup.trim()
-  startSeedArt.querySelector("svg")?.setAttribute("focusable", "false")
+  startSeedArt.innerHTML = createOpeningStageMarkup()
+  startSeedArt.querySelectorAll("svg").forEach((svg) => {
+    svg.setAttribute("focusable", "false")
+    svg.setAttribute("aria-hidden", "true")
+  })
   meaningTreeArt.innerHTML = meaningTreeSvgMarkup.trim()
   meaningTreeArt.querySelector("svg")?.setAttribute("focusable", "false")
   soundGardenArt.innerHTML = soundGardenSvgMarkup.trim()
