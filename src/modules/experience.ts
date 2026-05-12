@@ -3182,10 +3182,25 @@ export function createExperience(): void {
       plantedSeed.classList.add("language-planting-seed")
       plantedSeed.style.setProperty("--plant-start-x", `${sourceRect.left - gardenRect.left}px`)
       plantedSeed.style.setProperty("--plant-start-y", `${sourceRect.top - gardenRect.top}px`)
-      plantedSeed.style.setProperty("--plant-end-x", `${moundRect.left + moundRect.width * 0.45 - gardenRect.left}px`)
-      plantedSeed.style.setProperty("--plant-end-y", `${moundRect.top + moundRect.height * 0.44 - gardenRect.top}px`)
+      plantedSeed.style.setProperty(
+        "--plant-hover-x",
+        `${moundRect.left + moundRect.width * 0.5 - gardenRect.left - sourceRect.width * 0.5}px`
+      )
+      plantedSeed.style.setProperty(
+        "--plant-hover-y",
+        `${moundRect.top + moundRect.height * 0.08 - gardenRect.top - sourceRect.height * 0.5}px`
+      )
+      plantedSeed.style.setProperty(
+        "--plant-rise-y",
+        `${moundRect.top + moundRect.height * 0.02 - gardenRect.top - sourceRect.height * 0.5}px`
+      )
+      plantedSeed.style.setProperty(
+        "--plant-drop-y",
+        `${moundRect.top + moundRect.height * 0.44 - gardenRect.top - sourceRect.height * 0.5}px`
+      )
       plantedSeed.style.setProperty("--plant-start-w", `${sourceRect.width}px`)
       languageSelectGarden.append(plantedSeed)
+      sourceSeed?.classList.add("is-being-dragged")
     }
 
     window.setTimeout(() => {
@@ -3194,7 +3209,7 @@ export function createExperience(): void {
       languageSelectGarden.querySelector(".language-planting-seed")?.remove()
       isPlantingLanguage = false
       selectLanguage(code)
-    }, prefersReducedMotion() ? 80 : 920)
+    }, prefersReducedMotion() ? 80 : 1220)
   }
 
   function isPointInMound(clientX: number, clientY: number): boolean {

@@ -4144,7 +4144,7 @@ button:focus-visible {
 }
 
 .language-mound-button[data-planting="true"]::before {
-  animation: mound-plant-glow 860ms ease-out forwards;
+  animation: mound-plant-glow 680ms ease-out 640ms forwards;
 }
 
 .language-mound-art {
@@ -4176,7 +4176,8 @@ button:focus-visible {
   place-items: center;
   pointer-events: none;
   transform: translate(var(--plant-start-x), var(--plant-start-y));
-  animation: language-seed-plant 880ms cubic-bezier(0.22, 0.76, 0.22, 1) forwards;
+  transform-origin: 50% 78%;
+  animation: language-seed-plant 1120ms cubic-bezier(0.22, 0.76, 0.22, 1) forwards;
 }
 
 .language-planting-seed svg {
@@ -4617,17 +4618,22 @@ button:focus-visible {
 
 @keyframes mound-plant-glow {
   0% {
-    opacity: 0.2;
-    transform: translate(-50%, -50%) scale(0.62);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58);
   }
 
-  42% {
-    opacity: 0.64;
+  24% {
+    opacity: 0.58;
+  }
+
+  58% {
+    opacity: 0.34;
+    transform: translate(-50%, -50%) scale(1.08);
   }
 
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(1.64);
+    transform: translate(-50%, -50%) scale(1.52);
   }
 }
 
@@ -4637,14 +4643,29 @@ button:focus-visible {
     transform: translate(var(--plant-start-x), var(--plant-start-y)) scale(1);
   }
 
-  72% {
+  32% {
     opacity: 1;
-    transform: translate(var(--plant-end-x), var(--plant-end-y)) scale(0.62);
+    transform: translate(var(--plant-hover-x), var(--plant-hover-y)) scale(0.92);
+  }
+
+  46% {
+    opacity: 1;
+    transform: translate(var(--plant-hover-x), var(--plant-hover-y)) scale(0.92);
+  }
+
+  58% {
+    opacity: 1;
+    transform: translate(var(--plant-hover-x), var(--plant-rise-y)) scale(0.9);
+  }
+
+  86% {
+    opacity: 0.96;
+    transform: translate(var(--plant-hover-x), var(--plant-drop-y)) scale(0.64);
   }
 
   100% {
     opacity: 0;
-    transform: translate(var(--plant-end-x), calc(var(--plant-end-y) + 10px)) scale(0.42);
+    transform: translate(var(--plant-hover-x), calc(var(--plant-drop-y) + 10px)) scale(0.48);
   }
 }
 
