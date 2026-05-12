@@ -1,7 +1,21 @@
-import catArcSvgMarkup from "../../assets/symbols/arc_screen/cat.html?raw"
-import meaningTreeSvgMarkup from "../../assets/symbols/path_screen/meaning_tree.html?raw"
-import soundGardenSvgMarkup from "../../assets/symbols/path_screen/sound_garden.html?raw"
-import seedSvgMarkup from "../../assets/symbols/start_page/start.html?raw"
+import catArcSvgMarkup from "../../assets/arc_screen/cat.html?raw"
+import englishSeedSvgMarkup from "../../assets/language_select/lang_en.html?raw"
+import taiwaneseSeedSvgMarkup from "../../assets/language_select/lang_nan.html?raw"
+import mandarinSeedSvgMarkup from "../../assets/language_select/lang_zh.html?raw"
+import autoplaySvgMarkup from "../../assets/path_screen/meaning_tree/autoplay.html?raw"
+import manualPlaySvgMarkup from "../../assets/path_screen/meaning_tree/manual_play.html?raw"
+import playButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn.html?raw"
+import activePlayButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn-active.html?raw"
+import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
+import meaningTreeSvgMarkup from "../../assets/path_screen/meaning_tree.html?raw"
+import soundGardenSvgMarkup from "../../assets/path_screen/sound_garden.html?raw"
+import seedSvgMarkup from "../../assets/start_page/start.html?raw"
+import currentLessonBackNavSvgMarkup from "../../assets/ui/current_lesson_back_nav.html?raw"
+import currentLessonForwardNavSvgMarkup from "../../assets/ui/current_lesson_forward_nav.html?raw"
+import replaySvgMarkup from "../../assets/ui/replay.html?raw"
+import returnToMainNavSvgMarkup from "../../assets/ui/return_to_main_nav.html?raw"
+import sectionNavBackSvgMarkup from "../../assets/ui/section_nav_back.html?raw"
+import sectionNavForwardSvgMarkup from "../../assets/ui/section_nav_forward.html?raw"
 import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
@@ -85,6 +99,12 @@ type MeaningArc = {
 }
 
 const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
+
+const languageSeedMarkup: Record<SupportedLanguage, string> = {
+  en: englishSeedSvgMarkup,
+  nan: taiwaneseSeedSvgMarkup,
+  zh: mandarinSeedSvgMarkup
+}
 
 const conceptIcons: Record<string, string> = {
   cat: "🐈",
@@ -504,12 +524,24 @@ function makeChime(): void {
   })
 }
 
-function createSeedSvg(): HTMLElement {
+function createSeedSvg(code: SupportedLanguage): HTMLElement {
   const wrapper = document.createElement("span")
   wrapper.className = "language-seed-art"
-  wrapper.innerHTML = seedSvgMarkup.trim()
+  wrapper.innerHTML = languageSeedMarkup[code].trim()
   wrapper.querySelector("svg")?.setAttribute("focusable", "false")
   return wrapper
+}
+
+function setAssetIcon(element: HTMLElement, markup: string, modifier = ""): void {
+  const trimmed = markup.trim()
+  if (!trimmed) return
+
+  element.classList.add("asset-icon-button")
+  element.innerHTML = `<span class="asset-icon ${modifier}" aria-hidden="true">${trimmed}</span>`
+  element.querySelectorAll("svg").forEach((svg) => {
+    svg.setAttribute("focusable", "false")
+    svg.setAttribute("aria-hidden", "true")
+  })
 }
 
 export function createExperience(): void {
@@ -583,6 +615,7 @@ export function createExperience(): void {
   const recallNextQuestionButton = mustQuery<HTMLButtonElement>("#recall-next-question-button")
   const recallContinueButton = mustQuery<HTMLButtonElement>("#recall-continue-button")
   const reflectionScreen = mustQuery<HTMLElement>("#meaning-reflection-screen")
+  const reflectionGrowth = mustQuery<HTMLElement>("#reflection-growth")
   const reflectionStorySymbols = mustQuery<HTMLElement>("#reflection-story-symbols")
   const reflectionReplayButton = mustQuery<HTMLButtonElement>("#reflection-replay-button")
   const reflectionPathsButton = mustQuery<HTMLButtonElement>("#reflection-paths-button")
@@ -1417,7 +1450,7 @@ export function createExperience(): void {
 
     const symbol = document.createElement("span")
     symbol.className = "recall-choice-symbol"
-    symbol.textContent = choice.symbol ?? conceptIcons[choice.id] ?? "â—‹"
+    symbol.textContent = choice.symbol ?? conceptIcons[choice.id] ?? "○"
     symbol.setAttribute("aria-hidden", "true")
     button.append(symbol)
   }
@@ -1483,10 +1516,15 @@ export function createExperience(): void {
     if (!story) return
 
     completedStoryIds.add(storyId)
+    reflectionGrowth.innerHTML = reflectionSproutSvgMarkup.trim()
+    reflectionGrowth.querySelectorAll("svg").forEach((svg) => {
+      svg.setAttribute("focusable", "false")
+      svg.setAttribute("aria-hidden", "true")
+    })
     clearNode(reflectionStorySymbols)
     getStorySignature(story).forEach((concept) => {
       const symbol = document.createElement("span")
-      symbol.textContent = conceptIcons[concept] ?? "â—‹"
+      symbol.textContent = conceptIcons[concept] ?? "○"
       reflectionStorySymbols.append(symbol)
     })
   }
@@ -2746,7 +2784,7 @@ export function createExperience(): void {
     repeatButton.className = "sound-lesson-reflection-action sound-lesson-reflection-repeat"
     repeatButton.type = "button"
     repeatButton.setAttribute("aria-label", "Repeat lesson")
-    repeatButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    setAssetIcon(repeatButton, replaySvgMarkup)
 
     repeatButton.addEventListener("click", () => {
       currentSoundPathStep = "preview"
@@ -2760,7 +2798,7 @@ export function createExperience(): void {
     lessonListButton.className = "sound-lesson-reflection-action sound-lesson-reflection-list"
     lessonListButton.type = "button"
     lessonListButton.setAttribute("aria-label", "Return to lesson list")
-    lessonListButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    setAssetIcon(lessonListButton, currentLessonBackNavSvgMarkup)
 
     lessonListButton.addEventListener("click", () => {
       stopSoundPathAudio()
@@ -2774,7 +2812,7 @@ export function createExperience(): void {
     nextLessonButton.className = "sound-lesson-reflection-action sound-lesson-reflection-next"
     nextLessonButton.type = "button"
     nextLessonButton.setAttribute("aria-label", "Continue to next lesson")
-    nextLessonButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    setAssetIcon(nextLessonButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
     nextLessonButton.disabled = !nextLesson
 
     nextLessonButton.addEventListener("click", () => {
@@ -2786,7 +2824,7 @@ export function createExperience(): void {
     gardenButton.className = "sound-lesson-reflection-action sound-lesson-reflection-garden"
     gardenButton.type = "button"
     gardenButton.setAttribute("aria-label", "Return to Sound Garden")
-    gardenButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    setAssetIcon(gardenButton, returnToMainNavSvgMarkup)
 
     gardenButton.addEventListener("click", () => {
       stopSoundPathAudio()
@@ -3032,7 +3070,7 @@ export function createExperience(): void {
       button.type = "button"
       button.setAttribute("aria-label", `${option.name} preview`)
       button.setAttribute("aria-pressed", String(languageSeed.state === "selected"))
-      button.append(createSeedSvg())
+      button.append(createSeedSvg(languageSeed.code))
       button.addEventListener("click", () => {
         previewLanguage(languageSeed.code)
       })
@@ -3243,6 +3281,36 @@ export function createExperience(): void {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && surface === "primer") collapsePrimerCard()
   })
+
+  setAssetIcon(soundGardenReturnButton, returnToMainNavSvgMarkup)
+  setAssetIcon(lessonBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(soundPathSectionBackButton, sectionNavBackSvgMarkup)
+  setAssetIcon(soundPathBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(soundPathReplayButton, replaySvgMarkup)
+  setAssetIcon(soundPathNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(soundPathSectionNextButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
+  setAssetIcon(meaningArcReturnButton, returnToMainNavSvgMarkup)
+  setAssetIcon(storyBranchReturnButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(previewBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(previewEnterButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(primerBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(primerNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(storyAutoButton, autoplaySvgMarkup, "asset-icon-story-mode")
+  setAssetIcon(storyManualButton, manualPlaySvgMarkup, "asset-icon-story-mode")
+  setAssetIcon(storyAudioButton, playButtonSvgMarkup, "asset-icon-play")
+  setAssetIcon(storyBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(storyPrevButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(storyNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(storyReplayButton, replaySvgMarkup)
+  setAssetIcon(storyForwardButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(recallAudioButton, activePlayButtonSvgMarkup, "asset-icon-play")
+  setAssetIcon(recallStoryButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(recallPrevButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(recallNextQuestionButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(recallContinueButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(reflectionReplayButton, replaySvgMarkup)
+  setAssetIcon(reflectionPathsButton, returnToMainNavSvgMarkup)
+  setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
 
   startSeedArt.innerHTML = seedSvgMarkup.trim()
   startSeedArt.querySelector("svg")?.setAttribute("focusable", "false")

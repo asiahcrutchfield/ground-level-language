@@ -46,6 +46,84 @@ button:focus-visible {
   outline-offset: 10px;
 }
 
+.asset-icon-button > .asset-icon {
+  display: grid;
+  width: 62%;
+  height: 62%;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(244, 239, 192, 0.88);
+  transform: none;
+}
+
+.asset-icon-button > .asset-icon::before,
+.asset-icon-button > .asset-icon::after {
+  display: none;
+}
+
+.asset-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.asset-icon svg[fill="#000000"],
+.asset-icon svg[fill="#000"],
+.asset-icon svg [fill="#000000"],
+.asset-icon svg [fill="#000"],
+.path-mark svg[fill="#000000"],
+.path-mark svg[fill="#000"],
+.path-mark svg [fill="#000000"],
+.path-mark svg [fill="#000"],
+.reflection-growth svg[fill="#000000"],
+.reflection-growth svg[fill="#000"],
+.reflection-growth svg [fill="#000000"],
+.reflection-growth svg [fill="#000"] {
+  fill: currentColor;
+}
+
+.asset-icon svg[stroke="#000000"],
+.asset-icon svg[stroke="#000"],
+.asset-icon svg [stroke="#000000"],
+.asset-icon svg [stroke="#000"],
+.path-mark svg[stroke="#000000"],
+.path-mark svg[stroke="#000"],
+.path-mark svg [stroke="#000000"],
+.path-mark svg [stroke="#000"],
+.reflection-growth svg[stroke="#000000"],
+.reflection-growth svg[stroke="#000"],
+.reflection-growth svg [stroke="#000000"],
+.reflection-growth svg [stroke="#000"] {
+  stroke: currentColor;
+}
+
+.path-mark svg .st0,
+.reflection-growth svg .st0 {
+  fill: currentColor;
+}
+
+.asset-icon-button > .asset-icon.asset-icon-forward {
+  transform: scaleX(-1);
+}
+
+.asset-icon-story-mode {
+  width: 70%;
+  height: 70%;
+}
+
+.asset-icon-play {
+  width: 100%;
+  height: 100%;
+}
+
+.reflection-growth svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 [hidden] {
   display: none !important;
 }
