@@ -152,42 +152,10 @@
 
     <!-- This is the start of the story section container -->
     <section class="meaning-preview-screen" id="meaning-preview-screen" aria-label="Meaning preview" hidden>
-      <button class="path-return-button story-lesson-return-button" id="preview-story-return-button" type="button"
-        aria-label="Back to story selection">
-        <span aria-hidden="true"></span>
-      </button>
+      <div class="preview-world" id="preview-world">
+        <div class="preview-signature" id="preview-signature" aria-hidden="true"></div>
 
-      <div class="story-lesson-layout">
-        <div class="preview-world story-section-container" id="preview-world">
-          <div class="preview-signature" id="preview-signature" aria-hidden="true"></div>
-
-          <div class="track-nav-shell preview-track-shell">
-            <button class="track-nav-button track-nav-back" id="preview-track-back-button" type="button"
-              aria-label="Previous preview image">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <div class="preview-moment-track" id="preview-image-track" aria-label="Story preview images"></div>
-
-            <button class="track-nav-button track-nav-next" id="preview-track-next-button" type="button"
-              aria-label="Next preview image">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="preview-audio-track" id="preview-audio-track" aria-label="Story preview sounds"></div>
-
-          <div class="preview-actions">
-            <button class="preview-back-button" id="preview-back-button" type="button"
-              aria-label="Previous story lesson section" hidden>
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="preview-enter-button" id="preview-enter-button" type="button" aria-label="Enter primer">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
+        <div class="preview-moment-track" id="preview-image-track" aria-label="Story preview images"></div>
 
         <div class="story-lesson-progress" aria-label="Story lesson section 1 of 4">
           <span class="is-active" aria-hidden="true"></span>
@@ -195,55 +163,46 @@
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
         </div>
+
+        <div class="preview-audio-track" id="preview-audio-track" aria-label="Story preview sounds"></div>
+
+        <div class="preview-actions">
+          <button class="preview-back-button" id="preview-back-button" type="button" aria-label="Back to stories">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="preview-enter-button" id="preview-enter-button" type="button" aria-label="Enter primer">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
     </section>
 
     <section class="meaning-primer-screen" id="meaning-primer-screen" aria-label="Meaning primer" hidden>
-      <button class="path-return-button story-lesson-return-button" id="primer-story-return-button" type="button"
-        aria-label="Back to story selection">
-        <span aria-hidden="true"></span>
-      </button>
-
-      <div class="story-lesson-layout">
-        <div class="primer-world story-section-container" id="primer-world">
-          <div class="track-nav-shell primer-track-shell">
-            <button class="track-nav-button track-nav-back" id="primer-track-back-button" type="button"
-              aria-label="Previous primer item">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <div class="primer-card-track" id="primer-card-track" aria-label="Primer items"></div>
-
-            <button class="track-nav-button track-nav-next" id="primer-track-next-button" type="button"
-              aria-label="Next primer item">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="primer-echo" id="primer-echo" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="primer-actions">
-            <button class="primer-back-button" id="primer-back-button" type="button"
-              aria-label="Previous story lesson section">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="primer-next-button" id="primer-next-button" type="button"
-              aria-label="Next story lesson section">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-
+      <div class="primer-world" id="primer-world">
         <div class="story-lesson-progress" aria-label="Story lesson section 2 of 4">
           <span class="is-complete" aria-hidden="true"></span>
           <span class="is-active" aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
+        </div>
+
+        <div class="primer-card-track" id="primer-card-track" aria-label="Primer items"></div>
+
+        <div class="primer-echo" id="primer-echo" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="primer-actions">
+          <button class="primer-back-button" id="primer-back-button" type="button" aria-label="Back to preview">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="primer-next-button" id="primer-next-button" type="button" aria-label="Continue to story">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
       </div>
     </section>
@@ -254,118 +213,92 @@
         <span aria-hidden="true"></span>
       </button>
 
-      <div class="story-lesson-layout">
-        <div class="story-world story-section-container" id="story-world">
-          <div class="story-mode-gate" id="story-mode-gate" aria-label="Story playback mode">
-            <button class="story-mode-button story-mode-auto" id="story-auto-button" type="button"
-              aria-label="Play story automatically">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-mode-button story-mode-manual" id="story-manual-button" type="button"
-              aria-label="Go through story manually">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="story-stage" id="story-stage">
-            <img class="story-image" id="story-image" src="" alt="" aria-hidden="true" />
-          </div>
-
-          <button class="story-audio-button" id="story-audio-button" type="button" aria-label="Play story audio">
-            <span aria-hidden="true"></span>
-          </button>
-
-          <div class="story-echo" id="story-echo" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="story-section-progress" id="story-progress" aria-label="Section 1 of 1" hidden></div>
-
-          <div class="story-controls" id="story-controls">
-            <button class="story-prev-button" id="story-prev-button" type="button" aria-label="Previous story slide">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-next-button" id="story-next-button" type="button" aria-label="Next story slide">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-replay-button" id="story-replay-button" type="button" aria-label="Replay story">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-
-          <div class="story-section-actions">
-            <button class="story-section-back-button" id="story-section-back-button" type="button"
-              aria-label="Previous story lesson section">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="story-forward-button" id="story-forward-button" type="button"
-              aria-label="Next story lesson section">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-
-        <div class="story-lesson-progress" aria-label="Story lesson section 3 of 4">
-          <span class="is-complete" aria-hidden="true"></span>
-          <span class="is-complete" aria-hidden="true"></span>
-          <span class="is-active" aria-hidden="true"></span>
+      <div class="story-mode-gate" id="story-mode-gate" aria-label="Story playback mode">
+        <button class="story-mode-button story-mode-auto" id="story-auto-button" type="button"
+          aria-label="Play story automatically">
           <span aria-hidden="true"></span>
-        </div>
+        </button>
+
+        <button class="story-mode-button story-mode-manual" id="story-manual-button" type="button"
+          aria-label="Go through story manually">
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="story-stage" id="story-stage">
+        <img class="story-image" id="story-image" src="" alt="" aria-hidden="true" />
+      </div>
+
+      <button class="story-audio-button" id="story-audio-button" type="button" aria-label="Play story audio">
+        <span aria-hidden="true"></span>
+      </button>
+
+      <div class="story-echo" id="story-echo" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <div class="story-section-progress" id="story-progress" aria-label="Section 1 of 1" hidden></div>
+
+      <div class="story-controls" id="story-controls">
+        <button class="story-prev-button" id="story-prev-button" type="button" aria-label="Previous story section">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <button class="story-next-button" id="story-next-button" type="button" aria-label="Next story section">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <button class="story-replay-button" id="story-replay-button" type="button" aria-label="Replay story">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <button class="story-forward-button" id="story-forward-button" type="button" aria-label="Continue" hidden>
+          <span aria-hidden="true"></span>
+        </button>
+      </div>
       </div>
     </section>
 
     <section class="meaning-recall-screen" id="meaning-recall-screen" aria-label="Recall" hidden>
-      <button class="path-return-button story-lesson-return-button" id="recall-story-return-button" type="button"
-        aria-label="Back to story selection">
-        <span aria-hidden="true"></span>
-      </button>
-
-      <div class="story-lesson-layout">
-        <div class="recall-world story-section-container" id="recall-world">
-          <div class="recall-prompt-orb" id="recall-prompt-orb" aria-hidden="true">
-            <span class="recall-pulse"></span>
-          </div>
-
-          <button class="recall-audio-button" id="recall-audio-button" type="button" aria-label="Replay prompt">
-            <span aria-hidden="true"></span>
-          </button>
-
-          <div class="recall-choice-bed" id="recall-choice-bed" role="list"></div>
-
-          <div class="recall-progress" id="recall-progress" aria-hidden="true"></div>
-
-          <div class="recall-actions">
-            <button class="recall-story-button" id="recall-story-button" type="button" aria-label="Back to story">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-prev-button" id="recall-prev-button" type="button"
-              aria-label="Previous recall prompt">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-next-question-button" id="recall-next-question-button" type="button"
-              aria-label="Next recall prompt">
-              <span aria-hidden="true"></span>
-            </button>
-
-            <button class="recall-continue-button" id="recall-continue-button" type="button" aria-label="Continue">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-        </div>
-
+      <div class="recall-world" id="recall-world">
         <div class="story-lesson-progress" aria-label="Story lesson section 4 of 4">
           <span class="is-complete" aria-hidden="true"></span>
           <span class="is-complete" aria-hidden="true"></span>
           <span class="is-complete" aria-hidden="true"></span>
           <span class="is-active" aria-hidden="true"></span>
+        </div>
+
+        <div class="recall-prompt-orb" id="recall-prompt-orb" aria-hidden="true">
+          <span class="recall-pulse"></span>
+        </div>
+
+        <button class="recall-audio-button" id="recall-audio-button" type="button" aria-label="Replay prompt">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <div class="recall-choice-bed" id="recall-choice-bed" role="list"></div>
+
+        <div class="recall-progress" id="recall-progress" aria-hidden="true"></div>
+
+        <div class="recall-actions">
+          <button class="recall-story-button" id="recall-story-button" type="button" aria-label="Back to story">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-prev-button" id="recall-prev-button" type="button" aria-label="Previous recall prompt">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-next-question-button" id="recall-next-question-button" type="button"
+            aria-label="Next recall prompt">
+            <span aria-hidden="true"></span>
+          </button>
+
+          <button class="recall-continue-button" id="recall-continue-button" type="button" aria-label="Continue">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
       </div>
     </section>
@@ -404,6 +337,18 @@
         </div>
       </div>
     </section>
+    <!--This will be the div where the progress bar goes. Desktop should be on the
+    right side of the screen and vertical. On mobile it should be on the bottom of the 
+    container and horizontal-->
+    <div class="story-world" id="story-world">
+      <div class="story-lesson-progress" aria-label="Story lesson section 3 of 4">
+        <span class="is-complete" aria-hidden="true"></span>
+        <span class="is-complete" aria-hidden="true"></span>
+        <span class="is-active" aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </div>
+    </div>
+    <!--This will be the div where the progress bar goes-->
     <!-- This is the end of the story section container -->
 
   </main>
