@@ -1,4 +1,5 @@
 import catArcSvgMarkup from "../../assets/arc_screen/cat.html?raw"
+import rootSvgMarkup from "../../assets/arc_screen/background/root.html?raw"
 import englishSeedSvgMarkup from "../../assets/language_select/lang_en.html?raw"
 import languageSelectMoundSvgMarkup from "../../assets/language_select/select_mound.html?raw"
 import taiwaneseSeedSvgMarkup from "../../assets/language_select/lang_nan.html?raw"
@@ -463,10 +464,10 @@ const meaningArcs: MeaningArc[] = [
     unlocked: true
   },
   {
-    id: "dog-stray",
-    subject: "dog",
-    ariaLabel: "Dog arc",
-    fallbackSymbol: "🐕",
+    id: "monkey",
+    subject: "monkey",
+    ariaLabel: "Monkey arc",
+    fallbackSymbol: "\u{1F412}",
     unlocked: false
   },
   {
@@ -619,6 +620,8 @@ export function createExperience(): void {
   const seedButton = mustQuery<HTMLButtonElement>("#seed-button")
   const startSeedArt = mustQuery<HTMLElement>("#start-seed-art")
   const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
+  const meaningRootMound = mustQuery<HTMLElement>("#meaning-root-mound")
+  const meaningRootArt = mustQuery<HTMLElement>("#meaning-root-art")
   const soundGardenArt = mustQuery<HTMLElement>("#sound-garden-art")
   const soundGardenSecondaryArt = mustQuery<HTMLElement>("#sound-garden-secondary-art")
   const soundGardenTertiaryArt = mustQuery<HTMLElement>("#sound-garden-tertiary-art")
@@ -648,15 +651,22 @@ export function createExperience(): void {
   const arcList = mustQuery<HTMLUListElement>("#arc-list")
   const meaningArcReturnButton = mustQuery<HTMLButtonElement>("#meaning-arc-return-button")
   const storyBranchReturnButton = mustQuery<HTMLButtonElement>("#story-branch-return-button")
+  const storyArcSymbol = mustQuery<HTMLElement>("#story-arc-symbol")
   const storyPodBed = mustQuery<HTMLElement>("#story-pod-bed")
   const previewSignature = mustQuery<HTMLElement>("#preview-signature")
   const previewImageTrack = mustQuery<HTMLElement>("#preview-image-track")
+  const previewTrackBackButton = mustQuery<HTMLButtonElement>("#preview-track-back-button")
+  const previewTrackNextButton = mustQuery<HTMLButtonElement>("#preview-track-next-button")
   const previewAudioTrack = mustQuery<HTMLElement>("#preview-audio-track")
+  const previewStoryReturnButton = mustQuery<HTMLButtonElement>("#preview-story-return-button")
   const previewBackButton = mustQuery<HTMLButtonElement>("#preview-back-button")
   const previewEnterButton = mustQuery<HTMLButtonElement>("#preview-enter-button")
   const primerScreen = mustQuery<HTMLElement>("#meaning-primer-screen")
   const primerCardTrack = mustQuery<HTMLElement>("#primer-card-track")
+  const primerTrackBackButton = mustQuery<HTMLButtonElement>("#primer-track-back-button")
+  const primerTrackNextButton = mustQuery<HTMLButtonElement>("#primer-track-next-button")
   const primerEcho = mustQuery<HTMLElement>("#primer-echo")
+  const primerStoryReturnButton = mustQuery<HTMLButtonElement>("#primer-story-return-button")
   const primerBackButton = mustQuery<HTMLButtonElement>("#primer-back-button")
   const primerNextButton = mustQuery<HTMLButtonElement>("#primer-next-button")
   const storyScreen = mustQuery<HTMLElement>("#meaning-story-screen")
@@ -673,12 +683,14 @@ export function createExperience(): void {
   const storyPrevButton = mustQuery<HTMLButtonElement>("#story-prev-button")
   const storyNextButton = mustQuery<HTMLButtonElement>("#story-next-button")
   const storyReplayButton = mustQuery<HTMLButtonElement>("#story-replay-button")
+  const storySectionBackButton = mustQuery<HTMLButtonElement>("#story-section-back-button")
   const storyForwardButton = mustQuery<HTMLButtonElement>("#story-forward-button")
   const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
   const recallPromptOrb = mustQuery<HTMLElement>("#recall-prompt-orb")
   const recallAudioButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
   const recallChoiceBed = mustQuery<HTMLElement>("#recall-choice-bed")
   const recallProgress = mustQuery<HTMLElement>("#recall-progress")
+  const recallStoryReturnButton = mustQuery<HTMLButtonElement>("#recall-story-return-button")
   const recallStoryButton = mustQuery<HTMLButtonElement>("#recall-story-button")
   const recallPrevButton = mustQuery<HTMLButtonElement>("#recall-prev-button")
   const recallNextQuestionButton = mustQuery<HTMLButtonElement>("#recall-next-question-button")
@@ -1024,6 +1036,13 @@ export function createExperience(): void {
     expandedPrimerCard = null
   }
 
+  function scrollStoryTrack(track: HTMLElement, direction: -1 | 1): void {
+    track.scrollBy({
+      left: direction * Math.max(180, track.clientWidth * 0.76),
+      behavior: prefersReducedMotion() ? "auto" : "smooth"
+    })
+  }
+
   function expandPrimerCard(card: HTMLElement): void {
     if (expandedPrimerCard === card) return
     collapsePrimerCard()
@@ -1249,7 +1268,8 @@ export function createExperience(): void {
 
     scenes.forEach((_, index) => {
       const dot = document.createElement("span")
-      dot.className = index === currentStorySceneIndex ? "is-active" : ""
+      dot.className = index === currentStorySceneIndex ? "is-active" : index < currentStorySceneIndex ? "is-complete" : ""
+      dot.setAttribute("aria-hidden", "true")
       storyProgress.append(dot)
     })
   }
@@ -1260,7 +1280,9 @@ export function createExperience(): void {
 
     Array.from(storyProgress.children).forEach((dot, index) => {
       dot.classList.toggle("is-active", index === sceneIndex)
+      dot.classList.toggle("is-complete", index < sceneIndex)
     })
+    storyProgress.setAttribute("aria-label", `Section ${sceneIndex + 1} of ${scenes.length}`)
   }
 
   function updateStoryModeButtons(): void {
@@ -1283,8 +1305,12 @@ export function createExperience(): void {
       storyImage.classList.remove("is-changing")
     }, 180)
 
-    storyPrevButton.disabled = sceneIndex <= 0
-    storyNextButton.disabled = sceneIndex >= scenes.length - 1
+    const isFirstScene = sceneIndex <= 0
+    const isLastScene = sceneIndex >= scenes.length - 1
+    storyPrevButton.disabled = isFirstScene
+    storyPrevButton.hidden = isFirstScene
+    storyNextButton.disabled = isLastScene
+    storyNextButton.hidden = isLastScene
     updateStoryProgress(story, sceneIndex)
   }
 
@@ -1458,15 +1484,14 @@ export function createExperience(): void {
     currentStory = story
     currentStorySceneIndex = 0
     selectedStoryMode = "manual"
-    storyBackButton.hidden = false
     storyControls.hidden = false
     startManualStory(story)
   }
 
-  function goBackToPrimer(): void {
+  function goBackToStorySelection(): void {
     stopStoryAudio()
-    if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
-    setSurface("primer")
+    if (selectedArcId) renderStoryPods(getStoriesForArc(selectedArcId))
+    setSurface("storyBranch")
   }
 
   function goForwardFromStory(): void {
@@ -3059,14 +3084,18 @@ export function createExperience(): void {
   function renderArcButtons(): void {
     clearNode(arcList)
 
-    meaningArcs.forEach((arc) => {
+    meaningArcs.forEach((arc, index) => {
       const item = document.createElement("li")
+      item.className = arc.unlocked ? "arc-node-item is-unlocked" : "arc-node-item is-dormant"
+      item.dataset.endpoint = String(index + 1)
+
       const button = document.createElement("button")
       button.className = arc.unlocked ? "arc-button" : "arc-button is-locked"
       button.type = "button"
       button.dataset.arcId = arc.id
+      button.dataset.subject = arc.subject
       button.setAttribute("aria-label", arc.ariaLabel)
-      button.disabled = !arc.unlocked
+      button.setAttribute("aria-disabled", String(!arc.unlocked))
 
       const icon = document.createElement("span")
       icon.className = "arc-icon"
@@ -3076,14 +3105,31 @@ export function createExperience(): void {
         icon.innerHTML = arc.svg.trim()
         icon.querySelector("svg")?.setAttribute("focusable", "false")
       } else {
-        icon.textContent = arc.fallbackSymbol
+        icon.textContent = arc.subject === "monkey" ? "🐒" : arc.fallbackSymbol
       }
 
       button.append(icon)
       button.addEventListener("click", () => {
+        if (!arc.unlocked) {
+          button.dataset.inactiveTap = "true"
+          window.setTimeout(() => {
+            delete button.dataset.inactiveTap
+          }, 420)
+          return
+        }
+
+        arcList.dataset.selecting = arc.subject
+        button.dataset.selected = "true"
         selectedArcId = arc.id
-        renderStoryPods(getStoriesForArc(arc.id))
-        setSurface("storyBranch")
+        window.setTimeout(
+          () => {
+            renderStoryPods(getStoriesForArc(arc.id))
+            delete arcList.dataset.selecting
+            delete button.dataset.selected
+            setSurface("storyBranch")
+          },
+          prefersReducedMotion() ? 20 : 520
+        )
       })
 
       item.append(button)
@@ -3093,19 +3139,25 @@ export function createExperience(): void {
 
   function renderStoryPods(stories: Story[]): void {
     clearNode(storyPodBed)
+    renderStoryArcContext()
 
-    stories.forEach((story) => {
+    stories.forEach((story, index) => {
       const button = document.createElement("button")
-      button.className = "story-pod"
+      button.className = `story-pod ${index === 0 ? "is-current" : "is-future"}${completedStoryIds.has(story.id) ? " is-complete" : ""}`
       button.type = "button"
       button.setAttribute("role", "listitem")
       button.setAttribute("aria-label", story.title)
+      button.dataset.storyIndex = String(index + 1)
 
       const symbols = document.createElement("span")
       symbols.className = "story-symbols"
       symbols.setAttribute("aria-hidden", "true")
 
-      getStorySignature(story).forEach((concept) => {
+      const activeArc = meaningArcs.find((arc) => arc.id === selectedArcId)
+      const sceneSignature = getStorySignature(story).filter((concept) => concept !== activeArc?.subject).slice(0, 3)
+      const symbolsToRender = sceneSignature.length ? sceneSignature : getStorySignature(story).slice(1, 4)
+
+      symbolsToRender.forEach((concept) => {
         const symbol = document.createElement("span")
         symbol.className = "story-symbol"
         symbol.textContent = conceptIcons[concept] ?? "○"
@@ -3115,7 +3167,7 @@ export function createExperience(): void {
       const progress = document.createElement("span")
       progress.className = "story-progress"
       progress.setAttribute("aria-hidden", "true")
-      progress.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+      progress.append(document.createElement("span"))
 
       button.append(symbols, progress)
       button.addEventListener("click", () => {
@@ -3126,6 +3178,19 @@ export function createExperience(): void {
 
       storyPodBed.append(button)
     })
+  }
+
+  function renderStoryArcContext(): void {
+    const arc = meaningArcs.find((candidate) => candidate.id === selectedArcId)
+    clearNode(storyArcSymbol)
+    if (!arc) return
+
+    if (arc.svg) {
+      storyArcSymbol.innerHTML = arc.svg.trim()
+      muteInlineSvg(storyArcSymbol)
+    } else {
+      storyArcSymbol.textContent = arc.subject === "monkey" ? "🐒" : arc.fallbackSymbol
+    }
   }
 
   function returnToMeaningArcs(): void {
@@ -3534,6 +3599,16 @@ export function createExperience(): void {
     setSurface("storyBranch")
   })
 
+  previewStoryReturnButton.addEventListener("click", goBackToStorySelection)
+
+  previewTrackBackButton.addEventListener("click", () => {
+    scrollStoryTrack(previewImageTrack, -1)
+  })
+
+  previewTrackNextButton.addEventListener("click", () => {
+    scrollStoryTrack(previewImageTrack, 1)
+  })
+
   previewEnterButton.addEventListener("click", () => {
     stopPreviewMomentAudio()
     if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
@@ -3545,6 +3620,18 @@ export function createExperience(): void {
     stopPrimerAudio()
     if (selectedStoryId) renderMeaningPreviewWorld(selectedStoryId)
     setSurface("meaningPreview")
+  })
+
+  primerStoryReturnButton.addEventListener("click", goBackToStorySelection)
+
+  primerTrackBackButton.addEventListener("click", () => {
+    collapsePrimerCard()
+    scrollStoryTrack(primerCardTrack, -1)
+  })
+
+  primerTrackNextButton.addEventListener("click", () => {
+    collapsePrimerCard()
+    scrollStoryTrack(primerCardTrack, 1)
   })
 
   primerNextButton.addEventListener("click", () => {
@@ -3591,8 +3678,15 @@ export function createExperience(): void {
     else startAutoStory(story)
   })
 
-  storyBackButton.addEventListener("click", goBackToPrimer)
+  storyBackButton.addEventListener("click", goBackToStorySelection)
+  storySectionBackButton.addEventListener("click", () => {
+    stopStoryAudio()
+    if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
+    setSurface("primer")
+  })
   storyForwardButton.addEventListener("click", goForwardFromStory)
+
+  recallStoryReturnButton.addEventListener("click", goBackToStorySelection)
 
   recallAudioButton.addEventListener("click", playRecallPrompt)
 
@@ -3645,20 +3739,28 @@ export function createExperience(): void {
   setAssetIcon(soundPathNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(soundPathSectionNextButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
   setAssetIcon(meaningArcReturnButton, returnToMainNavSvgMarkup)
-  setAssetIcon(storyBranchReturnButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(storyBranchReturnButton, returnToMainNavSvgMarkup)
+  setAssetIcon(previewStoryReturnButton, returnToMainNavSvgMarkup)
+  setAssetIcon(previewTrackBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(previewTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(previewBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(previewEnterButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(primerStoryReturnButton, returnToMainNavSvgMarkup)
+  setAssetIcon(primerTrackBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(primerTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(primerBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(primerNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(storyAutoButton, autoplaySvgMarkup, "asset-icon-story-mode")
   setAssetIcon(storyManualButton, manualPlaySvgMarkup, "asset-icon-story-mode")
   setAssetIcon(storyAudioButton, playButtonSvgMarkup, "asset-icon-play")
-  setAssetIcon(storyBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(storyBackButton, returnToMainNavSvgMarkup)
   setAssetIcon(storyPrevButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(storyNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(storyReplayButton, replaySvgMarkup)
+  setAssetIcon(storySectionBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(storyForwardButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(recallAudioButton, activePlayButtonSvgMarkup, "asset-icon-play")
+  setAssetIcon(recallStoryReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(recallStoryButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(recallPrevButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(recallNextQuestionButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
@@ -3674,6 +3776,10 @@ export function createExperience(): void {
   })
   languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()
   muteInlineSvg(languageMoundArt)
+  meaningRootMound.innerHTML = gardenMoundSvgMarkup.trim()
+  meaningRootArt.innerHTML = rootSvgMarkup.trim()
+  muteInlineSvg(meaningRootMound)
+  muteInlineSvg(meaningRootArt)
   meaningTreeArt.innerHTML = createGardenMeaningMarkup()
   soundGardenArt.innerHTML = soundFlowerOneSvgMarkup.trim()
   soundGardenSecondaryArt.innerHTML = soundFlowerTwoSvgMarkup.trim()
