@@ -8,8 +8,10 @@ import manualPlaySvgMarkup from "../../assets/path_screen/meaning_tree/manual_pl
 import playButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn.html?raw"
 import activePlayButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn-active.html?raw"
 import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
-import meaningTreeSvgMarkup from "../../assets/path_screen/meaning_tree.html?raw"
-import soundGardenSvgMarkup from "../../assets/path_screen/sound_garden.html?raw"
+import gardenMoundSvgMarkup from "../../assets/path_screen/meaning_tree/tree/mound.html?raw"
+import soundFlowerOneSvgMarkup from "../../assets/path_screen/sound_garden/flower_1.html?raw"
+import soundFlowerTwoSvgMarkup from "../../assets/path_screen/sound_garden/flower_2.html?raw"
+import soundFlowerThreeSvgMarkup from "../../assets/path_screen/sound_garden/flower_3.html?raw"
 import seedSvgMarkup from "../../assets/start_page/seed.html?raw"
 import seedLogoSvgMarkup from "../../assets/start_page/seed_logo.html?raw"
 import seedPacketSvgMarkup from "../../assets/start_page/seed_packet.html?raw"
@@ -593,6 +595,19 @@ function setAssetIcon(element: HTMLElement, markup: string, modifier = ""): void
   })
 }
 
+function muteInlineSvg(element: HTMLElement): void {
+  element.querySelectorAll("svg").forEach((svg) => {
+    svg.setAttribute("focusable", "false")
+    svg.setAttribute("aria-hidden", "true")
+  })
+}
+
+function createGardenMeaningMarkup(): string {
+  return `
+    <span class="garden-mound-base">${gardenMoundSvgMarkup.trim()}</span>
+  `
+}
+
 export function createExperience(): void {
   const app = mustQuery<HTMLElement>("#app")
   const startScreen = mustQuery<HTMLElement>("#start-screen")
@@ -605,8 +620,10 @@ export function createExperience(): void {
   const startSeedArt = mustQuery<HTMLElement>("#start-seed-art")
   const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
   const soundGardenArt = mustQuery<HTMLElement>("#sound-garden-art")
+  const soundGardenSecondaryArt = mustQuery<HTMLElement>("#sound-garden-secondary-art")
+  const soundGardenTertiaryArt = mustQuery<HTMLElement>("#sound-garden-tertiary-art")
   const meaningTreeButton = mustQuery<HTMLButtonElement>("#meaning-tree-button")
-  const soundGardenButton = mustQuery<HTMLButtonElement>("#sound-garden-button")
+  const soundGardenButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-garden-sound]"))
   const soundGardenScreen = mustQuery<HTMLElement>("#sound-garden-screen")
   const soundGardenReturnButton = mustQuery<HTMLButtonElement>("#sound-garden-return-button")
   const soundPreviewList = mustQuery<HTMLUListElement>("#sound-preview-list")
@@ -690,6 +707,7 @@ export function createExperience(): void {
   let isPlantingLanguage = false
   let languageSeedDrag: LanguageSeedDrag | null = null
   let suppressNextLanguageSeedClick = false
+  let gardenLabelTimer = 0
   let selectedLanguage = getInitialLanguage()
   let selectedPath: PathId | null = null
   let selectedSoundSectionId: string | null = null
@@ -743,6 +761,22 @@ export function createExperience(): void {
     reflectionScreen.hidden = surface !== "reflection"
     app.dataset.surface = surface
     if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
+    if (surface !== "path") clearGardenLabels()
+  }
+
+  function clearGardenLabels(): void {
+    window.clearTimeout(gardenLabelTimer)
+    document.querySelectorAll<HTMLElement>(".garden-choice.is-label-visible").forEach((choice) => {
+      choice.classList.remove("is-label-visible")
+    })
+  }
+
+  function revealGardenLabel(choice: HTMLElement): void {
+    clearGardenLabels()
+    choice.classList.add("is-label-visible")
+    gardenLabelTimer = window.setTimeout(() => {
+      choice.classList.remove("is-label-visible")
+    }, 1500)
   }
 
   function setLanguageState(code: SupportedLanguage, state: SeedState): void {
@@ -3143,11 +3177,16 @@ export function createExperience(): void {
     setLanguageState(code, "selected")
     previewRun += 1
     const run = previewRun
-    activePreview = code
     syncLanguageSeedStates()
 
     previewAudio.src = previewPath(code)
     previewAudio.currentTime = 0
+
+    previewAudio.onplaying = () => {
+      if (run !== previewRun) return
+      activePreview = code
+      syncLanguageSeedStates()
+    }
 
     previewAudio.onended = () => {
       finishLanguagePreview(code, run, true)
@@ -3157,9 +3196,16 @@ export function createExperience(): void {
       finishLanguagePreview(code, run, true)
     }
 
-    previewAudio.play().catch(() => {
-      finishLanguagePreview(code, run, true)
-    })
+    previewAudio
+      .play()
+      .then(() => {
+        if (run !== previewRun) return
+        activePreview = code
+        syncLanguageSeedStates()
+      })
+      .catch(() => {
+        finishLanguagePreview(code, run, true)
+      })
   }
 
   function plantSelectedLanguage(startRectOverride?: DOMRect): void {
@@ -3410,13 +3456,17 @@ export function createExperience(): void {
   })
 
   meaningTreeButton.addEventListener("click", () => {
+    revealGardenLabel(meaningTreeButton)
     openMeaningArcs()
   })
 
-  soundGardenButton.addEventListener("click", () => {
-    selectedPath = "sound-garden"
-    renderSoundGarden()
-    setSurface("soundGarden")
+  soundGardenButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      revealGardenLabel(button)
+      selectedPath = "sound-garden"
+      renderSoundGarden()
+      setSurface("soundGarden")
+    })
   })
 
   soundGardenReturnButton.addEventListener("click", returnToPathGate)
@@ -3623,14 +3673,15 @@ export function createExperience(): void {
     svg.setAttribute("aria-hidden", "true")
   })
   languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()
-  languageMoundArt.querySelectorAll("svg").forEach((svg) => {
-    svg.setAttribute("focusable", "false")
-    svg.setAttribute("aria-hidden", "true")
-  })
-  meaningTreeArt.innerHTML = meaningTreeSvgMarkup.trim()
-  meaningTreeArt.querySelector("svg")?.setAttribute("focusable", "false")
-  soundGardenArt.innerHTML = soundGardenSvgMarkup.trim()
-  soundGardenArt.querySelector("svg")?.setAttribute("focusable", "false")
+  muteInlineSvg(languageMoundArt)
+  meaningTreeArt.innerHTML = createGardenMeaningMarkup()
+  soundGardenArt.innerHTML = soundFlowerOneSvgMarkup.trim()
+  soundGardenSecondaryArt.innerHTML = soundFlowerTwoSvgMarkup.trim()
+  soundGardenTertiaryArt.innerHTML = soundFlowerThreeSvgMarkup.trim()
+  muteInlineSvg(meaningTreeArt)
+  muteInlineSvg(soundGardenArt)
+  muteInlineSvg(soundGardenSecondaryArt)
+  muteInlineSvg(soundGardenTertiaryArt)
   renderLanguageSeeds()
   setSurface(surface)
 }
