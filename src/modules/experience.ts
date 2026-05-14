@@ -6,8 +6,6 @@ import taiwaneseSeedSvgMarkup from "../../assets/language_select/lang_nan.html?r
 import mandarinSeedSvgMarkup from "../../assets/language_select/lang_zh.html?raw"
 import autoplaySvgMarkup from "../../assets/path_screen/meaning_tree/autoplay.html?raw"
 import manualPlaySvgMarkup from "../../assets/path_screen/meaning_tree/manual_play.html?raw"
-import playButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn.html?raw"
-import activePlayButtonSvgMarkup from "../../assets/path_screen/meaning_tree/play_btn-active.html?raw"
 import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
 import gardenMoundSvgMarkup from "../../assets/path_screen/meaning_tree/tree/mound.html?raw"
 import soundFlowerOneSvgMarkup from "../../assets/path_screen/sound_garden/flower_1.html?raw"
@@ -25,9 +23,11 @@ import sectionNavBackSvgMarkup from "../../assets/ui/section_nav_back.html?raw"
 import sectionNavForwardSvgMarkup from "../../assets/ui/section_nav_forward.html?raw"
 import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
+import { createStoryLessonShell } from "./storyLesson/storyLesson"
+import type { StoryLessonSectionId } from "./storyLesson/storyLessonTypes"
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
-type Surface = "start" | "language" | "path" | "soundGarden" | "soundLessonList" | "soundPath" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
+type Surface = "start" | "language" | "path" | "soundGarden" | "soundLessonList" | "soundLesson" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
 type LanguageSeedDrag = {
   code: SupportedLanguage
@@ -45,7 +45,7 @@ type LanguageSeedDrag = {
 }
 type PathId = "meaning-tree" | "sound-garden"
 type StoryMode = "auto" | "manual"
-type SoundPathStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
+type SoundLessonStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
 type SoundVisualType = "contour" | "particle" | "pulse" | "rhythm" | "resonance" | "phrase"
 type SoundPreview = {
   id: string
@@ -59,26 +59,6 @@ type SoundSection = {
   kind: string
   iconType: string
   previews: SoundPreview[]
-}
-type SoundChoice = {
-  id: string
-  kind: SoundVisualType
-  visualShape?: string
-  correct?: boolean
-}
-type SoundGardenItem = {
-  id: string
-  visualType: SoundVisualType
-  visualShape?: string
-  audio?: string
-  compareAudio?: string
-  choices?: SoundChoice[]
-}
-type SoundGardenSection = {
-  id: string
-  ariaLabel: string
-  visualType: SoundVisualType
-  items: SoundGardenItem[]
 }
 type SoundLessonPreviewItem = {
   id: string
@@ -95,8 +75,8 @@ type SoundLesson = {
   completed: boolean
 }
 type RecallChoice =
-  | { kind: "meaning"; image?: string; symbol?: string; id: string }
-  | { kind: "perception"; pattern: number[]; id: string }
+  | { kind: "meaning"; image?: string; symbol?: string; id: string; audio?: string }
+  | { kind: "perception"; pattern: number[]; id: string; audio?: string }
 type RecallPrompt = {
   id: string
   family: "perception" | "meaning"
@@ -157,6 +137,7 @@ const conceptIcons: Record<string, string> = {
 
 const defaultSignature = ["cat", "food", "night"]
 const fallbackPrimerAudio = "engine/vocab/nan/audio/nan_u0002.wav"
+const openingAnimationDuration = 5600
 
 const universalImages = [
   "u0001.webp",
@@ -244,127 +225,7 @@ const soundSections: SoundSection[] = [
   }
 ]
 
-const soundPathSteps: SoundPathStepId[] = ["preview", "primer", "guided-tuning", "perception-recall", "reflection"]
-
-const soundGardenSections: SoundGardenSection[] = [
-  {
-    id: "tones",
-    ariaLabel: "Tones and pitch",
-    visualType: "contour",
-    items: [
-      {
-        id: "tone-flat",
-        visualType: "contour",
-        visualShape: "flat",
-        audio: "/audio/placeholders/tone-flat.mp3",
-        choices: [
-          { id: "flat", kind: "contour", visualShape: "flat", correct: true },
-          { id: "rising", kind: "contour", visualShape: "rising" },
-          { id: "falling", kind: "contour", visualShape: "falling" }
-        ]
-      },
-      {
-        id: "tone-rising",
-        visualType: "contour",
-        visualShape: "rising",
-        audio: "/audio/placeholders/tone-rising.mp3",
-        compareAudio: "/audio/placeholders/tone-falling.mp3",
-        choices: [
-          { id: "flat", kind: "contour", visualShape: "flat" },
-          { id: "rising", kind: "contour", visualShape: "rising", correct: true },
-          { id: "falling", kind: "contour", visualShape: "falling" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "phonemes",
-    ariaLabel: "Phonemes",
-    visualType: "particle",
-    items: [
-      {
-        id: "phoneme-1",
-        visualType: "particle",
-        visualShape: "small-dot",
-        audio: "/audio/placeholders/phoneme-1.mp3",
-        compareAudio: "/audio/placeholders/phoneme-2.mp3",
-        choices: [
-          { id: "particle-a", kind: "particle", visualShape: "small-dot", correct: true },
-          { id: "particle-b", kind: "particle", visualShape: "large-dot" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "syllables",
-    ariaLabel: "Syllables",
-    visualType: "pulse",
-    items: [
-      {
-        id: "syllable-1",
-        visualType: "pulse",
-        visualShape: "single-pulse",
-        audio: "/audio/placeholders/syllable-1.mp3",
-        choices: [
-          { id: "single-pulse", kind: "pulse", visualShape: "single-pulse", correct: true },
-          { id: "double-pulse", kind: "pulse", visualShape: "double-pulse" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "rhythm",
-    ariaLabel: "Rhythm and stress",
-    visualType: "rhythm",
-    items: [
-      {
-        id: "rhythm-1",
-        visualType: "rhythm",
-        visualShape: "strong-weak-weak",
-        audio: "/audio/placeholders/rhythm-1.mp3",
-        choices: [
-          { id: "strong-weak-weak", kind: "rhythm", visualShape: "strong-weak-weak", correct: true },
-          { id: "weak-strong", kind: "rhythm", visualShape: "weak-strong" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "features",
-    ariaLabel: "Special sound features",
-    visualType: "resonance",
-    items: [
-      {
-        id: "feature-1",
-        visualType: "resonance",
-        visualShape: "ring",
-        audio: "/audio/placeholders/feature-1.mp3",
-        choices: [
-          { id: "ring", kind: "resonance", visualShape: "ring", correct: true },
-          { id: "clip", kind: "resonance", visualShape: "clip" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "phrase-tuning",
-    ariaLabel: "Phrase tuning",
-    visualType: "phrase",
-    items: [
-      {
-        id: "phrase-1",
-        visualType: "phrase",
-        visualShape: "wave",
-        audio: "/audio/placeholders/phrase-full.mp3",
-        compareAudio: "/audio/placeholders/phrase-chunked.mp3",
-        choices: [
-          { id: "wave", kind: "phrase", visualShape: "wave", correct: true },
-          { id: "broken-wave", kind: "phrase", visualShape: "broken-wave" }
-        ]
-      }
-    ]
-  }
-]
+const soundLessonSteps: SoundLessonStepId[] = ["preview", "primer", "guided-tuning", "perception-recall", "reflection"]
 
 const soundLessons: SoundLesson[] = [
   {
@@ -616,9 +477,14 @@ export function createExperience(): void {
   const pathScreen = mustQuery<HTMLElement>("#path-screen")
   const meaningArcScreen = mustQuery<HTMLElement>("#meaning-arc-screen")
   const storyBranchScreen = mustQuery<HTMLElement>("#story-branch-screen")
-  const meaningPreviewScreen = mustQuery<HTMLElement>("#meaning-preview-screen")
+  const meaningPreviewScreen = mustQuery<HTMLElement>("#story-lessons")
   const seedButton = mustQuery<HTMLButtonElement>("#seed-button")
   const startSeedArt = mustQuery<HTMLElement>("#start-seed-art")
+  startSeedArt.innerHTML = createOpeningStageMarkup()
+  startSeedArt.querySelectorAll("svg").forEach((svg) => {
+    svg.setAttribute("focusable", "false")
+    svg.setAttribute("aria-hidden", "true")
+  })
   const meaningTreeArt = mustQuery<HTMLElement>("#meaning-tree-art")
   const meaningRootMound = mustQuery<HTMLElement>("#meaning-root-mound")
   const meaningRootArt = mustQuery<HTMLElement>("#meaning-root-art")
@@ -634,16 +500,19 @@ export function createExperience(): void {
   const lessonBackButton = mustQuery<HTMLButtonElement>("#lesson-back-button")
   const lessonHeader = mustQuery<HTMLElement>("#lesson-header")
   const soundLessonList = mustQuery<HTMLOListElement>("#sound-lesson-list")
-  const soundPathScreen = mustQuery<HTMLElement>("#sound-path-screen")
-  const soundPathVisual = mustQuery<HTMLElement>("#sound-path-visual")
-  const soundPathContent = mustQuery<HTMLElement>("#sound-path-content")
-  const soundPathEcho = mustQuery<HTMLElement>("#sound-path-echo")
-  const soundPathProgress = mustQuery<HTMLElement>("#sound-path-progress")
-  const soundPathSectionBackButton = mustQuery<HTMLButtonElement>("#sound-path-section-back-button")
-  const soundPathBackButton = mustQuery<HTMLButtonElement>("#sound-path-back-button")
-  const soundPathReplayButton = mustQuery<HTMLButtonElement>("#sound-path-replay-button")
-  const soundPathNextButton = mustQuery<HTMLButtonElement>("#sound-path-next-button")
-  const soundPathSectionNextButton = mustQuery<HTMLButtonElement>("#sound-path-section-next-button")
+  const soundLessonScreen = mustQuery<HTMLElement>("#sound-lesson-screen")
+  const soundPreviewSection = mustQuery<HTMLElement>("#sound-preview-section")
+  const soundPrimerSection = mustQuery<HTMLElement>("#sound-primer-section")
+  const soundGuidedSection = mustQuery<HTMLElement>("#sound-guided-section")
+  const soundRecallSection = mustQuery<HTMLElement>("#sound-recall-section")
+  const soundReflectionSection = mustQuery<HTMLElement>("#sound-reflection-section")
+  const soundLessonEcho = mustQuery<HTMLElement>("#sound-lesson-echo")
+  const soundLessonProgress = mustQuery<HTMLElement>("#sound-lesson-progress")
+  const soundLessonSectionBackButton = mustQuery<HTMLButtonElement>("#sound-lesson-section-back-button")
+  const soundLessonBackButton = mustQuery<HTMLButtonElement>("#sound-lesson-back-button")
+  const soundLessonReplayButton = mustQuery<HTMLButtonElement>("#sound-lesson-replay-button")
+  const soundLessonNextButton = mustQuery<HTMLButtonElement>("#sound-lesson-next-button")
+  const soundLessonSectionNextButton = mustQuery<HTMLButtonElement>("#sound-lesson-section-next-button")
   const languageSeedbed = mustQuery<HTMLElement>("#language-seedbed")
   const languageSelectGarden = mustQuery<HTMLElement>("#language-select-garden")
   const languageMoundButton = mustQuery<HTMLButtonElement>("#language-mound-button")
@@ -658,17 +527,12 @@ export function createExperience(): void {
   const previewTrackBackButton = mustQuery<HTMLButtonElement>("#preview-track-back-button")
   const previewTrackNextButton = mustQuery<HTMLButtonElement>("#preview-track-next-button")
   const previewAudioTrack = mustQuery<HTMLElement>("#preview-audio-track")
-  const previewStoryReturnButton = mustQuery<HTMLButtonElement>("#preview-story-return-button")
-  const previewBackButton = mustQuery<HTMLButtonElement>("#preview-back-button")
-  const previewEnterButton = mustQuery<HTMLButtonElement>("#preview-enter-button")
+  const previewStoryReturnButton = mustQuery<HTMLButtonElement>("#story-lessons-return-button")
   const primerScreen = mustQuery<HTMLElement>("#meaning-primer-screen")
   const primerCardTrack = mustQuery<HTMLElement>("#primer-card-track")
   const primerTrackBackButton = mustQuery<HTMLButtonElement>("#primer-track-back-button")
   const primerTrackNextButton = mustQuery<HTMLButtonElement>("#primer-track-next-button")
   const primerEcho = mustQuery<HTMLElement>("#primer-echo")
-  const primerStoryReturnButton = mustQuery<HTMLButtonElement>("#primer-story-return-button")
-  const primerBackButton = mustQuery<HTMLButtonElement>("#primer-back-button")
-  const primerNextButton = mustQuery<HTMLButtonElement>("#primer-next-button")
   const storyScreen = mustQuery<HTMLElement>("#meaning-story-screen")
   const storyModeGate = mustQuery<HTMLElement>("#story-mode-gate")
   const storyAutoButton = mustQuery<HTMLButtonElement>("#story-auto-button")
@@ -679,22 +543,17 @@ export function createExperience(): void {
   const storyEcho = mustQuery<HTMLElement>("#story-echo")
   const storyProgress = mustQuery<HTMLElement>("#story-progress")
   const storyControls = mustQuery<HTMLElement>("#story-controls")
-  const storyBackButton = mustQuery<HTMLButtonElement>("#story-back-button")
   const storyPrevButton = mustQuery<HTMLButtonElement>("#story-prev-button")
   const storyNextButton = mustQuery<HTMLButtonElement>("#story-next-button")
   const storyReplayButton = mustQuery<HTMLButtonElement>("#story-replay-button")
+  const storyLessonProgress = mustQuery<HTMLElement>("#story-lesson-progress")
   const storySectionBackButton = mustQuery<HTMLButtonElement>("#story-section-back-button")
   const storyForwardButton = mustQuery<HTMLButtonElement>("#story-forward-button")
   const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
   const recallPromptOrb = mustQuery<HTMLElement>("#recall-prompt-orb")
-  const recallAudioButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
+  const recallPromptButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
   const recallChoiceBed = mustQuery<HTMLElement>("#recall-choice-bed")
   const recallProgress = mustQuery<HTMLElement>("#recall-progress")
-  const recallStoryReturnButton = mustQuery<HTMLButtonElement>("#recall-story-return-button")
-  const recallStoryButton = mustQuery<HTMLButtonElement>("#recall-story-button")
-  const recallPrevButton = mustQuery<HTMLButtonElement>("#recall-prev-button")
-  const recallNextQuestionButton = mustQuery<HTMLButtonElement>("#recall-next-question-button")
-  const recallContinueButton = mustQuery<HTMLButtonElement>("#recall-continue-button")
   const reflectionScreen = mustQuery<HTMLElement>("#meaning-reflection-screen")
   const reflectionGrowth = mustQuery<HTMLElement>("#reflection-growth")
   const reflectionStorySymbols = mustQuery<HTMLElement>("#reflection-story-symbols")
@@ -709,6 +568,7 @@ export function createExperience(): void {
 
   let surface: Surface = "start"
   let hasBegun = false
+  let openingTransitionTimer = 0
   let previewRun = 0
   let activePreview: SupportedLanguage | null = null
   let previewRelease: SupportedLanguage | null = null
@@ -726,7 +586,7 @@ export function createExperience(): void {
   let selectedSoundLessonId: string | null = null
   let currentSoundPreviewAudio: HTMLAudioElement | null = null
   let currentLessonPreviewAudio: HTMLAudioElement | null = null
-  let currentSoundPathStep: SoundPathStepId | null = null
+  let currentSoundLessonStep: SoundLessonStepId | null = null
   let currentSoundItemIndex = 0
   let currentSoundPairIndex = 0
   let currentRecallItemIndex = 0
@@ -749,6 +609,56 @@ export function createExperience(): void {
     code: language.code,
     state: "idle"
   }))
+  const storyLessonSurfaceSections: Partial<Record<Surface, StoryLessonSectionId>> = {
+    meaningPreview: "preview",
+    primer: "primer",
+    story: "story",
+    recall: "recall",
+    reflection: "reflection"
+  }
+  const storyLessonSectionSurfaces: Record<StoryLessonSectionId, Surface> = {
+    preview: "meaningPreview",
+    primer: "primer",
+    story: "story",
+    recall: "recall",
+    reflection: "reflection"
+  }
+  const storyLessonShell = createStoryLessonShell({
+    sections: {
+      preview: mustQuery<HTMLElement>("#preview-world"),
+      primer: primerScreen,
+      story: storyScreen,
+      recall: recallScreen,
+      reflection: reflectionScreen
+    },
+    progress: storyLessonProgress,
+    previousButton: storySectionBackButton,
+    nextButton: storyForwardButton,
+    onSectionRequested: enterStoryLessonSection
+  })
+
+  function isStoryLessonSurface(value: Surface): boolean {
+    return storyLessonSurfaceSections[value] !== undefined
+  }
+
+  function getSoundLessonSection(step: SoundLessonStepId): HTMLElement {
+    const sectionMap: Record<SoundLessonStepId, HTMLElement> = {
+      preview: soundPreviewSection,
+      primer: soundPrimerSection,
+      "guided-tuning": soundGuidedSection,
+      "perception-recall": soundRecallSection,
+      reflection: soundReflectionSection
+    }
+
+    return sectionMap[step]
+  }
+
+  function showSoundLessonSection(step: SoundLessonStepId): void {
+    soundLessonSteps.forEach((candidate) => {
+      getSoundLessonSection(candidate).hidden = candidate !== step
+    })
+    app.dataset.soundStep = step
+  }
 
   function setSurface(nextSurface: Surface): void {
     if (surface === "meaningPreview" && nextSurface !== "meaningPreview") stopPreviewMomentAudio()
@@ -756,21 +666,19 @@ export function createExperience(): void {
     if (surface === "recall" && nextSurface !== "recall") stopRecallAudio()
     if (surface === "soundGarden" && nextSurface !== "soundGarden") stopCurrentSoundPreview()
     if (surface === "soundLessonList" && nextSurface !== "soundLessonList") stopLessonPreviewAudio()
-    if (surface === "soundPath" && nextSurface !== "soundPath") stopSoundPathAudio()
+    if (surface === "soundLesson" && nextSurface !== "soundLesson") stopSoundLessonAudio()
     surface = nextSurface
     startScreen.hidden = surface !== "start"
     languageScreen.hidden = surface !== "language"
     pathScreen.hidden = surface !== "path"
     soundGardenScreen.hidden = surface !== "soundGarden"
     soundLessonListScreen.hidden = surface !== "soundLessonList"
-    soundPathScreen.hidden = surface !== "soundPath"
+    soundLessonScreen.hidden = surface !== "soundLesson"
     meaningArcScreen.hidden = surface !== "meaningArc"
     storyBranchScreen.hidden = surface !== "storyBranch"
-    meaningPreviewScreen.hidden = surface !== "meaningPreview"
-    primerScreen.hidden = surface !== "primer"
-    storyScreen.hidden = surface !== "story"
-    recallScreen.hidden = surface !== "recall"
-    reflectionScreen.hidden = surface !== "reflection"
+    meaningPreviewScreen.hidden = !isStoryLessonSurface(surface)
+    const storyLessonSection = storyLessonSurfaceSections[surface]
+    if (storyLessonSection) storyLessonShell.setSection(storyLessonSection)
     app.dataset.surface = surface
     if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
     if (surface !== "path") clearGardenLabels()
@@ -1488,6 +1396,25 @@ export function createExperience(): void {
     startManualStory(story)
   }
 
+  function enterStoryLessonSection(section: StoryLessonSectionId, previousSection: StoryLessonSectionId): void {
+    if (previousSection === "preview" && section !== "preview") stopPreviewMomentAudio()
+    if (previousSection === "primer" && section !== "primer") {
+      collapsePrimerCard()
+      stopPrimerAudio()
+    }
+    if (previousSection === "story" && section !== "story") stopStoryAudio()
+    if (previousSection === "recall" && section !== "recall") stopRecallAudio()
+
+    if (!selectedStoryId) return
+
+    if (section === "preview") renderMeaningPreviewWorld(selectedStoryId)
+    if (section === "primer") renderMeaningPrimer(selectedStoryId)
+    if (section === "story") renderMeaningStory(selectedStoryId)
+    if (section === "recall") renderMeaningRecall(selectedStoryId)
+    if (section === "reflection") renderMeaningReflection(selectedStoryId)
+    setSurface(storyLessonSectionSurfaces[section])
+  }
+
   function goBackToStorySelection(): void {
     stopStoryAudio()
     if (selectedArcId) renderStoryPods(getStoriesForArc(selectedArcId))
@@ -1501,8 +1428,8 @@ export function createExperience(): void {
   }
 
   function stopRecallAudio(): void {
-    recallPromptOrb.classList.remove("is-playing")
-    recallAudioButton.classList.remove("is-playing")
+    recallPromptButton.classList.remove("is-playing")
+    recallScreen.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
     recallAudio.pause()
     recallAudio.removeAttribute("src")
     recallAudio.load()
@@ -1513,21 +1440,43 @@ export function createExperience(): void {
     stopRecallAudio()
     if (!prompt?.audio) return
 
-    recallPromptOrb.classList.add("is-playing")
-    recallAudioButton.classList.add("is-playing")
+    recallPromptButton.classList.add("is-playing")
     recallAudio.src = prompt.audio
     recallAudio.currentTime = 0
     recallAudio.onended = () => {
-      recallPromptOrb.classList.remove("is-playing")
-      recallAudioButton.classList.remove("is-playing")
+      recallPromptButton.classList.remove("is-playing")
     }
     recallAudio.onerror = () => {
-      recallPromptOrb.classList.remove("is-playing")
-      recallAudioButton.classList.remove("is-playing")
+      recallPromptButton.classList.remove("is-playing")
     }
     recallAudio.play().catch(() => {
-      recallPromptOrb.classList.remove("is-playing")
-      recallAudioButton.classList.remove("is-playing")
+      recallPromptButton.classList.remove("is-playing")
+    })
+  }
+
+  function playRecallChoiceAudio(audioSrc: string | undefined, activeElement: HTMLElement): void {
+    stopRecallAudio()
+    activeElement.classList.add("is-playing")
+
+    if (!audioSrc) {
+      window.setTimeout(() => {
+        activeElement.classList.remove("is-playing")
+      }, 700)
+      return
+    }
+
+    recallAudio.src = audioSrc
+    recallAudio.currentTime = 0
+    recallAudio.onended = () => {
+      activeElement.classList.remove("is-playing")
+    }
+    recallAudio.onerror = () => {
+      activeElement.classList.remove("is-playing")
+    }
+    recallAudio.play().catch(() => {
+      window.setTimeout(() => {
+        activeElement.classList.remove("is-playing")
+      }, 700)
     })
   }
 
@@ -1549,13 +1498,15 @@ export function createExperience(): void {
       kind: "meaning" as const,
       id: item.id,
       image: item.image,
-      symbol: conceptIcons[item.id]
+      symbol: conceptIcons[item.id],
+      audio: item.wholeAudio
     }))
 
     const perceptionChoices = [first, second, third].map((item, index) => ({
       kind: "perception" as const,
       id: item.id,
-      pattern: getRecallPattern(item, index)
+      pattern: getRecallPattern(item, index),
+      audio: item.wholeAudio
     }))
 
     return [
@@ -1599,7 +1550,7 @@ export function createExperience(): void {
     })
   }
 
-  function renderPerceptionChoice(choice: Extract<RecallChoice, { kind: "perception" }>, button: HTMLButtonElement): void {
+  function renderPerceptionChoice(choice: Extract<RecallChoice, { kind: "perception" }>, button: HTMLElement): void {
     const track = document.createElement("span")
     track.className = "recall-perception-track"
     choice.pattern.forEach((scale) => {
@@ -1610,7 +1561,7 @@ export function createExperience(): void {
     button.append(track)
   }
 
-  function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" }>, button: HTMLButtonElement): void {
+  function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" }>, button: HTMLElement): void {
     if (choice.image) {
       const img = document.createElement("img")
       img.src = choice.image
@@ -1631,28 +1582,59 @@ export function createExperience(): void {
     const prompt = currentRecallPrompts[currentRecallIndex]
     clearNode(recallChoiceBed)
     renderRecallProgress()
-    recallPrevButton.disabled = currentRecallIndex <= 0
-    recallNextQuestionButton.disabled = currentRecallIndex >= currentRecallPrompts.length - 1
-    recallContinueButton.disabled = !currentRecallPrompts.length
-    recallPromptOrb.dataset.family = prompt?.family ?? "meaning"
+    recallPromptButton.dataset.family = prompt?.family ?? "meaning"
     if (!prompt) return
 
     prompt.choices.forEach((choice, index) => {
-      const button = document.createElement("button")
+      const button = document.createElement("div")
       button.className = `recall-choice recall-choice-${choice.kind}`
-      button.type = "button"
+      button.tabIndex = 0
       button.setAttribute("role", "listitem")
       button.setAttribute("aria-label", choice.kind === "meaning" ? "Meaning choice" : "Sound shape choice")
 
       if (choice.kind === "meaning") renderMeaningChoice(choice, button)
       else renderPerceptionChoice(choice, button)
 
-      button.addEventListener("click", () => {
+      if (choice.audio) {
+        const answerAudioButton = document.createElement("button")
+        answerAudioButton.className = "recall-answer-audio"
+        answerAudioButton.type = "button"
+        answerAudioButton.setAttribute("aria-label", "Play answer sound")
+        answerAudioButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+        answerAudioButton.addEventListener("click", (event) => {
+          event.stopPropagation()
+          playRecallChoiceAudio(choice.audio, answerAudioButton)
+        })
+        button.append(answerAudioButton)
+      }
+
+      const selectChoice = () => {
         recallChoiceBed.querySelectorAll(".recall-choice").forEach((element) => {
           element.classList.remove("is-selected", "is-correct")
         })
         button.classList.add("is-selected")
-        if (index === prompt.correctIndex) button.classList.add("is-correct")
+        if (index !== prompt.correctIndex) return
+
+        button.classList.add("is-correct")
+        window.setTimeout(() => {
+          if (currentRecallPrompts[currentRecallIndex] !== prompt) return
+          stopRecallAudio()
+          if (currentRecallIndex < currentRecallPrompts.length - 1) {
+            currentRecallIndex += 1
+            renderRecallPrompt()
+            playRecallPrompt()
+            return
+          }
+          if (selectedStoryId) renderMeaningReflection(selectedStoryId)
+          setSurface("reflection")
+        }, 420)
+      }
+
+      button.addEventListener("click", selectChoice)
+      button.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return
+        event.preventDefault()
+        selectChoice()
       })
 
       recallChoiceBed.append(button)
@@ -1996,51 +1978,54 @@ export function createExperience(): void {
     return lessons[currentIndex + 1]
   }
 
+  function createSoundLessonStepFrame(
+    step: Exclude<SoundLessonStepId, "preview">,
+    options: { interactiveVisual?: boolean } = {}
+  ): { visual: HTMLElement; content: HTMLElement } {
+    const section = getSoundLessonSection(step)
+    clearNode(section)
+    showSoundLessonSection(step)
+
+    const visual = document.createElement("div")
+    visual.className = "sound-lesson-visual"
+    if (!options.interactiveVisual) visual.setAttribute("aria-hidden", "true")
+
+    const content = document.createElement("div")
+    content.className = "sound-lesson-content"
+
+    section.append(visual, content)
+    return { visual, content }
+  }
+
   function enterSoundLesson(lessonId: string): void {
     selectedSoundLessonId = lessonId
-    currentSoundPathStep = "preview"
+    currentSoundLessonStep = "preview"
     currentSoundItemIndex = 0
     currentSoundPairIndex = 0
     currentRecallItemIndex = 0
     stopLessonPreviewAudio()
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
     app.dataset.soundLesson = lessonId
     renderSoundLessonPreview(lessonId)
-    setSurface("soundPath")
+    setSurface("soundLesson")
   }
 
   function renderSoundLessonPreview(lessonId: string): void {
     const lesson = getSoundLessonById(lessonId)
     if (!lesson) return
 
-    clearNode(soundPathContent)
-    clearNode(soundPathVisual)
-
-    currentSoundPathStep = "preview"
+    currentSoundLessonStep = "preview"
     currentSoundItemIndex = 0
-    app.dataset.soundStep = "preview"
-    soundPathVisual.hidden = true
+    stopSoundLessonAudio()
+    clearNode(soundPreviewSection)
+    showSoundLessonSection("preview")
 
     renderSoundLessonPreviewCards(lesson)
-    renderSoundPathProgress("preview")
+    renderSoundLessonProgress("preview")
 
-    soundPathReplayButton.disabled = false
-    soundPathBackButton.disabled = true
-    soundPathNextButton.disabled = false
-  }
-
-  function renderSoundLessonPreviewHero(lesson: SoundLesson): void {
-    clearNode(soundPathVisual)
-    const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
-
-    const visual = document.createElement("span")
-    visual.className = [
-      "sound-path-shape",
-      `sound-path-shape-${lesson.visualType}`,
-      `sound-path-shape-${item?.visual ?? "soft"}`
-    ].join(" ")
-    visual.setAttribute("aria-hidden", "true")
-    soundPathVisual.append(visual)
+    soundLessonReplayButton.disabled = false
+    soundLessonBackButton.disabled = true
+    soundLessonNextButton.disabled = false
   }
 
   function renderSoundLessonPreviewCards(lesson: SoundLesson): void {
@@ -2077,7 +2062,7 @@ export function createExperience(): void {
       card.append(visual, playDot)
       card.addEventListener("click", () => {
         currentSoundItemIndex = index
-        playSoundPathAudio(item.audio, card)
+        playSoundLessonAudio(item.audio, card)
       })
 
       previewItem.append(card)
@@ -2097,7 +2082,7 @@ export function createExperience(): void {
     })
 
     preview.append(trackWrap, playAllButton)
-    soundPathContent.append(preview)
+    soundPreviewSection.append(preview)
   }
 
   function wait(ms: number): Promise<void> {
@@ -2105,13 +2090,13 @@ export function createExperience(): void {
   }
 
   async function playLessonPreviewSequence(lesson: SoundLesson): Promise<void> {
-    stopSoundPathAudio()
-    const cards = Array.from(soundPathContent.querySelectorAll<HTMLElement>(".sound-lesson-preview-card"))
+    stopSoundLessonAudio()
+    const cards = Array.from(soundPreviewSection.querySelectorAll<HTMLElement>(".sound-lesson-preview-card"))
 
     for (let index = 0; index < lesson.previewItems.length; index += 1) {
       const item = lesson.previewItems[index]
       currentSoundItemIndex = index
-      await playSoundPathAudioAsPromise(item.audio, cards[index])
+      await playSoundLessonAudioAsPromise(item.audio, cards[index])
       await wait(450)
     }
   }
@@ -2123,37 +2108,34 @@ export function createExperience(): void {
     const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
     if (!item) return
 
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
 
-    app.dataset.soundStep = "primer"
-    soundPathVisual.hidden = false
+    currentSoundLessonStep = "primer"
+    const { visual, content } = createSoundLessonStepFrame("primer")
 
-    clearNode(soundPathVisual)
-    clearNode(soundPathContent)
+    renderSoundLessonPrimerVisual(lesson, item, visual)
+    renderSoundLessonPrimerContent(lesson, item, content)
+    renderSoundLessonProgress("primer")
 
-    renderSoundLessonPrimerVisual(lesson, item)
-    renderSoundLessonPrimerContent(lesson, item)
-    renderSoundPathProgress("primer")
-
-    soundPathBackButton.disabled = false
-    soundPathNextButton.disabled = false
-    soundPathReplayButton.disabled = false
+    soundLessonBackButton.disabled = false
+    soundLessonNextButton.disabled = false
+    soundLessonReplayButton.disabled = false
   }
 
-  function renderSoundLessonPrimerVisual(lesson: SoundLesson, item: SoundLessonPreviewItem): void {
+  function renderSoundLessonPrimerVisual(lesson: SoundLesson, item: SoundLessonPreviewItem, container: HTMLElement): void {
     const visual = document.createElement("span")
 
     visual.className = [
-      "sound-path-shape",
-      `sound-path-shape-${lesson.visualType}`,
-      `sound-path-shape-${item.visual}`
+      "sound-lesson-shape",
+      `sound-lesson-shape-${lesson.visualType}`,
+      `sound-lesson-shape-${item.visual}`
     ].join(" ")
 
     visual.setAttribute("aria-hidden", "true")
-    soundPathVisual.append(visual)
+    container.append(visual)
   }
 
-  function renderSoundLessonPrimerContent(lesson: SoundLesson, item: SoundLessonPreviewItem): void {
+  function renderSoundLessonPrimerContent(lesson: SoundLesson, item: SoundLessonPreviewItem, container: HTMLElement): void {
     const primer = document.createElement("div")
     primer.className = "sound-lesson-primer"
 
@@ -2167,7 +2149,7 @@ export function createExperience(): void {
     playButton.innerHTML = "<span aria-hidden=\"true\"></span>"
 
     playButton.addEventListener("click", () => {
-      playSoundPathAudio(item.audio, playButton)
+      playSoundLessonAudio(item.audio, playButton)
     })
 
     const itemProgress = document.createElement("div")
@@ -2212,7 +2194,7 @@ export function createExperience(): void {
     itemControls.append(previousItemButton, nextItemButton)
     focusCard.append(playButton, itemProgress, itemControls)
     primer.append(focusCard)
-    soundPathContent.append(primer)
+    container.append(primer)
   }
 
   function getGuidedTuningPairs(lesson: SoundLesson): Array<{ first: SoundLessonPreviewItem; second: SoundLessonPreviewItem }> {
@@ -2239,27 +2221,24 @@ export function createExperience(): void {
       return
     }
 
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
 
-    currentSoundPathStep = "guided-tuning"
-    app.dataset.soundStep = "guided-tuning"
-    soundPathVisual.hidden = false
+    currentSoundLessonStep = "guided-tuning"
+    const { visual, content } = createSoundLessonStepFrame("guided-tuning")
 
-    clearNode(soundPathVisual)
-    clearNode(soundPathContent)
+    renderGuidedTuningVisual(lesson, pair, visual)
+    renderGuidedTuningContent(lesson, pair, pairs.length, content)
+    renderSoundLessonProgress("guided-tuning")
 
-    renderGuidedTuningVisual(lesson, pair)
-    renderGuidedTuningContent(lesson, pair, pairs.length)
-    renderSoundPathProgress("guided-tuning")
-
-    soundPathBackButton.disabled = false
-    soundPathNextButton.disabled = false
-    soundPathReplayButton.disabled = false
+    soundLessonBackButton.disabled = false
+    soundLessonNextButton.disabled = false
+    soundLessonReplayButton.disabled = false
   }
 
   function renderGuidedTuningVisual(
     lesson: SoundLesson,
-    pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem }
+    pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem },
+    container: HTMLElement
   ): void {
     const bridge = document.createElement("div")
     bridge.className = "sound-guided-bridge"
@@ -2285,13 +2264,14 @@ export function createExperience(): void {
     secondVisual.setAttribute("aria-hidden", "true")
 
     bridge.append(firstVisual, line, secondVisual)
-    soundPathVisual.append(bridge)
+    container.append(bridge)
   }
 
   function renderGuidedTuningContent(
     lesson: SoundLesson,
     pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem },
-    pairCount: number
+    pairCount: number,
+    container: HTMLElement
   ): void {
     const tuning = document.createElement("div")
     tuning.className = "sound-guided-tuning"
@@ -2356,7 +2336,7 @@ export function createExperience(): void {
     pairControls.append(previousPairButton, nextPairButton)
 
     tuning.append(pairGrid, sequenceButton, pairProgress, pairControls)
-    soundPathContent.append(tuning)
+    container.append(tuning)
   }
 
   function createGuidedTuningCard(lesson: SoundLesson, item: SoundLessonPreviewItem, position: "first" | "second"): HTMLButtonElement {
@@ -2380,7 +2360,7 @@ export function createExperience(): void {
     card.append(visual, playDot)
 
     card.addEventListener("click", () => {
-      playSoundPathAudio(item.audio, card)
+      playSoundLessonAudio(item.audio, card)
     })
 
     return card
@@ -2390,13 +2370,13 @@ export function createExperience(): void {
     pair: { first: SoundLessonPreviewItem; second: SoundLessonPreviewItem },
     activeElement?: HTMLElement
   ): Promise<void> {
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
 
     activeElement?.classList.add("is-playing")
-    await playSoundPathAudioAsPromise(pair.first.audio)
+    await playSoundLessonAudioAsPromise(pair.first.audio)
     activeElement?.classList.add("is-playing")
     await wait(350)
-    await playSoundPathAudioAsPromise(pair.second.audio)
+    await playSoundLessonAudioAsPromise(pair.second.audio)
 
     activeElement?.classList.remove("is-playing")
   }
@@ -2415,51 +2395,54 @@ export function createExperience(): void {
     const item = lesson.previewItems[currentRecallItemIndex] ?? lesson.previewItems[0]
     if (!item) return
 
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
 
-    currentSoundPathStep = "perception-recall"
-    app.dataset.soundStep = "perception-recall"
-    soundPathVisual.hidden = false
+    currentSoundLessonStep = "perception-recall"
+    const { visual, content } = createSoundLessonStepFrame("perception-recall", { interactiveVisual: true })
 
-    clearNode(soundPathVisual)
-    clearNode(soundPathContent)
+    const promptButton = renderPerceptionRecallPromptVisual(visual)
+    renderPerceptionRecallContent(lesson, item, content)
+    renderSoundLessonProgress("perception-recall")
 
-    renderPerceptionRecallPromptVisual()
-    renderPerceptionRecallContent(lesson, item)
-    renderSoundPathProgress("perception-recall")
-
-    soundPathBackButton.disabled = false
-    soundPathNextButton.disabled = false
-    soundPathReplayButton.disabled = false
+    soundLessonBackButton.disabled = false
+    soundLessonNextButton.disabled = false
+    soundLessonReplayButton.disabled = false
 
     const recallIndexAtRender = currentRecallItemIndex
     window.setTimeout(() => {
-      if (currentSoundPathStep !== "perception-recall" || currentRecallItemIndex !== recallIndexAtRender) return
-      playSoundPathAudio(item.audio, soundPathVisual)
+      if (currentSoundLessonStep !== "perception-recall" || currentRecallItemIndex !== recallIndexAtRender) return
+      playSoundLessonAudio(item.audio, promptButton)
     }, 180)
   }
 
-  function renderPerceptionRecallPromptVisual(): void {
-    const prompt = document.createElement("span")
-    prompt.className = "sound-recall-prompt-orb"
-    prompt.setAttribute("aria-hidden", "true")
+  function renderPerceptionRecallPromptVisual(container: HTMLElement): HTMLButtonElement {
+    const promptButton = document.createElement("button")
+    promptButton.className = "sound-recall-prompt-button"
+    promptButton.type = "button"
+    promptButton.setAttribute("aria-label", "Replay recall prompt")
 
-    soundPathVisual.append(prompt)
+    const promptOrb = document.createElement("span")
+    promptOrb.className = "sound-recall-prompt-orb"
+    promptOrb.setAttribute("aria-hidden", "true")
+
+    const promptPlayDot = document.createElement("span")
+    promptPlayDot.className = "sound-recall-prompt-dot"
+    promptPlayDot.setAttribute("aria-hidden", "true")
+
+    promptButton.append(promptOrb, promptPlayDot)
+    promptButton.addEventListener("click", () => {
+      const lesson = getSoundLessonById(selectedSoundLessonId)
+      const item = lesson?.previewItems[currentRecallItemIndex] ?? lesson?.previewItems[0]
+      if (item) playSoundLessonAudio(item.audio, promptButton)
+    })
+
+    container.append(promptButton)
+    return promptButton
   }
 
-  function renderPerceptionRecallContent(lesson: SoundLesson, correctItem: SoundLessonPreviewItem): void {
+  function renderPerceptionRecallContent(lesson: SoundLesson, correctItem: SoundLessonPreviewItem, container: HTMLElement): void {
     const recall = document.createElement("div")
     recall.className = "sound-perception-recall"
-
-    const replayButton = document.createElement("button")
-    replayButton.className = "sound-recall-prompt-play"
-    replayButton.type = "button"
-    replayButton.setAttribute("aria-label", "Replay recall prompt")
-    replayButton.innerHTML = "<span aria-hidden=\"true\"></span>"
-
-    replayButton.addEventListener("click", () => {
-      playSoundPathAudio(correctItem.audio, replayButton)
-    })
 
     const choiceGrid = document.createElement("div")
     choiceGrid.className = "sound-recall-choice-grid"
@@ -2511,8 +2494,8 @@ export function createExperience(): void {
     })
 
     recallControls.append(previousRecallButton, nextRecallButton)
-    recall.append(replayButton, choiceGrid, recallProgress, recallControls)
-    soundPathContent.append(recall)
+    recall.append(choiceGrid, recallProgress, recallControls)
+    container.append(recall)
   }
 
   function createSoundRecallChoice(
@@ -2535,6 +2518,19 @@ export function createExperience(): void {
 
     button.append(visual)
 
+    if (choice.audio) {
+      const answerAudioButton = document.createElement("button")
+      answerAudioButton.className = "sound-recall-answer-audio"
+      answerAudioButton.type = "button"
+      answerAudioButton.setAttribute("aria-label", "Play answer sound")
+      answerAudioButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+      answerAudioButton.addEventListener("click", (event) => {
+        event.stopPropagation()
+        playSoundLessonAudio(choice.audio, answerAudioButton)
+      })
+      button.append(answerAudioButton)
+    }
+
     button.addEventListener("click", () => {
       handleSoundRecallSelection(choice, correctItem, button)
     })
@@ -2547,7 +2543,7 @@ export function createExperience(): void {
     correctItem: SoundLessonPreviewItem,
     button: HTMLElement
   ): void {
-    soundPathContent.querySelectorAll(".sound-recall-choice-card").forEach((element) => {
+    soundRecallSection.querySelectorAll(".sound-recall-choice-card").forEach((element) => {
       element.classList.remove("is-selected", "is-correct", "is-soft-miss")
     })
 
@@ -2555,25 +2551,25 @@ export function createExperience(): void {
 
     if (choice.id === correctItem.id) {
       button.classList.add("is-correct")
-      runSoundEchoGap(700)
+      runSoundLessonEchoGap(700)
       return
     }
 
     button.classList.add("is-soft-miss")
-    runSoundEchoGap(500)
+    runSoundLessonEchoGap(500)
   }
 
-  function playSoundPathAudioAsPromise(audioSrc: string | undefined, activeElement?: HTMLElement): Promise<void> {
+  function playSoundLessonAudioAsPromise(audioSrc: string | undefined, activeElement?: HTMLElement): Promise<void> {
     return new Promise((resolve) => {
-      stopSoundPathAudio()
+      stopSoundLessonAudio()
       activeElement?.classList.add("is-playing")
-      soundPathVisual.classList.add("is-playing")
+      activeElement?.closest(".sound-lesson-visual")?.classList.add("is-playing")
 
       if (!audioSrc) {
         window.setTimeout(() => {
           activeElement?.classList.remove("is-playing")
-          soundPathVisual.classList.remove("is-playing")
-          runSoundEchoGap(700)
+          activeElement?.closest(".sound-lesson-visual")?.classList.remove("is-playing")
+          runSoundLessonEchoGap(700)
           resolve()
         }, 700)
         return
@@ -2587,9 +2583,9 @@ export function createExperience(): void {
         if (settled) return
         settled = true
         activeElement?.classList.remove("is-playing")
-        soundPathVisual.classList.remove("is-playing")
+        activeElement?.closest(".sound-lesson-visual")?.classList.remove("is-playing")
         currentSoundAudio = null
-        runSoundEchoGap(700)
+        runSoundLessonEchoGap(700)
         resolve()
       }
 
@@ -2606,191 +2602,23 @@ export function createExperience(): void {
     setSurface("soundGarden")
   }
 
-  function getSoundGardenSectionById(sectionId: string | null): SoundGardenSection | undefined {
-    return soundGardenSections.find((section) => section.id === sectionId)
-  }
-
-  function renderSoundPath(sectionId: string | null): void {
-    const section = getSoundGardenSectionById(sectionId)
-    if (!section || !currentSoundPathStep) return
-    renderSoundPathStep(section, currentSoundPathStep)
-  }
-
-  function renderSoundPathStep(section: SoundGardenSection, step: SoundPathStepId): void {
-    stopSoundPathAudio()
-    app.dataset.soundStep = step
-    soundPathVisual.hidden = false
-    renderSoundPathVisual(section.items[currentSoundItemIndex] ?? section.items[0] ?? { id: section.id, visualType: section.visualType })
-    clearNode(soundPathContent)
-
-    if (step === "preview") renderSoundPreviewStep(section)
-    if (step === "primer") renderSoundPrimerStep(section)
-    if (step === "guided-tuning") renderGuidedTuningStep(section)
-    if (step === "perception-recall") renderPerceptionRecallStep(section)
-    if (step === "reflection") renderSoundReflectionStep(section)
-
-    renderSoundPathProgress(step)
-  }
-
-  function getSoundVisualKind(itemOrChoice: SoundGardenItem | SoundChoice): SoundVisualType {
-    return "kind" in itemOrChoice ? itemOrChoice.kind : itemOrChoice.visualType
-  }
-
-  function renderSoundPathVisual(itemOrChoice: SoundGardenItem | SoundChoice): HTMLElement {
-    clearNode(soundPathVisual)
-    const visual = document.createElement("span")
-    visual.className = `sound-path-shape sound-path-shape-${getSoundVisualKind(itemOrChoice)} sound-path-shape-${itemOrChoice.visualShape ?? "soft"}`
-    soundPathVisual.append(visual)
-    return visual
-  }
-
-  function renderSoundPathProgress(step: SoundPathStepId): void {
-    clearNode(soundPathProgress)
-    soundPathSteps.forEach((candidate) => {
+  function renderSoundLessonProgress(step: SoundLessonStepId): void {
+    clearNode(soundLessonProgress)
+    soundLessonSteps.forEach((candidate) => {
       const dot = document.createElement("span")
       dot.className = candidate === step ? "is-active" : ""
-      soundPathProgress.append(dot)
+      soundLessonProgress.append(dot)
     })
-    soundPathBackButton.disabled = soundPathSteps.indexOf(step) <= 0
+    soundLessonBackButton.disabled = soundLessonSteps.indexOf(step) <= 0
   }
 
-  function renderSoundPathPreviewItem(item: SoundGardenItem): HTMLLIElement {
-    const rowItem = document.createElement("li")
-    rowItem.append(renderSoundPathMiniVisual(item))
-
-    const button = document.createElement("button")
-    button.className = "sound-path-play-button"
-    button.type = "button"
-    button.setAttribute("aria-label", `Play ${item.id}`)
-    button.innerHTML = "<span aria-hidden=\"true\"></span>"
-    button.addEventListener("click", () => {
-      currentSoundItemIndex = Math.max(0, getCurrentSoundSectionItems().findIndex((candidate) => candidate.id === item.id))
-      renderSoundPathVisual(item)
-      playSoundPathAudio(item.audio, rowItem)
-    })
-    rowItem.append(button)
-    return rowItem
-  }
-
-  function renderSoundPathMiniVisual(itemOrChoice: SoundGardenItem | SoundChoice): HTMLElement {
-    const visual = document.createElement("span")
-    visual.className = `sound-path-mini-visual sound-path-mini-${getSoundVisualKind(itemOrChoice)} sound-path-mini-${itemOrChoice.visualShape ?? "soft"}`
-    visual.setAttribute("aria-hidden", "true")
-    return visual
-  }
-
-  function renderSoundPreviewStep(section: SoundGardenSection): void {
-    const trackWrap = document.createElement("div")
-    trackWrap.className = "sound-path-preview-track-wrap"
-
-    const track = document.createElement("ul")
-    track.className = "sound-path-preview-track"
-    section.items.forEach((item) => track.append(renderSoundPathPreviewItem(item)))
-    trackWrap.append(track)
-    trackWrap.scrollLeft = 0
-    soundPathContent.append(trackWrap)
-  }
-
-  function renderSoundPrimerStep(section: SoundGardenSection): void {
-    const item = section.items[currentSoundItemIndex] ?? section.items[0]
-    if (!item) return
-
-    const card = document.createElement("div")
-    card.className = "sound-path-primer-card"
-    card.append(renderSoundPathMiniVisual(item))
-
-    const nextItemButton = document.createElement("button")
-    nextItemButton.className = "sound-path-small-next"
-    nextItemButton.type = "button"
-    nextItemButton.setAttribute("aria-label", "Next sound")
-    nextItemButton.innerHTML = "<span aria-hidden=\"true\"></span>"
-    nextItemButton.addEventListener("click", () => {
-      currentSoundItemIndex = (currentSoundItemIndex + 1) % section.items.length
-      renderSoundPathStep(section, "primer")
-    })
-
-    card.append(nextItemButton)
-    soundPathContent.append(card)
-  }
-
-  function renderGuidedTuningStep(section: SoundGardenSection): void {
-    const item = section.items[currentSoundItemIndex] ?? section.items[0]
-    const nextItem = section.items[(currentSoundItemIndex + 1) % section.items.length] ?? item
-    if (!item) return
-
-    const grid = document.createElement("div")
-    grid.className = "sound-compare-grid"
-    ;[
-      { item, audio: item.audio },
-      { item: nextItem, audio: item.compareAudio ?? nextItem.audio }
-    ].forEach(({ item: compareItem, audio }) => {
-      const card = document.createElement("button")
-      card.className = "sound-compare-card"
-      card.type = "button"
-      card.setAttribute("aria-label", "Play comparison sound")
-      card.append(renderSoundPathMiniVisual(compareItem))
-      card.addEventListener("click", () => playSoundPathAudio(audio, card))
-      grid.append(card)
-    })
-    soundPathContent.append(grid)
-  }
-
-  function renderPerceptionRecallStep(section: SoundGardenSection): void {
-    const item = section.items[currentSoundItemIndex] ?? section.items[0]
-    if (!item) return
-
-    const choices = item.choices?.length ? item.choices : [{ id: item.id, kind: item.visualType, visualShape: item.visualShape, correct: true }]
-    const bed = document.createElement("div")
-    bed.className = "sound-recall-choice-bed"
-
-    choices.forEach((choice) => {
-      const button = document.createElement("button")
-      button.className = "sound-recall-choice"
-      button.type = "button"
-      button.setAttribute("aria-label", "Choose sound shape")
-      button.append(renderSoundPathMiniVisual(choice))
-      button.addEventListener("click", () => handleSoundRecallChoice(choice, button))
-      bed.append(button)
-    })
-    soundPathContent.append(bed)
-  }
-
-  function renderSoundReflectionStep(section: SoundGardenSection): void {
-    markSoundSectionComplete(section.id)
-    const growth = document.createElement("div")
-    growth.className = "sound-reflection-growth"
-    growth.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
-
-    const actions = document.createElement("div")
-    actions.className = "sound-reflection-actions"
-    ;[
-      { label: "Repeat sound path", action: () => enterSoundSection(section.id), className: "repeat" },
-      { label: "Continue to next sound path", action: () => enterNextSoundSection(section.id), className: "next" },
-      { label: "Enter Meaning Tree", action: openMeaningArcs, className: "tree" }
-    ].forEach(({ label, action, className }) => {
-      const button = document.createElement("button")
-      button.className = `sound-reflection-action sound-reflection-action-${className}`
-      button.type = "button"
-      button.setAttribute("aria-label", label)
-      button.innerHTML = "<span aria-hidden=\"true\"></span>"
-      button.addEventListener("click", action)
-      actions.append(button)
-    })
-
-    soundPathContent.append(growth, actions)
-  }
-
-  function getCurrentSoundSectionItems(): SoundGardenItem[] {
-    return getSoundGardenSectionById(selectedSoundSectionId)?.items ?? []
-  }
-
-  function playSoundPathAudio(audioSrc: string | undefined, activeElement?: HTMLElement): void {
-    stopSoundPathAudio()
+  function playSoundLessonAudio(audioSrc: string | undefined, activeElement?: HTMLElement): void {
+    stopSoundLessonAudio()
     if (!audioSrc) {
       activeElement?.classList.add("is-playing")
       window.setTimeout(() => {
         activeElement?.classList.remove("is-playing")
-        runSoundEchoGap()
+        runSoundLessonEchoGap()
       }, 900)
       return
     }
@@ -2798,133 +2626,105 @@ export function createExperience(): void {
     const audio = new Audio(audioSrc)
     currentSoundAudio = audio
     activeElement?.classList.add("is-playing")
-    soundPathVisual.classList.add("is-playing")
+    activeElement?.closest(".sound-lesson-visual")?.classList.add("is-playing")
 
     const clearPlaying = () => {
       activeElement?.classList.remove("is-playing")
-      soundPathVisual.classList.remove("is-playing")
+      activeElement?.closest(".sound-lesson-visual")?.classList.remove("is-playing")
       currentSoundAudio = null
     }
 
     audio.addEventListener("ended", () => {
       clearPlaying()
-      runSoundEchoGap(Number.isFinite(audio.duration) ? Math.min(1800, Math.max(900, audio.duration * 420)) : 1200)
+      runSoundLessonEchoGap(Number.isFinite(audio.duration) ? Math.min(1800, Math.max(900, audio.duration * 420)) : 1200)
     })
     audio.addEventListener("error", () => {
       clearPlaying()
-      runSoundEchoGap()
+      runSoundLessonEchoGap()
     })
     audio.play().catch(() => {
       window.setTimeout(() => {
         clearPlaying()
-        runSoundEchoGap()
+        runSoundLessonEchoGap()
       }, 900)
     })
   }
 
-  function stopSoundPathAudio(): void {
+  function stopSoundLessonAudio(): void {
     if (currentSoundAudio) {
       currentSoundAudio.pause()
       currentSoundAudio.currentTime = 0
       currentSoundAudio = null
     }
-    soundPathVisual.classList.remove("is-playing")
-    soundPathContent.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
+    soundLessonScreen.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
   }
 
-  function runSoundEchoGap(duration = 1200): void {
-    soundPathEcho.classList.add("is-echoing")
-    window.setTimeout(() => soundPathEcho.classList.remove("is-echoing"), duration)
+  function runSoundLessonEchoGap(duration = 1200): void {
+    soundLessonEcho.classList.add("is-echoing")
+    window.setTimeout(() => soundLessonEcho.classList.remove("is-echoing"), duration)
   }
 
-  function handleSoundRecallChoice(choice: SoundChoice, button: HTMLElement): void {
-    soundPathContent.querySelectorAll(".sound-recall-choice").forEach((element) => element.classList.remove("is-selected", "is-correct", "is-soft-miss"))
-    button.classList.add("is-selected")
-    button.classList.add(choice.correct ? "is-correct" : "is-soft-miss")
-    if (!choice.correct) runSoundEchoGap(700)
-  }
+  function goToNextSoundLessonStep(): void {
+    if (!currentSoundLessonStep) return
+    if (!selectedSoundLessonId) return
 
-  function goToNextSoundPathStep(): void {
-    if (!currentSoundPathStep) return
-    if (selectedSoundLessonId) {
-      if (currentSoundPathStep === "preview") {
-        currentSoundPathStep = "primer"
-        currentSoundItemIndex = 0
-        renderSoundLessonPrimer()
-        return
-      }
-
-      if (currentSoundPathStep === "primer") {
-        currentSoundPathStep = "guided-tuning"
-        currentSoundPairIndex = 0
-        renderSoundGuidedTuning()
-        return
-      }
-
-      if (currentSoundPathStep === "guided-tuning") {
-        currentSoundPathStep = "perception-recall"
-        currentRecallItemIndex = 0
-        renderSoundPerceptionRecall()
-        return
-      }
-
-      if (currentSoundPathStep === "perception-recall") {
-        currentSoundPathStep = "reflection"
-        renderSoundReflection()
-        return
-      }
-
-      if (currentSoundPathStep === "reflection") {
-        const nextLesson = getNextSoundLesson(selectedSoundLessonId)
-
-        if (nextLesson) {
-          enterSoundLesson(nextLesson.id)
-          return
-        }
-
-        if (selectedSoundSectionId) renderSoundLessonList()
-        setSurface("soundLessonList")
-        return
-      }
-
+    if (currentSoundLessonStep === "preview") {
+      currentSoundItemIndex = 0
+      renderSoundLessonPrimer()
       return
     }
 
-    const nextStep = soundPathSteps[soundPathSteps.indexOf(currentSoundPathStep) + 1]
-    if (!nextStep) {
-      renderSoundGarden()
-      setSurface("soundGarden")
+    if (currentSoundLessonStep === "primer") {
+      currentSoundPairIndex = 0
+      renderSoundGuidedTuning()
       return
     }
-    currentSoundPathStep = nextStep
-    renderSoundPath(selectedSoundSectionId)
+
+    if (currentSoundLessonStep === "guided-tuning") {
+      currentRecallItemIndex = 0
+      renderSoundPerceptionRecall()
+      return
+    }
+
+    if (currentSoundLessonStep === "perception-recall") {
+      renderSoundReflection()
+      return
+    }
+
+    if (currentSoundLessonStep === "reflection") {
+      const nextLesson = getNextSoundLesson(selectedSoundLessonId)
+
+      if (nextLesson) {
+        enterSoundLesson(nextLesson.id)
+        return
+      }
+
+      if (selectedSoundSectionId) renderSoundLessonList()
+      setSurface("soundLessonList")
+    }
   }
 
   function renderSoundReflection(): void {
     const lesson = getSoundLessonById(selectedSoundLessonId)
     if (!lesson) return
 
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
 
-    currentSoundPathStep = "reflection"
-    app.dataset.soundStep = "reflection"
-    soundPathVisual.hidden = false
+    currentSoundLessonStep = "reflection"
+    const { visual, content } = createSoundLessonStepFrame("reflection")
 
     markSoundLessonComplete(lesson.id)
 
-    clearNode(soundPathVisual)
-    clearNode(soundPathContent)
+    renderSoundReflectionVisual(visual)
+    renderSoundReflectionContent(lesson, content)
+    renderSoundLessonProgress("reflection")
 
-    renderSoundReflectionVisual()
-    renderSoundReflectionContent(lesson)
-    renderSoundPathProgress("reflection")
-
-    soundPathBackButton.disabled = false
-    soundPathNextButton.disabled = false
-    soundPathReplayButton.disabled = false
+    soundLessonBackButton.disabled = false
+    soundLessonNextButton.disabled = false
+    soundLessonReplayButton.disabled = false
   }
 
-  function renderSoundReflectionVisual(): void {
+  function renderSoundReflectionVisual(container: HTMLElement): void {
     const bloom = document.createElement("div")
     bloom.className = "sound-lesson-reflection-bloom"
     bloom.setAttribute("aria-hidden", "true")
@@ -2936,10 +2736,10 @@ export function createExperience(): void {
       document.createElement("span")
     )
 
-    soundPathVisual.append(bloom)
+    container.append(bloom)
   }
 
-  function renderSoundReflectionContent(lesson: SoundLesson): void {
+  function renderSoundReflectionContent(lesson: SoundLesson, container: HTMLElement): void {
     const reflection = document.createElement("div")
     reflection.className = "sound-lesson-reflection"
 
@@ -2959,7 +2759,7 @@ export function createExperience(): void {
     setAssetIcon(repeatButton, replaySvgMarkup)
 
     repeatButton.addEventListener("click", () => {
-      currentSoundPathStep = "preview"
+      currentSoundLessonStep = "preview"
       currentSoundItemIndex = 0
       currentSoundPairIndex = 0
       currentRecallItemIndex = 0
@@ -2973,7 +2773,7 @@ export function createExperience(): void {
     setAssetIcon(lessonListButton, currentLessonBackNavSvgMarkup)
 
     lessonListButton.addEventListener("click", () => {
-      stopSoundPathAudio()
+      stopSoundLessonAudio()
       if (selectedSoundSectionId) renderSoundLessonList()
       setSurface("soundLessonList")
     })
@@ -2999,7 +2799,7 @@ export function createExperience(): void {
     setAssetIcon(gardenButton, returnToMainNavSvgMarkup)
 
     gardenButton.addEventListener("click", () => {
-      stopSoundPathAudio()
+      stopSoundLessonAudio()
       selectedSoundLessonId = null
       renderSoundGarden()
       setSurface("soundGarden")
@@ -3007,51 +2807,41 @@ export function createExperience(): void {
 
     actions.append(repeatButton, lessonListButton, nextLessonButton, gardenButton)
     reflection.append(resonance, actions)
-    soundPathContent.append(reflection)
+    container.append(reflection)
   }
 
-  function goToPreviousSoundPathStep(): void {
-    if (!currentSoundPathStep) return
-    if (selectedSoundLessonId) {
-      if (currentSoundPathStep === "primer") {
-        renderSoundLessonPreview(selectedSoundLessonId)
-      }
+  function goToPreviousSoundLessonStep(): void {
+    if (!currentSoundLessonStep) return
+    if (!selectedSoundLessonId) return
 
-      if (currentSoundPathStep === "guided-tuning") {
-        currentSoundPathStep = "primer"
-        renderSoundLessonPrimer()
-        return
-      }
-
-      if (currentSoundPathStep === "perception-recall") {
-        currentSoundPathStep = "guided-tuning"
-        renderSoundGuidedTuning()
-        return
-      }
-
-      if (currentSoundPathStep === "reflection") {
-        currentSoundPathStep = "perception-recall"
-        renderSoundPerceptionRecall()
-        return
-      }
-
+    if (currentSoundLessonStep === "primer") {
+      renderSoundLessonPreview(selectedSoundLessonId)
       return
     }
 
-    const previousStep = soundPathSteps[soundPathSteps.indexOf(currentSoundPathStep) - 1]
-    if (!previousStep) return
-    currentSoundPathStep = previousStep
-    renderSoundPath(selectedSoundSectionId)
+    if (currentSoundLessonStep === "guided-tuning") {
+      renderSoundLessonPrimer()
+      return
+    }
+
+    if (currentSoundLessonStep === "perception-recall") {
+      renderSoundGuidedTuning()
+      return
+    }
+
+    if (currentSoundLessonStep === "reflection") {
+      renderSoundPerceptionRecall()
+    }
   }
 
   function returnToSoundGardenSelection(): void {
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
     renderSoundGarden()
     setSurface("soundGarden")
   }
 
   function returnToSoundLessonList(): void {
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
     if (selectedSoundSectionId) renderSoundLessonList()
     setSurface("soundLessonList")
   }
@@ -3062,14 +2852,14 @@ export function createExperience(): void {
   }
 
   function enterNextSoundSection(sectionId: string): void {
-    const index = soundGardenSections.findIndex((section) => section.id === sectionId)
-    const nextSection = soundGardenSections[(index + 1) % soundGardenSections.length]
+    const index = soundSections.findIndex((section) => section.id === sectionId)
+    const nextSection = soundSections[(index + 1) % soundSections.length]
     if (nextSection) enterSoundSection(nextSection.id)
   }
 
   function returnToPathGate(): void {
     stopCurrentSoundPreview()
-    stopSoundPathAudio()
+    stopSoundLessonAudio()
     stopLessonPreviewAudio()
     selectedArcId = null
     selectedSoundSectionId = null
@@ -3495,17 +3285,23 @@ export function createExperience(): void {
     syncLanguageSeedStates()
   }
 
+  function finishOpening(): void {
+    window.clearTimeout(openingTransitionTimer)
+    delete app.dataset.opening
+    setSurface("language")
+  }
+
   seedButton.addEventListener("click", () => {
     if (hasBegun) return
     hasBegun = true
     app.dataset.audio = "unlocked"
-    app.dataset.opening = "spilling"
     makeChime()
 
-    window.setTimeout(() => {
-      delete app.dataset.opening
-      setSurface("language")
-    }, prefersReducedMotion() ? 120 : 4400)
+    window.requestAnimationFrame(() => {
+      app.dataset.opening = "spilling"
+    })
+
+    openingTransitionTimer = window.setTimeout(finishOpening, prefersReducedMotion() ? 140 : openingAnimationDuration)
   })
 
   languageMoundButton.addEventListener("click", () => {
@@ -3547,56 +3343,53 @@ export function createExperience(): void {
     returnToMeaningArcs()
   })
 
-  soundPathSectionBackButton.addEventListener("click", returnToSoundLessonList)
+  soundLessonSectionBackButton.addEventListener("click", returnToSoundLessonList)
 
-  soundPathBackButton.addEventListener("click", goToPreviousSoundPathStep)
+  soundLessonBackButton.addEventListener("click", goToPreviousSoundLessonStep)
 
-  soundPathReplayButton.addEventListener("click", () => {
+  soundLessonReplayButton.addEventListener("click", () => {
     const lesson = getSoundLessonById(selectedSoundLessonId)
-    if (lesson && currentSoundPathStep === "preview") {
+    if (lesson && currentSoundLessonStep === "preview") {
       void playLessonPreviewSequence(lesson)
       return
     }
 
-    if (lesson && currentSoundPathStep === "primer") {
+    if (lesson && currentSoundLessonStep === "primer") {
       const item = lesson.previewItems[currentSoundItemIndex] ?? lesson.previewItems[0]
-      if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+      if (item) playSoundLessonAudio(item.audio, soundLessonReplayButton)
       return
     }
 
-    if (lesson && currentSoundPathStep === "guided-tuning") {
+    if (lesson && currentSoundLessonStep === "guided-tuning") {
       const pairs = getGuidedTuningPairs(lesson)
       const pair = pairs[currentSoundPairIndex]
-      if (pair) void playGuidedTuningSequence(pair, soundPathReplayButton)
+      if (pair) void playGuidedTuningSequence(pair, soundLessonReplayButton)
       return
     }
 
-    if (lesson && currentSoundPathStep === "perception-recall") {
+    if (lesson && currentSoundLessonStep === "perception-recall") {
       const item = lesson.previewItems[currentRecallItemIndex] ?? lesson.previewItems[0]
-      if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+      if (item) {
+        const promptButton = soundRecallSection.querySelector<HTMLElement>(".sound-recall-prompt-button")
+        playSoundLessonAudio(item.audio, promptButton ?? soundLessonReplayButton)
+      }
       return
     }
 
-    if (lesson && currentSoundPathStep === "reflection") {
+    if (lesson && currentSoundLessonStep === "reflection") {
       makeChime()
-      runSoundEchoGap(900)
+      runSoundLessonEchoGap(900)
       return
     }
 
-    const section = getSoundGardenSectionById(selectedSoundSectionId)
-    const item = section?.items[currentSoundItemIndex] ?? section?.items[0]
-    if (item) playSoundPathAudio(item.audio, soundPathReplayButton)
+    const item = lesson?.previewItems[currentSoundItemIndex] ?? lesson?.previewItems[0]
+    if (item) playSoundLessonAudio(item.audio, soundLessonReplayButton)
   })
 
-  soundPathNextButton.addEventListener("click", goToNextSoundPathStep)
+  soundLessonNextButton.addEventListener("click", goToNextSoundLessonStep)
 
-  soundPathSectionNextButton.addEventListener("click", () => {
+  soundLessonSectionNextButton.addEventListener("click", () => {
     if (selectedSoundSectionId) enterNextSoundSection(selectedSoundSectionId)
-  })
-
-  previewBackButton.addEventListener("click", () => {
-    stopPreviewMomentAudio()
-    setSurface("storyBranch")
   })
 
   previewStoryReturnButton.addEventListener("click", goBackToStorySelection)
@@ -3609,21 +3402,6 @@ export function createExperience(): void {
     scrollStoryTrack(previewImageTrack, 1)
   })
 
-  previewEnterButton.addEventListener("click", () => {
-    stopPreviewMomentAudio()
-    if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
-    setSurface("primer")
-  })
-
-  primerBackButton.addEventListener("click", () => {
-    collapsePrimerCard()
-    stopPrimerAudio()
-    if (selectedStoryId) renderMeaningPreviewWorld(selectedStoryId)
-    setSurface("meaningPreview")
-  })
-
-  primerStoryReturnButton.addEventListener("click", goBackToStorySelection)
-
   primerTrackBackButton.addEventListener("click", () => {
     collapsePrimerCard()
     scrollStoryTrack(primerCardTrack, -1)
@@ -3632,13 +3410,6 @@ export function createExperience(): void {
   primerTrackNextButton.addEventListener("click", () => {
     collapsePrimerCard()
     scrollStoryTrack(primerCardTrack, 1)
-  })
-
-  primerNextButton.addEventListener("click", () => {
-    collapsePrimerCard()
-    stopPrimerAudio()
-    if (selectedStoryId) renderMeaningStory(selectedStoryId)
-    setSurface("story")
   })
 
   storyAutoButton.addEventListener("click", () => {
@@ -3678,37 +3449,7 @@ export function createExperience(): void {
     else startAutoStory(story)
   })
 
-  storyBackButton.addEventListener("click", goBackToStorySelection)
-  storySectionBackButton.addEventListener("click", () => {
-    stopStoryAudio()
-    if (selectedStoryId) renderMeaningPrimer(selectedStoryId)
-    setSurface("primer")
-  })
-  storyForwardButton.addEventListener("click", goForwardFromStory)
-
-  recallStoryReturnButton.addEventListener("click", goBackToStorySelection)
-
-  recallAudioButton.addEventListener("click", playRecallPrompt)
-
-  recallStoryButton.addEventListener("click", goBackToStory)
-
-  recallPrevButton.addEventListener("click", () => {
-    if (currentRecallIndex <= 0) return
-    stopRecallAudio()
-    currentRecallIndex -= 1
-    renderRecallPrompt()
-    playRecallPrompt()
-  })
-
-  recallNextQuestionButton.addEventListener("click", () => {
-    if (currentRecallIndex >= currentRecallPrompts.length - 1) return
-    stopRecallAudio()
-    currentRecallIndex += 1
-    renderRecallPrompt()
-    playRecallPrompt()
-  })
-
-  recallContinueButton.addEventListener("click", continueFromRecall)
+  recallPromptButton.addEventListener("click", playRecallPrompt)
 
   reflectionReplayButton.addEventListener("click", replayStoryFromReflection)
   reflectionPathsButton.addEventListener("click", returnToPathSelection)
@@ -3733,47 +3474,29 @@ export function createExperience(): void {
 
   setAssetIcon(soundGardenReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(lessonBackButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(soundPathSectionBackButton, sectionNavBackSvgMarkup)
-  setAssetIcon(soundPathBackButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(soundPathReplayButton, replaySvgMarkup)
-  setAssetIcon(soundPathNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(soundPathSectionNextButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
+  setAssetIcon(soundLessonSectionBackButton, sectionNavBackSvgMarkup)
+  setAssetIcon(soundLessonBackButton, currentLessonBackNavSvgMarkup)
+  setAssetIcon(soundLessonReplayButton, replaySvgMarkup)
+  setAssetIcon(soundLessonNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(soundLessonSectionNextButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
   setAssetIcon(meaningArcReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(storyBranchReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(previewStoryReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(previewTrackBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(previewTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(previewBackButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(previewEnterButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(primerStoryReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(primerTrackBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(primerTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(primerBackButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(primerNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(storyAutoButton, autoplaySvgMarkup, "asset-icon-story-mode")
   setAssetIcon(storyManualButton, manualPlaySvgMarkup, "asset-icon-story-mode")
-  setAssetIcon(storyAudioButton, playButtonSvgMarkup, "asset-icon-play")
-  setAssetIcon(storyBackButton, returnToMainNavSvgMarkup)
   setAssetIcon(storyPrevButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(storyNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(storyReplayButton, replaySvgMarkup)
   setAssetIcon(storySectionBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(storyForwardButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(recallAudioButton, activePlayButtonSvgMarkup, "asset-icon-play")
-  setAssetIcon(recallStoryReturnButton, returnToMainNavSvgMarkup)
-  setAssetIcon(recallStoryButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(recallPrevButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(recallNextQuestionButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
-  setAssetIcon(recallContinueButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(reflectionReplayButton, replaySvgMarkup)
   setAssetIcon(reflectionPathsButton, returnToMainNavSvgMarkup)
   setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
 
-  startSeedArt.innerHTML = createOpeningStageMarkup()
-  startSeedArt.querySelectorAll("svg").forEach((svg) => {
-    svg.setAttribute("focusable", "false")
-    svg.setAttribute("aria-hidden", "true")
-  })
   languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()
   muteInlineSvg(languageMoundArt)
   meaningRootMound.innerHTML = gardenMoundSvgMarkup.trim()
@@ -3791,3 +3514,4 @@ export function createExperience(): void {
   renderLanguageSeeds()
   setSurface(surface)
 }
+

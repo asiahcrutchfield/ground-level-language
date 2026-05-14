@@ -177,14 +177,10 @@ button:focus-visible {
 .path-screen,
 .sound-garden-screen,
 .sound-lesson-list-screen,
-.sound-path-screen,
+.sound-lesson-screen,
 .meaning-arc-screen,
 .story-branch-screen,
-.meaning-preview-screen,
-.meaning-primer-screen,
-.meaning-story-screen,
-.meaning-recall-screen,
-.meaning-reflection-screen {
+.story-lesson-screen {
   position: relative;
   display: grid;
   height: 100svh;
@@ -291,6 +287,7 @@ button:focus-visible {
   aspect-ratio: 1;
   place-items: center;
   filter: drop-shadow(0 0 42px rgba(181, 211, 134, 0.24));
+  pointer-events: none;
   transform-origin: bottom;
   animation: start-seed-icon 5.4s ease-in-out infinite;
 }
@@ -518,7 +515,7 @@ button:focus-visible {
 .path-screen,
 .meaning-arc-screen,
 .story-branch-screen,
-.meaning-preview-screen {
+.story-lesson-screen {
   opacity: 0;
   animation: fade-in 900ms ease forwards;
 }
@@ -1539,23 +1536,62 @@ button:focus-visible {
   animation: phrase-preview-wave 900ms ease-in-out infinite;
 }
 
-.sound-path-screen {
-  align-content: safe center;
-  align-items: safe center;
+.sound-lesson-screen {
+  align-items: stretch;
+  align-content: stretch;
   justify-items: center;
-  overflow-y: auto;
+  overflow: hidden;
+  padding: 0;
 }
 
-.sound-path {
+.sound-lesson-shell {
+  position: relative;
   display: grid;
-  gap: 0.95rem;
-  width: min(100%, 430px);
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    "content"
+    "echo"
+    "progress"
+    "actions";
+  width: min(100%, 560px);
+  min-height: 100svh;
+  max-height: 100svh;
+  gap: clamp(0.65rem, 1.8svh, 0.95rem);
+  padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom));
+  align-items: center;
   justify-items: center;
 }
 
-.sound-path-visual {
+.sound-lesson-content-slot {
+  grid-area: content;
   display: grid;
-  width: min(62vw, 220px);
+  width: min(100%, 500px);
+  min-height: 0;
+  align-items: center;
+  justify-items: center;
+}
+
+.sound-lesson-layout,
+.sound-lesson-section {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-items: center;
+}
+
+.sound-lesson-section[hidden] {
+  display: none;
+}
+
+.sound-lesson-section {
+  gap: clamp(0.7rem, 1.8svh, 1rem);
+}
+
+.sound-lesson-visual {
+  display: grid;
+  width: min(50svh, 62vw, 220px);
   aspect-ratio: 1;
   place-items: center;
   border: 1px solid rgba(244, 239, 192, 0.16);
@@ -1566,16 +1602,16 @@ button:focus-visible {
   box-shadow: 0 0 48px rgba(157, 187, 116, 0.13);
 }
 
-.sound-path-visual.is-playing .sound-path-shape {
+.sound-lesson-visual.is-playing .sound-lesson-shape {
   animation: sound-preview-pulse 1.2s ease-out infinite;
 }
 
-.sound-path-shape,
-.sound-path-mini-visual {
+.sound-lesson-shape,
+.sound-lesson-mini-visual {
   display: block;
 }
 
-.sound-path-shape-soft {
+.sound-lesson-shape-soft {
   width: 52px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.34);
@@ -1583,38 +1619,38 @@ button:focus-visible {
   background: rgba(244, 239, 192, 0.1);
 }
 
-.sound-path-shape-contour,
-.sound-path-mini-contour {
+.sound-lesson-shape-contour,
+.sound-lesson-mini-contour {
   width: 86px;
   height: 42px;
   border-bottom: 4px solid rgba(244, 239, 192, 0.82);
   border-radius: 3px;
 }
 
-.sound-path-mini-contour {
+.sound-lesson-mini-contour {
   width: 46px;
   height: 24px;
   border-bottom-width: 3px;
 }
 
-.sound-path-shape-rising,
-.sound-path-mini-rising {
+.sound-lesson-shape-rising,
+.sound-lesson-mini-rising {
   transform: rotate(-22deg);
 }
 
-.sound-path-shape-falling,
-.sound-path-mini-falling {
+.sound-lesson-shape-falling,
+.sound-lesson-mini-falling {
   transform: rotate(22deg);
 }
 
-.sound-path-shape-particle,
-.sound-path-shape-pulse,
-.sound-path-shape-rhythm,
-.sound-path-shape-resonance,
-.sound-path-mini-particle,
-.sound-path-mini-pulse,
-.sound-path-mini-rhythm,
-.sound-path-mini-resonance {
+.sound-lesson-shape-particle,
+.sound-lesson-shape-pulse,
+.sound-lesson-shape-rhythm,
+.sound-lesson-shape-resonance,
+.sound-lesson-mini-particle,
+.sound-lesson-mini-pulse,
+.sound-lesson-mini-rhythm,
+.sound-lesson-mini-resonance {
   width: 46px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.34);
@@ -1622,62 +1658,63 @@ button:focus-visible {
   background: rgba(244, 239, 192, 0.12);
 }
 
-.sound-path-mini-particle,
-.sound-path-mini-pulse,
-.sound-path-mini-rhythm,
-.sound-path-mini-resonance {
+.sound-lesson-mini-particle,
+.sound-lesson-mini-pulse,
+.sound-lesson-mini-rhythm,
+.sound-lesson-mini-resonance {
   width: 24px;
 }
 
-.sound-path-shape-large-dot,
-.sound-path-mini-large-dot {
+.sound-lesson-shape-large-dot,
+.sound-lesson-mini-large-dot {
   transform: scale(1.28);
 }
 
-.sound-path-shape-double-pulse,
-.sound-path-mini-double-pulse {
+.sound-lesson-shape-double-pulse,
+.sound-lesson-mini-double-pulse {
   box-shadow: 24px 0 0 -4px rgba(244, 239, 192, 0.25);
 }
 
-.sound-path-shape-strong-weak,
-.sound-path-mini-strong-weak {
+.sound-lesson-shape-strong-weak,
+.sound-lesson-mini-strong-weak {
   box-shadow: 28px 0 0 -14px rgba(244, 239, 192, 0.36);
 }
 
-.sound-path-shape-strong-weak-weak,
-.sound-path-mini-strong-weak-weak {
+.sound-lesson-shape-strong-weak-weak,
+.sound-lesson-mini-strong-weak-weak {
   box-shadow:
     24px 0 0 -14px rgba(244, 239, 192, 0.34),
     44px 0 0 -14px rgba(244, 239, 192, 0.28);
 }
 
-.sound-path-shape-weak-strong,
-.sound-path-mini-weak-strong {
+.sound-lesson-shape-weak-strong,
+.sound-lesson-mini-weak-strong {
   transform: scale(0.72);
   box-shadow: 36px 0 0 8px rgba(244, 239, 192, 0.2);
 }
 
-.sound-path-shape-phrase,
-.sound-path-mini-phrase {
+.sound-lesson-shape-phrase,
+.sound-lesson-mini-phrase {
   width: 108px;
   height: 42px;
   border-top: 4px solid rgba(244, 239, 192, 0.76);
   border-radius: 50%;
 }
 
-.sound-path-mini-phrase {
+.sound-lesson-mini-phrase {
   width: 54px;
   height: 24px;
   border-top-width: 3px;
 }
 
-.sound-path-shape-broken-wave,
-.sound-path-mini-broken-wave {
+.sound-lesson-shape-broken-wave,
+.sound-lesson-mini-broken-wave {
   border-style: dashed;
 }
 
-.sound-path-content {
+.sound-lesson-content {
   width: 100%;
+  min-width: 0;
 }
 
 .sound-lesson-preview {
@@ -2192,7 +2229,7 @@ button:focus-visible {
   background: rgba(244, 239, 192, 0.28);
 }
 
-.sound-path-visual.is-playing .sound-guided-bridge {
+.sound-lesson-visual.is-playing .sound-guided-bridge {
   animation: sound-preview-pulse 1.2s ease-out infinite;
 }
 
@@ -2203,42 +2240,81 @@ button:focus-visible {
   gap: 1rem;
 }
 
-.sound-recall-prompt-orb {
-  display: block;
-  width: 52px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(244, 239, 192, 0.34);
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(244, 239, 192, 0.26) 0 18%, transparent 20%),
-    rgba(244, 239, 192, 0.08);
-  box-shadow: 0 0 34px rgba(157, 187, 116, 0.14);
-}
-
-.sound-path-visual.is-playing .sound-recall-prompt-orb {
-  animation: recall-pulse 1.2s ease-out infinite;
-}
-
-.sound-recall-prompt-play {
+.sound-recall-prompt-button {
+  position: relative;
   display: grid;
-  width: 58px;
-  height: 58px;
+  width: 92px;
+  aspect-ratio: 1;
   place-items: center;
   border: 1px solid rgba(244, 239, 192, 0.24);
   border-radius: 999px;
-  background: rgba(8, 22, 13, 0.76);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(244, 239, 192, 0.11), transparent 38%),
+    rgba(8, 22, 13, 0.68);
+  box-shadow:
+    0 0 38px rgba(157, 187, 116, 0.16),
+    inset 0 0 22px rgba(244, 239, 192, 0.05);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.sound-recall-prompt-play span {
-  width: 34px;
+.sound-recall-prompt-button::before {
+  position: absolute;
+  inset: 15%;
+  border: 1px solid rgba(244, 239, 192, 0.12);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.sound-recall-prompt-button:hover,
+.sound-recall-prompt-button:focus-visible {
+  border-color: rgba(244, 239, 192, 0.42);
+  box-shadow:
+    0 0 46px rgba(157, 187, 116, 0.22),
+    inset 0 0 24px rgba(244, 239, 192, 0.07);
+  transform: translateY(-1px);
+}
+
+.sound-recall-prompt-orb {
+  display: block;
+  width: 38px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(244, 239, 192, 0.32);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(244, 239, 192, 0.28) 0 18%, transparent 20%),
+    rgba(244, 239, 192, 0.08);
+}
+
+.sound-recall-prompt-dot {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  width: 28px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.3);
-  border-radius: 50%;
+  border-radius: 999px;
   background: rgba(8, 22, 13, 0.78);
-  box-shadow: inset 0 0 0 9px rgba(244, 239, 192, 0.82);
+  box-shadow: inset 0 0 0 8px rgba(244, 239, 192, 0.82);
+  transform: translateX(-50%);
 }
 
-.sound-recall-prompt-play.is-playing span {
+.sound-recall-prompt-button.is-playing {
+  border-color: rgba(244, 239, 192, 0.48);
+  box-shadow:
+    0 0 54px rgba(157, 187, 116, 0.26),
+    inset 0 0 28px rgba(244, 239, 192, 0.08);
+}
+
+.sound-recall-prompt-button.is-playing .sound-recall-prompt-orb {
+  animation: recall-pulse 1.2s ease-out infinite;
+}
+
+.sound-recall-prompt-button.is-playing .sound-recall-prompt-dot {
   animation: story-pulse 1.2s ease-out infinite;
 }
 
@@ -2250,10 +2326,11 @@ button:focus-visible {
 }
 
 .sound-recall-choice-card {
+  position: relative;
   display: grid;
   min-height: 112px;
   place-items: center;
-  padding: 0.8rem;
+  padding: 0.8rem 0.8rem 2.75rem;
   border: 1px solid rgba(244, 239, 192, 0.18);
   border-radius: 1.4rem;
   background:
@@ -2283,6 +2360,44 @@ button:focus-visible {
 
 .sound-recall-choice-card.is-soft-miss {
   animation: soft-nudge 260ms ease;
+}
+
+.sound-recall-answer-audio {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 2;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(244, 239, 192, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 22, 13, 0.76);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.sound-recall-answer-audio:hover,
+.sound-recall-answer-audio:focus-visible {
+  border-color: rgba(244, 239, 192, 0.42);
+  background: rgba(8, 22, 13, 0.88);
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.sound-recall-answer-audio span {
+  width: 12px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(244, 239, 192, 0.74);
+  border-radius: 999px;
+}
+
+.sound-recall-answer-audio.is-playing span {
+  animation: story-pulse 1.2s ease-out infinite;
 }
 
 .sound-recall-choice-visual {
@@ -2419,21 +2534,16 @@ button:focus-visible {
   transform: translateX(-2px) rotate(45deg);
 }
 
-.app[data-sound-step="perception-recall"] .sound-path {
+.app[data-sound-step="perception-recall"] .sound-lesson-shell {
   gap: clamp(0.55rem, 1.8svh, 0.95rem);
 }
 
-.app[data-sound-step="perception-recall"] .sound-path-visual {
+.app[data-sound-step="perception-recall"] .sound-lesson-visual {
   width: min(50vw, 180px);
 }
 
 .app[data-sound-step="perception-recall"] .sound-perception-recall {
   gap: clamp(0.55rem, 1.7svh, 1rem);
-}
-
-.app[data-sound-step="perception-recall"] .sound-recall-prompt-play {
-  width: 52px;
-  height: 52px;
 }
 
 .app[data-sound-step="perception-recall"] .sound-recall-choice-card {
@@ -2451,7 +2561,7 @@ button:focus-visible {
     padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom));
   }
 
-  .app[data-sound-step="perception-recall"] .sound-path-actions button {
+  .app[data-sound-step="perception-recall"] .sound-lesson-actions button {
     width: 46px;
     height: 46px;
   }
@@ -2646,7 +2756,7 @@ button:focus-visible {
   }
 }
 
-.sound-path-placeholder {
+.sound-lesson-placeholder {
   min-height: 120px;
   border: 1px solid rgba(244, 239, 192, 0.16);
   border-radius: 1.5rem;
@@ -2655,7 +2765,7 @@ button:focus-visible {
     rgba(8, 22, 13, 0.52);
 }
 
-.sound-path-preview-track-wrap {
+.sound-lesson-preview-track-wrap {
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -2672,11 +2782,11 @@ button:focus-visible {
   text-align: start;
 }
 
-.sound-path-preview-track-wrap::-webkit-scrollbar {
+.sound-lesson-preview-track-wrap::-webkit-scrollbar {
   display: none;
 }
 
-.sound-path-preview-track {
+.sound-lesson-preview-track {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -2691,12 +2801,12 @@ button:focus-visible {
 
 .sound-preview-track,
 .lesson-preview-track,
-.sound-path-preview-track {
+.sound-lesson-preview-track {
   text-align: start;
 }
 
-.sound-path-preview-track li,
-.sound-path-primer-card,
+.sound-lesson-preview-track li,
+.sound-lesson-primer-card,
 .sound-compare-card,
 .sound-recall-choice {
   display: grid;
@@ -2710,13 +2820,13 @@ button:focus-visible {
     rgba(8, 22, 13, 0.68);
 }
 
-.sound-path-preview-track li {
+.sound-lesson-preview-track li {
   flex: 0 0 108px;
   scroll-snap-align: center;
 }
 
-.sound-path-play-button,
-.sound-path-small-next {
+.sound-lesson-play-button,
+.sound-lesson-small-next {
   display: grid;
   width: 38px;
   height: 38px;
@@ -2726,14 +2836,14 @@ button:focus-visible {
   background: rgba(8, 22, 13, 0.76);
 }
 
-.sound-path-play-button span {
+.sound-lesson-play-button span {
   width: 13px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.74);
   border-radius: 999px;
 }
 
-.sound-path-small-next span {
+.sound-lesson-small-next span {
   width: 12px;
   aspect-ratio: 1;
   border-top: 2px solid rgba(244, 239, 192, 0.82);
@@ -2767,7 +2877,8 @@ button:focus-visible {
   animation: soft-nudge 260ms ease;
 }
 
-.sound-path-echo {
+.sound-lesson-echo {
+  grid-area: echo;
   display: flex;
   min-height: 18px;
   align-items: center;
@@ -2777,11 +2888,11 @@ button:focus-visible {
   transition: opacity 220ms ease;
 }
 
-.sound-path-echo.is-echoing {
+.sound-lesson-echo.is-echoing {
   opacity: 1;
 }
 
-.sound-path-echo span {
+.sound-lesson-echo span {
   width: 9px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.36);
@@ -2789,12 +2900,13 @@ button:focus-visible {
   animation: echo-dot 900ms ease-in-out infinite;
 }
 
-.sound-path-progress {
+.sound-lesson-progress {
+  grid-area: progress;
   display: flex;
   gap: 0.45rem;
 }
 
-.sound-path-progress span {
+.sound-lesson-progress span {
   width: 7px;
   height: 7px;
   border: 1px solid rgba(244, 239, 192, 0.22);
@@ -2802,20 +2914,21 @@ button:focus-visible {
   background: rgba(244, 239, 192, 0.2);
 }
 
-.sound-path-progress span.is-active {
+.sound-lesson-progress span.is-active {
   width: 18px;
   background: rgba(244, 239, 192, 0.82);
 }
 
-.sound-path-actions,
+.sound-lesson-actions,
 .sound-reflection-actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.85rem;
 }
 
-.sound-path-actions button,
+.sound-lesson-actions button,
 .sound-reflection-action {
   display: grid;
   width: 50px;
@@ -2826,38 +2939,38 @@ button:focus-visible {
   background: rgba(8, 22, 13, 0.72);
 }
 
-.sound-path-section-back-button,
-.sound-path-section-next-button {
+.sound-lesson-section-back-button,
+.sound-lesson-section-next-button {
   box-shadow: 0 0 28px rgba(157, 187, 116, 0.1);
 }
 
-.sound-path-back-button span,
-.sound-path-next-button span,
-.sound-path-section-back-button span,
-.sound-path-section-next-button span {
+.sound-lesson-back-button span,
+.sound-lesson-next-button span,
+.sound-lesson-section-back-button span,
+.sound-lesson-section-next-button span {
   width: 14px;
   aspect-ratio: 1;
   border-top: 2px solid rgba(244, 239, 192, 0.82);
 }
 
-.sound-path-back-button span,
-.sound-path-section-back-button span {
+.sound-lesson-back-button span,
+.sound-lesson-section-back-button span {
   border-left: 2px solid rgba(244, 239, 192, 0.82);
   transform: translateX(3px) rotate(-45deg);
 }
 
-.sound-path-next-button span,
-.sound-path-section-next-button span {
+.sound-lesson-next-button span,
+.sound-lesson-section-next-button span {
   border-right: 2px solid rgba(244, 239, 192, 0.82);
   transform: translateX(-3px) rotate(45deg);
 }
 
-.sound-path-section-back-button span,
-.sound-path-section-next-button span {
+.sound-lesson-section-back-button span,
+.sound-lesson-section-next-button span {
   width: 16px;
 }
 
-.sound-path-replay-button span,
+.sound-lesson-replay-button span,
 .sound-reflection-action-repeat span {
   width: 20px;
   height: 20px;
@@ -2903,8 +3016,8 @@ button:focus-visible {
   transform: none;
 }
 
-.meaning-preview-screen {
-  align-content: center;
+.story-lesson-screen {
+  align-content: start;
   overflow-y: auto;
 }
 
@@ -3000,27 +3113,67 @@ button:focus-visible {
   display: none;
 }
 
-.story-lesson-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: clamp(10px, 2.4vw, 18px);
-  width: min(100%, 520px);
+/* Story Lesson Stable Shell */
+.story-lesson-screen {
+  align-items: stretch;
+  align-content: stretch;
+  padding: 0;
 }
 
-.story-section-container {
-  min-width: 0;
+.story-lesson-shell {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    'content progress'
+    'nav     nav';
+  width: min(100%, 560px);
+  min-height: 100svh;
+  max-height: 100svh;
+  padding: max(22px, env(safe-area-inset-top)) 22px max(22px, env(safe-area-inset-bottom));
+  padding-top: calc(max(22px, env(safe-area-inset-top)) + 60px);
+  gap: 1rem clamp(10px, 2.4vw, 16px);
+  align-items: center;
+  justify-self: center;
+}
+
+.story-lesson-content {
+  grid-area: content;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  min-height: 0;
+  overflow: visible;
 }
 
 .story-lesson-progress {
+  grid-area: progress;
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.42rem;
+  align-self: center;
 }
+
+.story-section-container {
+  min-width: 0;
+  position: relative;
+  width: 100%;
+}
+
+/* Old layout helper kept for inner-content compatibility */
+.story-lesson-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(10px, 2.4vw, 18px);
+  width: min(100%, 520px);
+}
+
 
 .story-lesson-progress span {
   width: 7px;
@@ -3045,15 +3198,18 @@ button:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .story-lesson-layout {
+  .story-lesson-shell {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'content'
+      'progress'
+      'nav';
     justify-items: center;
-    width: min(100%, 440px);
   }
 
   .story-lesson-progress {
     flex-direction: row;
-    order: 2;
+    align-self: auto;
   }
 
   .story-lesson-progress span {
@@ -3199,11 +3355,7 @@ button:focus-visible {
   transform: translateX(-3px) rotate(45deg);
 }
 
-.meaning-primer-screen,
-.meaning-story-screen,
-.meaning-recall-screen,
-.meaning-reflection-screen,
-.sound-path-screen {
+.sound-lesson-screen {
   opacity: 0;
   animation: fade-in 900ms ease forwards;
 }
@@ -3543,20 +3695,14 @@ button:focus-visible {
 .primer-back-button,
 .primer-next-button {
   display: grid;
-  width: 64px;
-  height: 64px;
+  width: 54px;
+  height: 54px;
   place-items: center;
   border: 1px solid rgba(244, 239, 192, 0.24);
   border-radius: 999px;
   color: rgba(244, 239, 192, 0.9);
   background: rgba(8, 22, 13, 0.72);
   transition: transform 180ms ease, border-color 180ms ease;
-}
-
-.primer-next-button {
-  width: 76px;
-  height: 76px;
-  box-shadow: 0 0 36px rgba(157, 187, 116, 0.14);
 }
 
 .primer-back-button:hover,
@@ -3736,10 +3882,13 @@ button:focus-visible {
 }
 
 .story-audio-button {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 2;
   display: grid;
-  width: 48px;
-  height: 48px;
-  margin: -0.2rem auto 0;
+  width: 46px;
+  height: 46px;
   place-items: center;
   border: 0;
   border-radius: 999px;
@@ -3747,6 +3896,7 @@ button:focus-visible {
   color: rgba(244, 239, 192, 0.92);
   box-shadow: none;
   cursor: pointer;
+  transform: translateX(-50%);
   transition: transform 180ms ease;
 }
 
@@ -3756,16 +3906,23 @@ button:focus-visible {
 
 .story-audio-button:hover,
 .story-audio-button:focus-visible {
-  transform: translateY(-1px);
+  transform: translateX(-50%) translateY(-1px);
 }
 
 .story-audio-button span {
-  width: 36px;
+  width: 34px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.3);
   border-radius: 50%;
   background: rgba(8, 22, 13, 0.78);
-  box-shadow: inset 0 0 0 10px rgba(244, 239, 192, 0.82);
+  box-shadow: inset 0 0 0 9px rgba(244, 239, 192, 0.82);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.story-audio-button:hover span,
+.story-audio-button:focus-visible span {
+  border-color: rgba(244, 239, 192, 0.44);
+  background: rgba(8, 22, 13, 0.88);
 }
 
 .story-stage.is-playing .story-audio-button span,
@@ -3863,8 +4020,7 @@ button:focus-visible {
   left: -2px;
 }
 
-.story-next-button,
-.story-forward-button {
+.story-controls .story-next-button {
   right: -2px;
 }
 
@@ -3884,17 +4040,19 @@ button:focus-visible {
 }
 
 .story-section-actions {
+  grid-area: nav;
   display: flex;
   min-height: 54px;
   align-items: center;
   justify-content: center;
   gap: 0.85rem;
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
 }
 
 .story-section-actions button {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   place-items: center;
   border: 1px solid rgba(244, 239, 192, 0.24);
   border-radius: 999px;
@@ -3970,22 +4128,38 @@ button:focus-visible {
   justify-items: center;
 }
 
-.recall-prompt-orb {
+.recall-prompt-button {
   position: relative;
   display: grid;
   width: 120px;
   aspect-ratio: 1;
   place-items: center;
-  border: 1px solid rgba(244, 239, 192, 0.18);
+  border: 1px solid rgba(244, 239, 192, 0.24);
   border-radius: 999px;
   background:
     radial-gradient(circle at 50% 48%, rgba(244, 239, 192, 0.18), transparent 15%),
     radial-gradient(circle, rgba(157, 187, 116, 0.16), transparent 66%),
     rgba(8, 22, 13, 0.58);
-  box-shadow: 0 0 44px rgba(157, 187, 116, 0.12);
+  box-shadow:
+    0 0 44px rgba(157, 187, 116, 0.16),
+    inset 0 0 22px rgba(244, 239, 192, 0.04);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.recall-prompt-orb[data-family="perception"] {
+.recall-prompt-button::before {
+  position: absolute;
+  inset: 15%;
+  border: 1px solid rgba(244, 239, 192, 0.12);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.recall-prompt-button[data-family="perception"] {
   background:
     radial-gradient(circle at 36% 50%, rgba(244, 239, 192, 0.2), transparent 10%),
     radial-gradient(circle at 64% 50%, rgba(244, 239, 192, 0.16), transparent 12%),
@@ -3993,38 +4167,59 @@ button:focus-visible {
     rgba(8, 22, 13, 0.58);
 }
 
+.recall-prompt-button:hover,
+.recall-prompt-button:focus-visible {
+  border-color: rgba(244, 239, 192, 0.42);
+  box-shadow:
+    0 0 52px rgba(157, 187, 116, 0.22),
+    inset 0 0 24px rgba(244, 239, 192, 0.07);
+  transform: translateY(-1px);
+}
+
+.recall-prompt-orb {
+  display: grid;
+  width: 38px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid rgba(244, 239, 192, 0.32);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(244, 239, 192, 0.28) 0 18%, transparent 20%),
+    rgba(244, 239, 192, 0.08);
+}
+
 .recall-pulse {
-  width: 34px;
+  width: 18px;
   aspect-ratio: 1;
   border: 1px solid rgba(244, 239, 192, 0.3);
   border-radius: 999px;
 }
 
-.recall-prompt-orb.is-playing .recall-pulse {
+.recall-prompt-dot {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  width: 30px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(244, 239, 192, 0.3);
+  border-radius: 999px;
+  background: rgba(8, 22, 13, 0.78);
+  box-shadow: inset 0 0 0 8px rgba(244, 239, 192, 0.82);
+  transform: translateX(-50%);
+}
+
+.recall-prompt-button.is-playing {
+  border-color: rgba(244, 239, 192, 0.48);
+  box-shadow:
+    0 0 58px rgba(157, 187, 116, 0.26),
+    inset 0 0 28px rgba(244, 239, 192, 0.08);
+}
+
+.recall-prompt-button.is-playing .recall-prompt-orb {
   animation: recall-pulse 1.2s ease-out infinite;
 }
 
-.recall-audio-button {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.recall-audio-button span {
-  width: 34px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(244, 239, 192, 0.3);
-  border-radius: 50%;
-  background: rgba(8, 22, 13, 0.78);
-  box-shadow: inset 0 0 0 9px rgba(244, 239, 192, 0.82);
-}
-
-.recall-audio-button.is-playing span {
+.recall-prompt-button.is-playing .recall-prompt-dot {
   animation: story-pulse 1.2s ease-out infinite;
 }
 
@@ -4049,6 +4244,11 @@ button:focus-visible {
   box-shadow: inset 0 0 22px rgba(244, 239, 192, 0.04);
   cursor: pointer;
   transition: border-color 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+
+.recall-choice:focus-visible {
+  outline: 2px solid rgba(225, 239, 174, 0.86);
+  outline-offset: 4px;
 }
 
 .recall-choice:hover,
@@ -4079,6 +4279,44 @@ button:focus-visible {
 .recall-choice-symbol {
   color: rgba(244, 239, 192, 0.88);
   font-size: 2.2rem;
+}
+
+.recall-answer-audio {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 2;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(244, 239, 192, 0.24);
+  border-radius: 999px;
+  background: rgba(8, 22, 13, 0.76);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.recall-answer-audio:hover,
+.recall-answer-audio:focus-visible {
+  border-color: rgba(244, 239, 192, 0.42);
+  background: rgba(8, 22, 13, 0.88);
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.recall-answer-audio span {
+  width: 12px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(244, 239, 192, 0.74);
+  border-radius: 999px;
+}
+
+.recall-answer-audio.is-playing span {
+  animation: story-pulse 1.2s ease-out infinite;
 }
 
 .recall-perception-track {
@@ -5759,3 +5997,4 @@ button:focus-visible {
     opacity: 0 !important;
   }
 }
+
