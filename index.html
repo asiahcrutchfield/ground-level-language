@@ -101,12 +101,13 @@
     ----->
     <!-- MAIN SOUND GARDEN SCREEN  -->
     <section class="sound-garden-screen" id="sound-garden-screen" aria-label="Sound Garden" hidden>
+      <!-- back button -->
+      <button class="path-return-button sound-garden-return-button" id="sound-garden-return-button" type="button"
+        aria-label="Back to path selection">
+        <span aria-hidden="true"></span>
+      </button>
+      <!------>
       <div class="sound-garden" id="sound-garden">
-        <button class="path-return-button sound-garden-return-button" id="sound-garden-return-button" type="button"
-          aria-label="Back to path selection">
-          <span aria-hidden="true"></span>
-        </button>
-
         <!-- lesson categories list (syllables, tones, rhythm, etc)-->
         <ul class="sound-preview-list" id="sound-preview-list"></ul>
         <!------>
@@ -137,20 +138,30 @@
       <div class="sound-lesson-shell" id="sound-lesson-shell">
         <div class="sound-lesson-content-slot" id="sound-lesson-content-slot">
           <div class="sound-lesson-layout" id="sound-lesson-layout">
+            <!-- preview-->
             <section class="sound-lesson-section sound-preview-section" id="sound-preview-section"
               aria-label="Sound lesson preview"></section>
+            <!------>
 
+            <!-- primer -->
             <section class="sound-lesson-section sound-primer-section" id="sound-primer-section"
               aria-label="Sound primer" hidden></section>
+            <!------>
 
+            <!-- guided tuning -->
             <section class="sound-lesson-section sound-guided-section" id="sound-guided-section"
               aria-label="Guided tuning" hidden></section>
+            <!------>
 
+            <!-- recall -->
             <section class="sound-lesson-section sound-recall-section" id="sound-recall-section"
               aria-label="Perception recall" hidden></section>
+            <!------>
 
+            <!-- reflection -->
             <section class="sound-lesson-section sound-reflection-section" id="sound-reflection-section"
               aria-label="Sound reflection" hidden></section>
+            <!------>
           </div>
         </div>
 

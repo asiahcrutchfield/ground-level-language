@@ -21,13 +21,32 @@ import replaySvgMarkup from "../../assets/ui/replay.html?raw"
 import returnToMainNavSvgMarkup from "../../assets/ui/return_to_main_nav.html?raw"
 import sectionNavBackSvgMarkup from "../../assets/ui/section_nav_back.html?raw"
 import sectionNavForwardSvgMarkup from "../../assets/ui/section_nav_forward.html?raw"
+import { makeChime, runEchoGap as runAudioEchoGap, stopAudio } from "./audio"
 import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
+import {
+  conceptIcons,
+  defaultSignature,
+  fallbackPrimerAudio,
+  getPreviewMoments,
+  getPrimerItems,
+  getRecallPrompts,
+  getStoryScenes,
+  getStorySignature,
+  renderArcButtons as renderMeaningArcButtons,
+  renderStoryPods as renderMeaningStoryPods,
+  resolveStoryAsset,
+  type MeaningArc,
+  type RecallChoice,
+  type RecallPrompt
+} from "./meaning"
+import type { SoundLesson, SoundLessonPreviewItem, SoundLessonStepId, SoundPreview, SoundSection, SoundVisualType } from "./sound"
+import { createAppState, type AppSurface } from "./state"
 import { createStoryLessonShell } from "./storyLesson/storyLesson"
 import type { StoryLessonSectionId } from "./storyLesson/storyLessonTypes"
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
-type Surface = "start" | "language" | "path" | "soundGarden" | "soundLessonList" | "soundLesson" | "meaningArc" | "storyBranch" | "meaningPreview" | "primer" | "story" | "recall" | "reflection"
+type Surface = AppSurface
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
 type LanguageSeedDrag = {
   code: SupportedLanguage
@@ -43,60 +62,10 @@ type LanguageSeedDrag = {
   startX: number
   startY: number
 }
-type PathId = "meaning-tree" | "sound-garden"
 type StoryMode = "auto" | "manual"
-type SoundLessonStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
-type SoundVisualType = "contour" | "particle" | "pulse" | "rhythm" | "resonance" | "phrase"
-type SoundPreview = {
-  id: string
-  ariaLabel: string
-  visual: string
-  audio: string
-}
-type SoundSection = {
-  id: string
-  ariaLabel: string
-  kind: string
-  iconType: string
-  previews: SoundPreview[]
-}
-type SoundLessonPreviewItem = {
-  id: string
-  visual: string
-  audio: string
-}
-type SoundLesson = {
-  id: string
-  sectionId: string
-  ariaLabel: string
-  visualType: SoundVisualType
-  previewItems: SoundLessonPreviewItem[]
-  unlocked: boolean
-  completed: boolean
-}
-type RecallChoice =
-  | { kind: "meaning"; image?: string; symbol?: string; id: string; audio?: string }
-  | { kind: "perception"; pattern: number[]; id: string; audio?: string }
-type RecallPrompt = {
-  id: string
-  family: "perception" | "meaning"
-  audio?: string
-  choices: RecallChoice[]
-  correctIndex: number
-}
-
 type LanguageSeed = {
   code: SupportedLanguage
   state: SeedState
-}
-
-type MeaningArc = {
-  id: string
-  subject: string
-  ariaLabel: string
-  svg?: string
-  fallbackSymbol: string
-  unlocked: boolean
 }
 
 const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
@@ -110,51 +79,8 @@ const languageSeedMarkup: Record<SupportedLanguage, string> = {
 const prefersReducedMotion = (): boolean =>
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
 
-const conceptIcons: Record<string, string> = {
-  cat: "🐈",
-  dog: "🐕",
-  bird: "🐦",
-  rabbit: "🐇",
-  food: "🍖",
-  night: "🌙",
-  rain: "🌧",
-  shelter: "▰",
-  fish: "🐟",
-  table: "▔",
-  box: "□",
-  bowl: "◡",
-  meat: "🍖",
-  human: "◯",
-  hand: "✋",
-  touch: "◌",
-  car: "▭",
-  hands: "✋",
-  home: "⌂",
-  day: "○",
-  tree: "♧",
-  sun: "☼"
-}
-
-const defaultSignature = ["cat", "food", "night"]
-const fallbackPrimerAudio = "engine/vocab/nan/audio/nan_u0002.wav"
-const openingAnimationDuration = 5600
-
-const universalImages = [
-  "u0001.webp",
-  "u0002.webp",
-  "u0003.gif",
-  "u0004.webp",
-  "u0005.gif",
-  "u0006.webp",
-  "u0007.gif",
-  "u0008.webp",
-  "u0009.webp"
-]
-
-const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
-  nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
-  zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
-}
+const openingAnimationDuration = 4300
+const soundGardenEnterDuration = 760
 
 const soundSections: SoundSection[] = [
   {
@@ -355,60 +281,6 @@ const getDisplayName = (code: SupportedLanguage): string => {
 
 const getStoryArcId = (story: Story): string => story.arcId ?? `${story.perspective}-${story.arc}`
 
-function getFallbackVisualSignature(story: Story): string[] {
-  if (story.perspective === "cat") return ["cat", "food", "night"]
-  if (story.perspective === "dog") return ["dog", "food", "day"]
-  if (story.perspective === "bird") return ["bird", "tree", "sun"]
-  return ["○", "○", "○"]
-}
-
-function shuffled<T>(items: readonly T[]): T[] {
-  return [...items].sort(() => Math.random() - 0.5)
-}
-
-function getPreviewCount(story: Story): number {
-  return Math.max(3, Math.min(5, story.visualSignature?.length || story.coreConcepts.length || 5))
-}
-
-function getVocabAudioFiles(lang: SupportedLanguage): string[] {
-  return vocabAudioFiles[lang] ?? vocabAudioFiles.nan ?? []
-}
-
-function makeChime(): void {
-  const AudioContextConstructor =
-    window.AudioContext ||
-    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-  if (!AudioContextConstructor) return
-
-  const context = new AudioContextConstructor()
-  void context.resume()
-  const now = context.currentTime
-  const master = context.createGain()
-  master.gain.setValueAtTime(0.0001, now)
-  master.gain.exponentialRampToValueAtTime(0.16, now + 0.04)
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.65)
-  master.connect(context.destination)
-
-  ;[392, 523.25, 659.25].forEach((frequency, index) => {
-    const oscillator = context.createOscillator()
-    const gain = context.createGain()
-    const start = now + index * 0.09
-
-    oscillator.type = "sine"
-    oscillator.frequency.setValueAtTime(frequency, start)
-    oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.012, start + 1.1)
-
-    gain.gain.setValueAtTime(0.0001, start)
-    gain.gain.exponentialRampToValueAtTime(0.32 / (index + 1), start + 0.05)
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.3)
-
-    oscillator.connect(gain)
-    gain.connect(master)
-    oscillator.start(start)
-    oscillator.stop(start + 1.45)
-  })
-}
-
 function createSeedSvg(code: SupportedLanguage): HTMLElement {
   const wrapper = document.createElement("span")
   wrapper.className = "language-seed-art"
@@ -580,8 +452,8 @@ export function createExperience(): void {
   let languageSeedDrag: LanguageSeedDrag | null = null
   let suppressNextLanguageSeedClick = false
   let gardenLabelTimer = 0
-  let selectedLanguage = getInitialLanguage()
-  let selectedPath: PathId | null = null
+  let isGardenTransitioning = false
+  const appState = createAppState(getInitialLanguage())
   let selectedSoundSectionId: string | null = null
   let selectedSoundLessonId: string | null = null
   let currentSoundPreviewAudio: HTMLAudioElement | null = null
@@ -592,18 +464,13 @@ export function createExperience(): void {
   let currentRecallItemIndex = 0
   let currentSoundAudio: HTMLAudioElement | null = null
   const completedSoundSectionIds = new Set<string>()
-  let selectedArcId: string | null = null
-  let selectedStoryId: string | null = null
   let expandedPrimerCard: HTMLElement | null = null
   let selectedStoryMode: StoryMode | null = null
-  let currentStorySceneIndex = 0
   let currentStoryAudio: HTMLAudioElement | null = null
   let currentStory: Story | null = null
   let storySceneTimer = 0
   let storyAudioBase = ""
   let currentRecallPrompts: RecallPrompt[] = []
-  let currentRecallIndex = 0
-  const completedStoryIds = new Set<string>()
   let allStories: Story[] = []
   const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
     code: language.code,
@@ -731,9 +598,7 @@ export function createExperience(): void {
     previewRun += 1
     window.clearTimeout(previewReleaseTimer)
     window.clearTimeout(languageNameTimer)
-    previewAudio.pause()
-    previewAudio.removeAttribute("src")
-    previewAudio.load()
+    stopAudio(previewAudio)
 
     activePreview = null
     previewRelease = null
@@ -780,11 +645,11 @@ export function createExperience(): void {
   function selectLanguage(code: SupportedLanguage): void {
     resetActivePreview()
     window.clearTimeout(languageNameTimer)
-    selectedLanguage = code
+    appState.selectedLanguage = code
     pendingLanguage = null
     visibleLanguageName = null
-    selectedArcId = null
-    selectedStoryId = null
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
     allStories = []
     setLanguageState(code, "selected")
     saveLanguage(code)
@@ -796,98 +661,22 @@ export function createExperience(): void {
     }, 360)
   }
 
-  function getStorySignature(story: Story): string[] {
-    if (story.visualSignature?.length) return story.visualSignature.slice(0, 3)
-    return getFallbackVisualSignature(story)
-  }
-
-  function getPreviewMoments(story: Story): PreviewMoment[] {
-    if (story.previewMoments?.length) return story.previewMoments.slice(0, 5)
-
-    const count = getPreviewCount(story)
-    const signature = story.visualSignature?.length ? story.visualSignature : getFallbackVisualSignature(story)
-    const concepts = [...signature, ...story.coreConcepts].filter(Boolean)
-    const imageFiles = shuffled(universalImages).slice(0, count)
-    const audioFiles = shuffled(getVocabAudioFiles(selectedLanguage)).slice(0, count)
-
-    return imageFiles.map((image, index) => {
-      const concept = concepts[index % concepts.length] ?? `moment-${index + 1}`
-      const audio = audioFiles[index % audioFiles.length]
-
-      return {
-        id: concept,
-        symbol: concept,
-        image: `engine/universal/images/${image}`,
-        audio: audio ? `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}` : undefined
-      }
-    })
-  }
-
-  function getPrimerAudioFiles(): string[] {
-    return getVocabAudioFiles(selectedLanguage).map(
-      (audio) => `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}`
-    )
-  }
-
-  function createSoundPieces(count: number, prefix: string, audio: string): SoundPiece[] {
-    return Array.from({ length: Math.max(1, count) }, (_, index) => ({
-      id: `${prefix}-${index + 1}`,
-      audio
-    }))
-  }
-
-  function getPrimerItems(story: Story): PrimerItem[] {
-    if (story.primerItems?.length) return story.primerItems.slice(0, 5)
-
-    const moments = getPreviewMoments(story)
-    const concepts = [
-      ...(story.visualSignature ?? []),
-      ...story.coreConcepts,
-      ...defaultSignature
-    ].filter(Boolean)
-    const audioFiles = getPrimerAudioFiles()
-
-    return moments.slice(0, 5).map((moment, index) => {
-      const id = concepts[index % concepts.length] ?? moment.id
-      const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? fallbackPrimerAudio
-      const phonemeCount = Math.max(2, Math.min(4, id.length || 3))
-      const syllableCount = Math.max(1, Math.min(3, Math.ceil((id.length || 3) / 3)))
-
-      return {
-        id,
-        image: moment.image,
-        wholeAudio,
-        phonemes: createSoundPieces(phonemeCount, `${id}-sound`, wholeAudio),
-        syllables: createSoundPieces(syllableCount, `${id}-pulse`, wholeAudio),
-        toneOrPitch: [{ id: `${id}-contour`, audio: wholeAudio, shape: selectedLanguage === "en" ? "single-pulse" : "contour" }],
-        features: []
-      }
-    })
-  }
-
   function stopPreviewMomentAudio(): void {
-    previewMomentAudio.pause()
-    previewMomentAudio.removeAttribute("src")
-    previewMomentAudio.load()
+    stopAudio(previewMomentAudio)
     document.querySelectorAll(".is-preview-playing").forEach((element) => {
       element.classList.remove("is-preview-playing")
     })
   }
 
   function stopPrimerAudio(): void {
-    primerAudio.pause()
-    primerAudio.removeAttribute("src")
-    primerAudio.load()
+    stopAudio(primerAudio)
     document.querySelectorAll(".is-primer-playing").forEach((element) => {
       element.classList.remove("is-primer-playing")
     })
   }
 
   function runEchoGap(duration = 1200): void {
-    primerEcho.classList.add("is-echoing")
-    window.setTimeout(() => {
-      primerEcho.classList.remove("is-echoing")
-    }, duration)
+    runAudioEchoGap(primerEcho, duration)
   }
 
   function playPrimerAudio(audioSrc: string | undefined, sourceElement: HTMLElement, echo = false): void {
@@ -979,7 +768,7 @@ export function createExperience(): void {
       previewSignature.append(symbol)
     })
 
-    const moments = getPreviewMoments(story)
+    const moments = getPreviewMoments(story, appState.selectedLanguage)
 
     moments.forEach((moment) => {
       const imageFrame = document.createElement("figure")
@@ -1115,49 +904,13 @@ export function createExperience(): void {
     stopPrimerAudio()
     collapsePrimerCard()
     clearNode(primerCardTrack)
-    getPrimerItems(story).forEach((item) => {
+    getPrimerItems(story, appState.selectedLanguage).forEach((item) => {
       primerCardTrack.append(renderPrimerCard(item))
     })
   }
 
-  function resolveStoryAsset(path: string | undefined, base = storyAudioBase): string {
-    if (!path) return ""
-    if (/^(https?:|data:|blob:|\/|engine\/|stories\/|assets\/)/.test(path)) return path
-    return `${base}${path}`
-  }
-
   function getStoryById(storyId: string): Story | undefined {
     return allStories.find((candidate) => candidate.id === storyId)
-  }
-
-  function getStoryScenes(story: Story): StoryScene[] {
-    const providedScenes = story.scenes?.filter((scene) => scene.image || scene.audio || scene.start !== undefined)
-    const sourceScenes: StoryScene[] = providedScenes?.length
-      ? providedScenes
-      : [
-          ...getPrimerItems(story).map((item) => ({
-            id: item.id,
-            image: item.image,
-            audio: item.wholeAudio
-          })),
-          ...universalImages.map((image, index) => ({
-            id: `fallback-scene-${index + 1}`,
-            image: `engine/universal/images/${image}`
-          }))
-        ] satisfies StoryScene[]
-
-    return sourceScenes.slice(0, 5).map((scene, index) => {
-      const start = scene.start ?? index * 3.8
-      const end = scene.end ?? start + 3.8
-
-      return {
-        id: scene.id || `scene-${index + 1}`,
-        image: scene.image ? resolveStoryAsset(scene.image) : `engine/universal/images/${universalImages[index % universalImages.length]}`,
-        audio: scene.audio ? resolveStoryAsset(scene.audio) : undefined,
-        start,
-        end
-      }
-    })
   }
 
   function getSceneIndexFromTime(scenes: StoryScene[], time: number): number {
@@ -1176,14 +929,14 @@ export function createExperience(): void {
 
     scenes.forEach((_, index) => {
       const dot = document.createElement("span")
-      dot.className = index === currentStorySceneIndex ? "is-active" : index < currentStorySceneIndex ? "is-complete" : ""
+      dot.className = index === appState.currentStorySceneIndex ? "is-active" : index < appState.currentStorySceneIndex ? "is-complete" : ""
       dot.setAttribute("aria-hidden", "true")
       storyProgress.append(dot)
     })
   }
 
   function updateStoryProgress(story: Story, sceneIndex: number): void {
-    const scenes = getStoryScenes(story)
+    const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
     if (storyProgress.children.length !== scenes.length) renderStoryProgress(scenes)
 
     Array.from(storyProgress.children).forEach((dot, index) => {
@@ -1201,11 +954,11 @@ export function createExperience(): void {
   }
 
   function showStoryScene(story: Story, sceneIndex: number): void {
-    const scenes = getStoryScenes(story)
+    const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
     const scene = scenes[sceneIndex]
     if (!scene) return
 
-    currentStorySceneIndex = sceneIndex
+    appState.currentStorySceneIndex = sceneIndex
     storyImage.classList.add("is-changing")
 
     window.setTimeout(() => {
@@ -1223,10 +976,7 @@ export function createExperience(): void {
   }
 
   function runStoryEcho(duration = 1200): void {
-    storyEcho.classList.add("is-echoing")
-    window.setTimeout(() => {
-      storyEcho.classList.remove("is-echoing")
-    }, duration)
+    runAudioEchoGap(storyEcho, duration)
   }
 
   function stopStoryAudio(): void {
@@ -1236,9 +986,7 @@ export function createExperience(): void {
 
     if (!currentStoryAudio) return
 
-    currentStoryAudio.pause()
-    currentStoryAudio.removeAttribute("src")
-    currentStoryAudio.load()
+    stopAudio(currentStoryAudio)
     currentStoryAudio = null
   }
 
@@ -1254,7 +1002,7 @@ export function createExperience(): void {
   }
 
   function runTimedAutoStory(story: Story, sceneIndex = 0): void {
-    const scenes = getStoryScenes(story)
+    const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
     const scene = scenes[sceneIndex]
     if (!scene) {
       finishStory()
@@ -1269,8 +1017,8 @@ export function createExperience(): void {
   }
 
   function playFullStoryAudio(story: Story): void {
-    const scenes = getStoryScenes(story)
-    const src = resolveStoryAsset(story.audio)
+    const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
+    const src = resolveStoryAsset(story.audio, storyAudioBase)
 
     if (!src) {
       runTimedAutoStory(story)
@@ -1282,18 +1030,18 @@ export function createExperience(): void {
 
     audio.addEventListener("timeupdate", () => {
       const sceneIndex = getSceneIndexFromTime(scenes, audio.currentTime)
-      if (sceneIndex !== currentStorySceneIndex) showStoryScene(story, sceneIndex)
+      if (sceneIndex !== appState.currentStorySceneIndex) showStoryScene(story, sceneIndex)
     })
 
     audio.addEventListener("ended", finishStory)
     audio.addEventListener("error", () => {
       currentStoryAudio = null
-      runTimedAutoStory(story, currentStorySceneIndex)
+      runTimedAutoStory(story, appState.currentStorySceneIndex)
     })
 
     audio.play().catch(() => {
       currentStoryAudio = null
-      runTimedAutoStory(story, currentStorySceneIndex)
+      runTimedAutoStory(story, appState.currentStorySceneIndex)
     })
   }
 
@@ -1309,13 +1057,13 @@ export function createExperience(): void {
     storyNextButton.hidden = true
     storyReplayButton.hidden = true
     storyForwardButton.hidden = false
-    currentStorySceneIndex = 0
+    appState.currentStorySceneIndex = 0
     showStoryScene(story, 0)
     playFullStoryAudio(story)
   }
 
   function playSceneAudio(story: Story, sceneIndex: number): void {
-    const scene = getStoryScenes(story)[sceneIndex]
+    const scene = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)[sceneIndex]
     if (!scene) return
 
     stopStoryAudio()
@@ -1323,7 +1071,7 @@ export function createExperience(): void {
     storyAudioButton.classList.add("is-playing")
 
     const sceneAudio = scene.audio
-    const fullStoryAudio = resolveStoryAsset(story.audio)
+    const fullStoryAudio = resolveStoryAsset(story.audio, storyAudioBase)
     const audio = new Audio(sceneAudio || fullStoryAudio)
 
     if (!sceneAudio && !fullStoryAudio) {
@@ -1373,15 +1121,15 @@ export function createExperience(): void {
     selectedStoryMode = "manual"
     stopStoryAudio()
     updateStoryModeButtons()
-    currentStorySceneIndex = Math.min(currentStorySceneIndex, getStoryScenes(story).length - 1)
+    appState.currentStorySceneIndex = Math.min(appState.currentStorySceneIndex, getStoryScenes(story, appState.selectedLanguage, storyAudioBase).length - 1)
     storyModeGate.hidden = false
     storyAudioButton.hidden = false
     storyPrevButton.hidden = false
     storyNextButton.hidden = false
     storyReplayButton.hidden = false
     storyForwardButton.hidden = false
-    showStoryScene(story, currentStorySceneIndex)
-    updateStoryProgress(story, currentStorySceneIndex)
+    showStoryScene(story, appState.currentStorySceneIndex)
+    updateStoryProgress(story, appState.currentStorySceneIndex)
   }
 
   function renderMeaningStory(storyId: string): void {
@@ -1390,7 +1138,7 @@ export function createExperience(): void {
 
     stopStoryAudio()
     currentStory = story
-    currentStorySceneIndex = 0
+    appState.currentStorySceneIndex = 0
     selectedStoryMode = "manual"
     storyControls.hidden = false
     startManualStory(story)
@@ -1405,38 +1153,36 @@ export function createExperience(): void {
     if (previousSection === "story" && section !== "story") stopStoryAudio()
     if (previousSection === "recall" && section !== "recall") stopRecallAudio()
 
-    if (!selectedStoryId) return
+    if (!appState.selectedStoryId) return
 
-    if (section === "preview") renderMeaningPreviewWorld(selectedStoryId)
-    if (section === "primer") renderMeaningPrimer(selectedStoryId)
-    if (section === "story") renderMeaningStory(selectedStoryId)
-    if (section === "recall") renderMeaningRecall(selectedStoryId)
-    if (section === "reflection") renderMeaningReflection(selectedStoryId)
+    if (section === "preview") renderMeaningPreviewWorld(appState.selectedStoryId)
+    if (section === "primer") renderMeaningPrimer(appState.selectedStoryId)
+    if (section === "story") renderMeaningStory(appState.selectedStoryId)
+    if (section === "recall") renderMeaningRecall(appState.selectedStoryId)
+    if (section === "reflection") renderMeaningReflection(appState.selectedStoryId)
     setSurface(storyLessonSectionSurfaces[section])
   }
 
   function goBackToStorySelection(): void {
     stopStoryAudio()
-    if (selectedArcId) renderStoryPods(getStoriesForArc(selectedArcId))
+    if (appState.selectedArcId) renderStoryPods(getStoriesForArc(appState.selectedArcId))
     setSurface("storyBranch")
   }
 
   function goForwardFromStory(): void {
     stopStoryAudio()
-    if (selectedStoryId) renderMeaningRecall(selectedStoryId)
+    if (appState.selectedStoryId) renderMeaningRecall(appState.selectedStoryId)
     setSurface("recall")
   }
 
   function stopRecallAudio(): void {
     recallPromptButton.classList.remove("is-playing")
     recallScreen.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
-    recallAudio.pause()
-    recallAudio.removeAttribute("src")
-    recallAudio.load()
+    stopAudio(recallAudio)
   }
 
   function playRecallPrompt(): void {
-    const prompt = currentRecallPrompts[currentRecallIndex]
+    const prompt = currentRecallPrompts[appState.currentRecallIndex]
     stopRecallAudio()
     if (!prompt?.audio) return
 
@@ -1480,72 +1226,11 @@ export function createExperience(): void {
     })
   }
 
-  function getRecallPattern(item: PrimerItem, fallbackIndex: number): number[] {
-    const phonemeCount = Math.max(2, item.phonemes?.length ?? 2 + (fallbackIndex % 3))
-    return Array.from({ length: Math.min(5, phonemeCount) }, (_, index) => (index % 2 === 0 ? 1 : 0.64))
-  }
-
-  function getRecallPrompts(story: Story): RecallPrompt[] {
-    const primerItems = getPrimerItems(story).slice(0, 4)
-    const scenes = getStoryScenes(story)
-    const items = primerItems.length ? primerItems : scenes.map((scene) => ({ id: scene.id, image: scene.image, wholeAudio: scene.audio }))
-    const first = items[0]
-    const second = items[1] ?? items[0]
-    const third = items[2] ?? items[0]
-    if (!first || !second || !third) return []
-
-    const meaningChoices = items.slice(0, 3).map((item) => ({
-      kind: "meaning" as const,
-      id: item.id,
-      image: item.image,
-      symbol: conceptIcons[item.id],
-      audio: item.wholeAudio
-    }))
-
-    const perceptionChoices = [first, second, third].map((item, index) => ({
-      kind: "perception" as const,
-      id: item.id,
-      pattern: getRecallPattern(item, index),
-      audio: item.wholeAudio
-    }))
-
-    return [
-      {
-        id: `${first.id}-hear-shape`,
-        family: "perception",
-        audio: first.wholeAudio,
-        choices: perceptionChoices,
-        correctIndex: 0
-      },
-      {
-        id: `${second.id}-meaning`,
-        family: "meaning",
-        audio: second.wholeAudio,
-        choices: meaningChoices,
-        correctIndex: Math.min(1, meaningChoices.length - 1)
-      },
-      {
-        id: `${third.id}-hear-shape`,
-        family: "perception",
-        audio: third.wholeAudio,
-        choices: [...perceptionChoices].reverse(),
-        correctIndex: Math.max(0, perceptionChoices.length - 1 - 2)
-      },
-      {
-        id: `${first.id}-meaning-return`,
-        family: "meaning",
-        audio: first.wholeAudio,
-        choices: [...meaningChoices].reverse(),
-        correctIndex: Math.max(0, meaningChoices.length - 1)
-      }
-    ]
-  }
-
   function renderRecallProgress(): void {
     clearNode(recallProgress)
     currentRecallPrompts.forEach((_, index) => {
       const dot = document.createElement("span")
-      dot.className = index === currentRecallIndex ? "is-active" : ""
+      dot.className = index === appState.currentRecallIndex ? "is-active" : ""
       recallProgress.append(dot)
     })
   }
@@ -1579,7 +1264,7 @@ export function createExperience(): void {
   }
 
   function renderRecallPrompt(): void {
-    const prompt = currentRecallPrompts[currentRecallIndex]
+    const prompt = currentRecallPrompts[appState.currentRecallIndex]
     clearNode(recallChoiceBed)
     renderRecallProgress()
     recallPromptButton.dataset.family = prompt?.family ?? "meaning"
@@ -1617,15 +1302,15 @@ export function createExperience(): void {
 
         button.classList.add("is-correct")
         window.setTimeout(() => {
-          if (currentRecallPrompts[currentRecallIndex] !== prompt) return
+          if (currentRecallPrompts[appState.currentRecallIndex] !== prompt) return
           stopRecallAudio()
-          if (currentRecallIndex < currentRecallPrompts.length - 1) {
-            currentRecallIndex += 1
+          if (appState.currentRecallIndex < currentRecallPrompts.length - 1) {
+            appState.currentRecallIndex += 1
             renderRecallPrompt()
             playRecallPrompt()
             return
           }
-          if (selectedStoryId) renderMeaningReflection(selectedStoryId)
+          if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
           setSurface("reflection")
         }, 420)
       }
@@ -1647,21 +1332,21 @@ export function createExperience(): void {
 
     stopRecallAudio()
     currentStory = story
-    currentRecallPrompts = getRecallPrompts(story)
-    currentRecallIndex = 0
+    currentRecallPrompts = getRecallPrompts(story, appState.selectedLanguage, storyAudioBase)
+    appState.currentRecallIndex = 0
     renderRecallPrompt()
     window.setTimeout(playRecallPrompt, 180)
   }
 
   function goBackToStory(): void {
     stopRecallAudio()
-    if (selectedStoryId) renderMeaningStory(selectedStoryId)
+    if (appState.selectedStoryId) renderMeaningStory(appState.selectedStoryId)
     setSurface("story")
   }
 
   function continueFromRecall(): void {
     stopRecallAudio()
-    if (selectedStoryId) renderMeaningReflection(selectedStoryId)
+    if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
     setSurface("reflection")
   }
 
@@ -1669,7 +1354,7 @@ export function createExperience(): void {
     const story = getStoryById(storyId)
     if (!story) return
 
-    completedStoryIds.add(storyId)
+    appState.completedStoryIds.add(storyId)
     reflectionGrowth.innerHTML = reflectionSproutSvgMarkup.trim()
     reflectionGrowth.querySelectorAll("svg").forEach((svg) => {
       svg.setAttribute("focusable", "false")
@@ -1684,20 +1369,40 @@ export function createExperience(): void {
   }
 
   function replayStoryFromReflection(): void {
-    if (selectedStoryId) renderMeaningStory(selectedStoryId)
+    if (appState.selectedStoryId) renderMeaningStory(appState.selectedStoryId)
     setSurface("story")
   }
 
   function returnToPathSelection(): void {
-    selectedArcId = null
-    selectedStoryId = null
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
     setSurface("path")
   }
 
+  function enterSoundGardenWithTransition(sourceButton?: HTMLElement): void {
+    if (isGardenTransitioning) return
+
+    isGardenTransitioning = true
+    appState.selectedPath = "sound-garden"
+    sourceButton?.classList.add("is-entering-sound-garden")
+    app.dataset.transition = "sound-garden-enter"
+    makeChime()
+
+    window.setTimeout(
+      () => {
+        renderSoundGarden()
+        setSurface("soundGarden")
+
+        sourceButton?.classList.remove("is-entering-sound-garden")
+        delete app.dataset.transition
+        isGardenTransitioning = false
+      },
+      prefersReducedMotion() ? 0 : soundGardenEnterDuration
+    )
+  }
+
   function enterSoundGardenFromReflection(): void {
-    selectedPath = "sound-garden"
-    renderSoundGarden()
-    setSurface("soundGarden")
+    enterSoundGardenWithTransition()
   }
 
   function createSectionIcon(section: SoundSection): string {
@@ -2660,8 +2365,7 @@ export function createExperience(): void {
   }
 
   function runSoundLessonEchoGap(duration = 1200): void {
-    soundLessonEcho.classList.add("is-echoing")
-    window.setTimeout(() => soundLessonEcho.classList.remove("is-echoing"), duration)
+    runAudioEchoGap(soundLessonEcho, duration)
   }
 
   function goToNextSoundLessonStep(): void {
@@ -2861,7 +2565,7 @@ export function createExperience(): void {
     stopCurrentSoundPreview()
     stopSoundLessonAudio()
     stopLessonPreviewAudio()
-    selectedArcId = null
+    appState.selectedArcId = null
     selectedSoundSectionId = null
     selectedSoundLessonId = null
     setSurface("path")
@@ -2873,105 +2577,35 @@ export function createExperience(): void {
 
   function renderArcButtons(): void {
     clearNode(arcList)
-
-    meaningArcs.forEach((arc, index) => {
-      const item = document.createElement("li")
-      item.className = arc.unlocked ? "arc-node-item is-unlocked" : "arc-node-item is-dormant"
-      item.dataset.endpoint = String(index + 1)
-
-      const button = document.createElement("button")
-      button.className = arc.unlocked ? "arc-button" : "arc-button is-locked"
-      button.type = "button"
-      button.dataset.arcId = arc.id
-      button.dataset.subject = arc.subject
-      button.setAttribute("aria-label", arc.ariaLabel)
-      button.setAttribute("aria-disabled", String(!arc.unlocked))
-
-      const icon = document.createElement("span")
-      icon.className = "arc-icon"
-      icon.setAttribute("aria-hidden", "true")
-
-      if (arc.svg) {
-        icon.innerHTML = arc.svg.trim()
-        icon.querySelector("svg")?.setAttribute("focusable", "false")
-      } else {
-        icon.textContent = arc.subject === "monkey" ? "🐒" : arc.fallbackSymbol
+    renderMeaningArcButtons({
+      arcList,
+      arcs: meaningArcs,
+      prefersReducedMotion,
+      onArcSelected: (arc) => {
+        appState.selectedArcId = arc.id
+        renderStoryPods(getStoriesForArc(arc.id))
+        setSurface("storyBranch")
       }
-
-      button.append(icon)
-      button.addEventListener("click", () => {
-        if (!arc.unlocked) {
-          button.dataset.inactiveTap = "true"
-          window.setTimeout(() => {
-            delete button.dataset.inactiveTap
-          }, 420)
-          return
-        }
-
-        arcList.dataset.selecting = arc.subject
-        button.dataset.selected = "true"
-        selectedArcId = arc.id
-        window.setTimeout(
-          () => {
-            renderStoryPods(getStoriesForArc(arc.id))
-            delete arcList.dataset.selecting
-            delete button.dataset.selected
-            setSurface("storyBranch")
-          },
-          prefersReducedMotion() ? 20 : 520
-        )
-      })
-
-      item.append(button)
-      arcList.append(item)
     })
   }
 
   function renderStoryPods(stories: Story[]): void {
     clearNode(storyPodBed)
     renderStoryArcContext()
-
-    stories.forEach((story, index) => {
-      const button = document.createElement("button")
-      button.className = `story-pod ${index === 0 ? "is-current" : "is-future"}${completedStoryIds.has(story.id) ? " is-complete" : ""}`
-      button.type = "button"
-      button.setAttribute("role", "listitem")
-      button.setAttribute("aria-label", story.title)
-      button.dataset.storyIndex = String(index + 1)
-
-      const symbols = document.createElement("span")
-      symbols.className = "story-symbols"
-      symbols.setAttribute("aria-hidden", "true")
-
-      const activeArc = meaningArcs.find((arc) => arc.id === selectedArcId)
-      const sceneSignature = getStorySignature(story).filter((concept) => concept !== activeArc?.subject).slice(0, 3)
-      const symbolsToRender = sceneSignature.length ? sceneSignature : getStorySignature(story).slice(1, 4)
-
-      symbolsToRender.forEach((concept) => {
-        const symbol = document.createElement("span")
-        symbol.className = "story-symbol"
-        symbol.textContent = conceptIcons[concept] ?? "○"
-        symbols.append(symbol)
-      })
-
-      const progress = document.createElement("span")
-      progress.className = "story-progress"
-      progress.setAttribute("aria-hidden", "true")
-      progress.append(document.createElement("span"))
-
-      button.append(symbols, progress)
-      button.addEventListener("click", () => {
-        selectedStoryId = story.id
+    renderMeaningStoryPods({
+      storyPodBed,
+      stories,
+      completedStoryIds: appState.completedStoryIds,
+      activeArc: meaningArcs.find((arc) => arc.id === appState.selectedArcId),
+      onStorySelected: (story) => {
+        appState.selectedStoryId = story.id
         renderMeaningPreviewWorld(story.id)
         setSurface("meaningPreview")
-      })
-
-      storyPodBed.append(button)
+      }
     })
   }
-
   function renderStoryArcContext(): void {
-    const arc = meaningArcs.find((candidate) => candidate.id === selectedArcId)
+    const arc = meaningArcs.find((candidate) => candidate.id === appState.selectedArcId)
     clearNode(storyArcSymbol)
     if (!arc) return
 
@@ -2984,20 +2618,20 @@ export function createExperience(): void {
   }
 
   function returnToMeaningArcs(): void {
-    selectedArcId = null
-    selectedStoryId = null
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
     renderArcButtons()
     setSurface("meaningArc")
   }
 
   function openMeaningArcs(): void {
-    selectedPath = "meaning-tree"
-    selectedArcId = null
-    selectedStoryId = null
+    appState.selectedPath = "meaning-tree"
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
     clearNode(arcList)
     clearNode(storyPodBed)
 
-    loadLearningData(selectedLanguage)
+    loadLearningData(appState.selectedLanguage)
       .then((data) => {
         allStories = data.stories
         storyAudioBase = data.storyAudio
@@ -3324,9 +2958,7 @@ export function createExperience(): void {
   soundGardenButtons.forEach((button) => {
     button.addEventListener("click", () => {
       revealGardenLabel(button)
-      selectedPath = "sound-garden"
-      renderSoundGarden()
-      setSurface("soundGarden")
+      enterSoundGardenWithTransition(button)
     })
   })
 
@@ -3413,39 +3045,39 @@ export function createExperience(): void {
   })
 
   storyAutoButton.addEventListener("click", () => {
-    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    const story = currentStory ?? (appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined)
     if (story) startAutoStory(story)
   })
 
   storyManualButton.addEventListener("click", () => {
-    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    const story = currentStory ?? (appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined)
     if (story) startManualStory(story)
   })
 
   storyAudioButton.addEventListener("click", () => {
-    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    const story = currentStory ?? (appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined)
     if (!story) return
-    if (selectedStoryMode === "manual") playSceneAudio(story, currentStorySceneIndex)
+    if (selectedStoryMode === "manual") playSceneAudio(story, appState.currentStorySceneIndex)
     else startAutoStory(story)
   })
 
   storyPrevButton.addEventListener("click", () => {
     if (!currentStory) return
     stopStoryAudio()
-    showStoryScene(currentStory, Math.max(0, currentStorySceneIndex - 1))
+    showStoryScene(currentStory, Math.max(0, appState.currentStorySceneIndex - 1))
   })
 
   storyNextButton.addEventListener("click", () => {
     if (!currentStory) return
-    const scenes = getStoryScenes(currentStory)
+    const scenes = getStoryScenes(currentStory, appState.selectedLanguage, storyAudioBase)
     stopStoryAudio()
-    showStoryScene(currentStory, Math.min(scenes.length - 1, currentStorySceneIndex + 1))
+    showStoryScene(currentStory, Math.min(scenes.length - 1, appState.currentStorySceneIndex + 1))
   })
 
   storyReplayButton.addEventListener("click", () => {
-    const story = currentStory ?? (selectedStoryId ? getStoryById(selectedStoryId) : undefined)
+    const story = currentStory ?? (appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined)
     if (!story) return
-    if (selectedStoryMode === "manual") playSceneAudio(story, currentStorySceneIndex)
+    if (selectedStoryMode === "manual") playSceneAudio(story, appState.currentStorySceneIndex)
     else startAutoStory(story)
   })
 
@@ -3514,4 +3146,10 @@ export function createExperience(): void {
   renderLanguageSeeds()
   setSurface(surface)
 }
+
+
+
+
+
+
 

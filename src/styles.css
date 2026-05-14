@@ -1000,6 +1000,10 @@ button:focus-visible {
   padding-block: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-bottom));
 }
 
+.app[data-surface="soundGarden"] .sound-garden-screen {
+  animation: sound-garden-arrive 720ms ease forwards;
+}
+
 .sound-lesson-list-screen {
   align-content: start;
   justify-items: center;
@@ -5178,6 +5182,28 @@ button:focus-visible {
   transform: translateY(1px) scale(0.98);
 }
 
+.garden-choice.is-entering-sound-garden .garden-mark {
+  animation: sound-garden-enter-mark 760ms cubic-bezier(0.2, 0.8, 0.16, 1) forwards;
+}
+
+.garden-choice.is-entering-sound-garden::before {
+  animation: sound-garden-enter-ring 760ms ease-out forwards;
+}
+
+.app[data-transition="sound-garden-enter"] .garden-hub {
+  pointer-events: none;
+}
+
+.app[data-transition="sound-garden-enter"] .garden-hub .garden-choice:not(.is-entering-sound-garden) {
+  opacity: 0.28;
+  transition: opacity 260ms ease;
+}
+
+.app[data-transition="sound-garden-enter"] .garden-hub .garden-choice:not(.is-entering-sound-garden) .garden-mark {
+  transform: scale(0.96);
+  transition: transform 260ms ease;
+}
+
 .garden-choice-label {
   position: absolute;
   bottom: -0.25rem;
@@ -5474,6 +5500,50 @@ button:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes sound-garden-enter-mark {
+  0% {
+    opacity: 1;
+    filter: drop-shadow(0 0 34px rgba(157, 187, 116, 0.16));
+    transform: scale(1);
+  }
+
+  45% {
+    opacity: 1;
+    filter: drop-shadow(0 0 56px rgba(244, 239, 192, 0.28));
+    transform: scale(1.1) translateY(-4px);
+  }
+
+  100% {
+    opacity: 0;
+    filter: drop-shadow(0 0 72px rgba(244, 239, 192, 0.36));
+    transform: scale(0.84) translateY(-12px);
+  }
+}
+
+@keyframes sound-garden-enter-ring {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.86);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.85);
+  }
+}
+
+@keyframes sound-garden-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
