@@ -809,7 +809,7 @@ export function createExperience(): void {
     stopPrimerAudio()
     expandedPrimerCard.querySelector<HTMLElement>(".primer-breakdown")?.setAttribute("hidden", "")
     expandedPrimerCard.querySelector<HTMLButtonElement>(".primer-collapse-button")?.setAttribute("hidden", "")
-    expandedPrimerCard.classList.remove("is-expanded")
+    expandedPrimerCard.classList.remove("is-expanded", "primer-card-expanded")
     primerCardTrack.classList.remove("has-expanded-card")
     primerBackdrop.hidden = true
     expandedPrimerCard = null
@@ -933,7 +933,7 @@ export function createExperience(): void {
     collapsePrimerCard()
 
     expandedPrimerCard = card
-    card.classList.add("is-expanded")
+    card.classList.add("is-expanded", "primer-card-expanded")
     card.querySelector<HTMLElement>(".primer-breakdown")?.removeAttribute("hidden")
     card.querySelector<HTMLButtonElement>(".primer-collapse-button")?.removeAttribute("hidden")
     primerCardTrack.classList.add("has-expanded-card")
@@ -1040,16 +1040,57 @@ export function createExperience(): void {
   }
 
   function renderSoundBreakdown(item: PrimerItem, container: HTMLElement): void {
-    const tracks = [
-      createTrack("phonemes", item.phonemes ?? []),
-      createTrack("syllables", item.syllables ?? []),
-      createTrack("tone", item.toneOrPitch ?? []),
-      createTrack("features", item.features ?? [])
-    ]
+    const roots = document.createElement("div")
+    roots.className = "primer-sound-roots"
 
-    tracks.forEach((track) => {
-      if (track) container.append(track)
+    const wordSeed = document.createElement("button")
+    wordSeed.className = "primer-word-seed"
+    wordSeed.type = "button"
+    wordSeed.setAttribute("aria-label", "Play whole word audio")
+    wordSeed.innerHTML = "<span aria-hidden=\"true\"></span>"
+    wordSeed.addEventListener("click", () => {
+      playPrimerAudio(item.wholeAudio, wordSeed)
     })
+
+    const syllableRow = document.createElement("button")
+    syllableRow.className = "primer-syllable-row"
+    syllableRow.type = "button"
+    syllableRow.setAttribute("aria-label", "Play syllable shape")
+    const syllableCount = Math.max(1, Math.min(4, item.syllables?.length ?? 1))
+    Array.from({ length: syllableCount }).forEach(() => {
+      const dot = document.createElement("span")
+      dot.className = "primer-syllable-dot"
+      syllableRow.append(dot)
+    })
+    syllableRow.addEventListener("click", () => {
+      const syllableAudio = item.syllables?.find((piece) => piece.audio && piece.audio !== item.wholeAudio)?.audio
+      if (!syllableAudio) {
+        syllableRow.classList.add("primer-syllable-row-playing")
+        window.setTimeout(() => syllableRow.classList.remove("primer-syllable-row-playing"), 520)
+        return
+      }
+
+      playPrimerAudio(syllableAudio, syllableRow)
+    })
+
+    const toneButton = document.createElement("button")
+    toneButton.className = "primer-tone-contour"
+    toneButton.type = "button"
+    toneButton.setAttribute("aria-label", "Play tone contour")
+    toneButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    toneButton.addEventListener("click", () => {
+      const toneAudio = item.toneOrPitch?.find((piece) => piece.audio && piece.audio !== item.wholeAudio)?.audio
+      if (!toneAudio) {
+        toneButton.classList.add("is-primer-playing")
+        window.setTimeout(() => toneButton.classList.remove("is-primer-playing"), 520)
+        return
+      }
+
+      playPrimerAudio(toneAudio, toneButton)
+    })
+
+    roots.append(wordSeed, syllableRow, toneButton)
+    container.append(roots)
   }
 
   function renderPrimerCard(item: PrimerItem): HTMLElement {
@@ -1058,7 +1099,7 @@ export function createExperience(): void {
     card.dataset.primerId = item.id
 
     const expandButton = document.createElement("button")
-    expandButton.className = "primer-expand-zone"
+    expandButton.className = "primer-expand-zone primer-expanded-image"
     expandButton.type = "button"
     expandButton.setAttribute("aria-label", "Expand sound pieces")
 
@@ -1088,7 +1129,7 @@ export function createExperience(): void {
     })
 
     const collapseButton = document.createElement("button")
-    collapseButton.className = "primer-collapse-button"
+    collapseButton.className = "primer-collapse-button primer-expanded-close"
     collapseButton.type = "button"
     collapseButton.hidden = true
     collapseButton.setAttribute("aria-label", "Collapse primer card")

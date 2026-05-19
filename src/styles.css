@@ -3711,6 +3711,14 @@ button:focus-visible {
   transform: translate(-50%, -50%);
 }
 
+.primer-card-expanded {
+  display: grid;
+  grid-template-rows: auto auto;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(244, 239, 192, 0.08), transparent 34%),
+    rgba(8, 22, 13, 0.88);
+}
+
 .primer-expand-zone {
   display: grid;
   width: 100%;
@@ -3754,6 +3762,10 @@ button:focus-visible {
   height: 290px;
 }
 
+.primer-card-expanded .primer-expanded-image {
+  border-radius: 2rem 2rem 0 0;
+}
+
 .primer-fallback-symbol {
   color: rgba(244, 239, 192, 0.9);
   font-size: 3rem;
@@ -3784,8 +3796,7 @@ button:focus-visible {
 }
 
 .primer-card.is-expanded .primer-audio-button {
-  top: 236px;
-  bottom: auto;
+  display: none;
 }
 
 .primer-audio-button span {
@@ -3864,7 +3875,137 @@ button:focus-visible {
 }
 
 .primer-card.is-expanded .primer-breakdown {
-  padding: 1rem 1.1rem 1.25rem;
+  padding: 0;
+}
+
+.primer-sound-roots {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 112px;
+  padding: 1rem 1.15rem 1.15rem;
+  border-top: 1px solid rgba(244, 239, 192, 0.12);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(111, 168, 106, 0.12), transparent 62%),
+    linear-gradient(180deg, rgba(5, 18, 10, 0.9), rgba(3, 10, 6, 0.96));
+}
+
+.primer-word-seed,
+.primer-syllable-row,
+.primer-tone-contour {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(244, 239, 192, 0.2);
+  background: rgba(8, 22, 13, 0.58);
+  color: rgba(244, 239, 192, 0.86);
+  box-shadow: 0 0 18px rgba(157, 187, 116, 0.08);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primer-word-seed:hover,
+.primer-word-seed:focus-visible,
+.primer-syllable-row:hover,
+.primer-syllable-row:focus-visible,
+.primer-tone-contour:hover,
+.primer-tone-contour:focus-visible {
+  border-color: rgba(244, 239, 192, 0.34);
+  box-shadow: 0 0 24px rgba(157, 187, 116, 0.14);
+  transform: translateY(-1px);
+}
+
+.primer-word-seed {
+  width: 54px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.primer-word-seed span {
+  width: 30px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(244, 239, 192, 0.28);
+  border-radius: 50%;
+  background: rgba(244, 239, 192, 0.12);
+  box-shadow: inset 0 0 0 8px rgba(244, 239, 192, 0.72);
+}
+
+.primer-word-seed.is-primer-playing span,
+.primer-word-seed-playing span {
+  animation: primer-pulse 1.2s ease-out infinite;
+}
+
+.primer-syllable-row {
+  grid-auto-flow: column;
+  justify-content: center;
+  gap: 0.48rem;
+  min-height: 44px;
+  border-radius: 999px;
+  padding: 0 0.9rem;
+}
+
+.primer-syllable-dot {
+  width: 10px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(244, 239, 192, 0.68);
+  box-shadow: 0 0 10px rgba(244, 239, 192, 0.12);
+}
+
+.primer-syllable-row.is-primer-playing .primer-syllable-dot,
+.primer-syllable-row-playing .primer-syllable-dot {
+  animation: primer-syllable-dot-pulse 720ms ease-in-out infinite;
+}
+
+.primer-syllable-row .primer-syllable-dot:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.primer-syllable-row .primer-syllable-dot:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.primer-syllable-row .primer-syllable-dot:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.primer-tone-contour {
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+.primer-tone-contour span {
+  position: relative;
+  width: 42px;
+  height: 22px;
+}
+
+.primer-tone-contour span::before {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(244, 239, 192, 0.6);
+  content: "";
+  transform: rotate(-11deg);
+}
+
+.primer-tone-contour span::after {
+  position: absolute;
+  right: 3px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid rgba(244, 239, 192, 0.58);
+  border-right: 2px solid rgba(244, 239, 192, 0.58);
+  content: "";
+  transform: rotate(34deg);
+}
+
+.primer-tone-contour.is-primer-playing span {
+  animation: primer-tone-glow 720ms ease-in-out infinite;
 }
 
 .primer-backdrop {
@@ -6192,6 +6333,34 @@ button:focus-visible {
 
   100% {
     box-shadow: 0 0 0 18px rgba(244, 239, 192, 0);
+  }
+}
+
+@keyframes primer-syllable-dot-pulse {
+
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes primer-tone-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(244, 239, 192, 0));
+    opacity: 0.72;
+  }
+
+  50% {
+    filter: drop-shadow(0 0 10px rgba(244, 239, 192, 0.28));
+    opacity: 1;
   }
 }
 
