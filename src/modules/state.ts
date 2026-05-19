@@ -12,6 +12,7 @@ export type AppSurface =
   | "meaningPreview"
   | "primer"
   | "story"
+  | "demoFinish"
   | "recall"
   | "reflection"
 

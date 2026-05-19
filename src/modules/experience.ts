@@ -67,6 +67,18 @@ type LanguageSeed = {
   code: SupportedLanguage
   state: SeedState
 }
+type StoryImagePreviewMoment = {
+  id: string
+  image?: string
+  symbol?: string
+  scene: "wake" | "smell" | "ground" | "big-cat" | "sleep"
+}
+type PreviewVocabularyPod = {
+  id: string
+  label: string
+  items: readonly string[]
+  audio: string[]
+}
 
 const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
 
@@ -81,6 +93,21 @@ const prefersReducedMotion = (): boolean =>
 
 const openingAnimationDuration = 4300
 const soundGardenEnterDuration = 760
+const previewVocabularyPods = [
+  { id: "cat-food", label: "Cat, food, ground", items: ["貓", "食物", "地上"] },
+  { id: "action", label: "Walk, look, eat", items: ["走", "看", "吃"] },
+  { id: "ending", label: "Big, small, night, sleep", items: ["大", "小", "晚上", "睡著"] }
+] as const
+const previewVocabularyAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
+  nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
+  zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
+}
+
+const demoConfig = {
+  enabled: false,
+  arcId: "cat-stray",
+  storyId: "s0-001"
+} as const
 
 const soundSections: SoundSection[] = [
   {
@@ -421,6 +448,11 @@ export function createExperience(): void {
   const storyLessonProgress = mustQuery<HTMLElement>("#story-lesson-progress")
   const storySectionBackButton = mustQuery<HTMLButtonElement>("#story-section-back-button")
   const storyForwardButton = mustQuery<HTMLButtonElement>("#story-forward-button")
+  const demoFinishScreen = mustQuery<HTMLElement>("#demo-finish-screen")
+  const demoFinishStorySymbols = mustQuery<HTMLElement>("#demo-finish-story-symbols")
+  const demoFinishReplayButton = mustQuery<HTMLButtonElement>("#demo-finish-replay-button")
+  const demoFinishLanguageButton = mustQuery<HTMLButtonElement>("#demo-finish-language-button")
+  const demoFinishStartButton = mustQuery<HTMLButtonElement>("#demo-finish-start-button")
   const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
   const recallPromptOrb = mustQuery<HTMLElement>("#recall-prompt-orb")
   const recallPromptButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
@@ -470,6 +502,9 @@ export function createExperience(): void {
   let currentStory: Story | null = null
   let storySceneTimer = 0
   let storyAudioBase = ""
+  let previewStoryImageIndex = 0
+  let previewStoryImageStartX: number | null = null
+  let previewStoryImageStartY: number | null = null
   let currentRecallPrompts: RecallPrompt[] = []
   let allStories: Story[] = []
   const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
@@ -480,6 +515,7 @@ export function createExperience(): void {
     meaningPreview: "preview",
     primer: "primer",
     story: "story",
+    demoFinish: undefined,
     recall: "recall",
     reflection: "reflection"
   }
@@ -543,6 +579,7 @@ export function createExperience(): void {
     soundLessonScreen.hidden = surface !== "soundLesson"
     meaningArcScreen.hidden = surface !== "meaningArc"
     storyBranchScreen.hidden = surface !== "storyBranch"
+    demoFinishScreen.hidden = surface !== "demoFinish"
     meaningPreviewScreen.hidden = !isStoryLessonSurface(surface)
     const storyLessonSection = storyLessonSurfaceSections[surface]
     if (storyLessonSection) storyLessonShell.setSection(storyLessonSection)
@@ -606,6 +643,18 @@ export function createExperience(): void {
     syncLanguageSeedStates()
   }
 
+  function restoreLanguageSeedVisibility(): void {
+    languageSeedbed.querySelectorAll<HTMLElement>(".language-seed-art.is-being-dragged").forEach((seed) => {
+      seed.classList.remove("is-being-dragged")
+    })
+    languageSelectGarden.querySelector(".language-planting-seed")?.remove()
+    document.querySelector(".language-drag-seed")?.remove()
+    languageSelectGarden.dataset.planting = "false"
+    languageMoundButton.dataset.planting = "false"
+    isPlantingLanguage = false
+    languageSeedDrag = null
+  }
+
   function releaseLanguagePreview(code: SupportedLanguage): void {
     activePreview = null
     previewRelease = code
@@ -657,6 +706,11 @@ export function createExperience(): void {
     syncLanguageSeedStates()
 
     window.setTimeout(() => {
+      if (demoConfig.enabled) {
+        openDemoMeaningTree()
+        return
+      }
+
       setSurface("path")
     }, 360)
   }
@@ -664,7 +718,7 @@ export function createExperience(): void {
   function stopPreviewMomentAudio(): void {
     stopAudio(previewMomentAudio)
     document.querySelectorAll(".is-preview-playing").forEach((element) => {
-      element.classList.remove("is-preview-playing")
+      element.classList.remove("is-preview-playing", "preview-audio-node-playing", "preview-audio-pod-playing")
     })
   }
 
@@ -707,18 +761,46 @@ export function createExperience(): void {
     stopPreviewMomentAudio()
     if (!moment.audio) return
 
-    sourceButton.classList.add("is-preview-playing")
+    sourceButton.classList.add("is-preview-playing", "preview-audio-node-playing", "preview-audio-node-heard")
     previewMomentAudio.src = moment.audio
     previewMomentAudio.currentTime = 0
     previewMomentAudio.onended = () => {
-      sourceButton.classList.remove("is-preview-playing")
+      sourceButton.classList.remove("is-preview-playing", "preview-audio-node-playing")
     }
     previewMomentAudio.onerror = () => {
-      sourceButton.classList.remove("is-preview-playing")
+      sourceButton.classList.remove("is-preview-playing", "preview-audio-node-playing")
     }
     previewMomentAudio.play().catch(() => {
-      sourceButton.classList.remove("is-preview-playing")
+      sourceButton.classList.remove("is-preview-playing", "preview-audio-node-playing")
     })
+  }
+
+  function playPreviewVocabularyPod(pod: PreviewVocabularyPod, sourceButton: HTMLElement): void {
+    stopPreviewMomentAudio()
+    sourceButton.classList.add("is-preview-playing", "preview-audio-pod-playing")
+
+    const playNext = (index: number): void => {
+      const src = pod.audio[index]
+      if (!src) {
+        sourceButton.classList.remove("is-preview-playing", "preview-audio-pod-playing")
+        sourceButton.classList.add("preview-audio-pod-heard")
+        return
+      }
+
+      previewMomentAudio.src = src
+      previewMomentAudio.currentTime = 0
+      previewMomentAudio.onended = () => {
+        playNext(index + 1)
+      }
+      previewMomentAudio.onerror = () => {
+        playNext(index + 1)
+      }
+      previewMomentAudio.play().catch(() => {
+        playNext(index + 1)
+      })
+    }
+
+    playNext(0)
   }
 
   function collapsePrimerCard(): void {
@@ -740,6 +822,112 @@ export function createExperience(): void {
     })
   }
 
+  function getPreviewVocabularyPods(): PreviewVocabularyPod[] {
+    const audioLanguage = appState.selectedLanguage === "en" ? "nan" : appState.selectedLanguage
+    const audioFiles = previewVocabularyAudioFiles[audioLanguage] ?? previewVocabularyAudioFiles.nan ?? []
+
+    return previewVocabularyPods.map((pod, podIndex) => {
+      const audio = pod.items.map((_, itemIndex) => {
+        const audio = audioFiles[(podIndex * 3 + itemIndex) % Math.max(1, audioFiles.length)]
+        return audio ? `engine/vocab/${audioLanguage}/audio/${audio}` : fallbackPrimerAudio
+      })
+
+      return { ...pod, audio }
+    })
+  }
+
+  function getStoryImagePreviewMoments(story: Story): StoryImagePreviewMoment[] {
+    const catStoryScenes: StoryImagePreviewMoment[] = [
+      { id: "cat-wakes-up", scene: "wake", symbol: "cat" },
+      { id: "cat-smells-food", scene: "smell", symbol: "food" },
+      { id: "food-on-ground", scene: "ground", symbol: "food" },
+      { id: "big-cat-appears", scene: "big-cat", symbol: "cat" },
+      { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night" }
+    ]
+
+    if (story.id === "s0-001" && getStoryArcId(story) === "cat-stray") return catStoryScenes
+
+    const moments = getPreviewMoments(story, appState.selectedLanguage)
+    const sceneOrder: StoryImagePreviewMoment["scene"][] = ["wake", "smell", "ground", "big-cat", "sleep"]
+
+    return moments.slice(0, 5).map((moment, index) => ({
+      id: moment.id,
+      image: moment.image,
+      symbol: moment.symbol,
+      scene: sceneOrder[index] ?? "ground"
+    }))
+  }
+
+  function updateStoryImageCarousel(activeIndex: number): void {
+    const cards = Array.from(previewImageTrack.querySelectorAll<HTMLElement>(".story-image-card"))
+    const boundedIndex = Math.max(0, Math.min(activeIndex, cards.length - 1))
+    previewStoryImageIndex = boundedIndex
+
+    cards.forEach((card, index) => {
+      const offset = index - boundedIndex
+      card.classList.toggle("story-image-card-active", offset === 0)
+      card.classList.toggle("story-image-card-prev", offset === -1)
+      card.classList.toggle("story-image-card-next", offset === 1)
+      card.classList.toggle("story-image-card-hidden", Math.abs(offset) > 1)
+      card.dataset.offset = String(offset)
+      card.setAttribute("aria-current", String(offset === 0))
+    })
+
+    previewTrackBackButton.disabled = boundedIndex === 0
+    previewTrackNextButton.disabled = boundedIndex === cards.length - 1
+  }
+
+  function setPreviewStoryImageIndex(nextIndex: number): void {
+    updateStoryImageCarousel(nextIndex)
+  }
+
+  function createStoryImageCard(moment: StoryImagePreviewMoment, index: number): HTMLElement {
+    const imageFrame = document.createElement("figure")
+    imageFrame.className = "preview-moment story-image-card"
+    imageFrame.dataset.scene = moment.scene
+    imageFrame.setAttribute("aria-label", `Story image ${index + 1}`)
+
+    if (moment.image) {
+      const img = document.createElement("img")
+      img.className = "preview-image"
+      img.src = moment.image
+      img.alt = ""
+      imageFrame.append(img)
+    } else {
+      const scene = document.createElement("span")
+      scene.className = `story-image-scene story-image-scene-${moment.scene}`
+      scene.setAttribute("aria-hidden", "true")
+
+      const cat = document.createElement("span")
+      cat.className = "story-image-scene-cat"
+      cat.textContent = conceptIcons.cat ?? "cat"
+
+      const food = document.createElement("span")
+      food.className = "story-image-scene-food"
+      food.textContent = moment.scene === "big-cat" ? conceptIcons.cat ?? "cat" : conceptIcons.food ?? "food"
+
+      const accent = document.createElement("span")
+      accent.className = "story-image-scene-accent"
+
+      scene.append(cat, food, accent)
+      imageFrame.append(scene)
+    }
+
+    return imageFrame
+  }
+
+  function renderStoryImageCarousel(story: Story): void {
+    previewStoryImageIndex = 0
+    clearNode(previewImageTrack)
+    previewImageTrack.classList.add("story-image-track", "story-image-carousel")
+
+    getStoryImagePreviewMoments(story).forEach((moment, index) => {
+      previewImageTrack.append(createStoryImageCard(moment, index))
+    })
+
+    updateStoryImageCarousel(0)
+  }
+
   function expandPrimerCard(card: HTMLElement): void {
     if (expandedPrimerCard === card) return
     collapsePrimerCard()
@@ -758,7 +946,6 @@ export function createExperience(): void {
 
     stopPreviewMomentAudio()
     clearNode(previewSignature)
-    clearNode(previewImageTrack)
     clearNode(previewAudioTrack)
 
     getStorySignature(story).forEach((concept) => {
@@ -768,7 +955,32 @@ export function createExperience(): void {
       previewSignature.append(symbol)
     })
 
-    const moments = getPreviewMoments(story, appState.selectedLanguage)
+    const moments: PreviewMoment[] = []
+    const vocabularyPods = getPreviewVocabularyPods()
+    renderStoryImageCarousel(story)
+
+    vocabularyPods.forEach((pod) => {
+      const audioButton = document.createElement("button")
+      audioButton.className = "preview-sound preview-audio-pod"
+      audioButton.type = "button"
+      audioButton.setAttribute("aria-label", `Play ${pod.label} vocabulary audio`)
+      audioButton.dataset.pod = pod.id
+
+      const bars = document.createElement("span")
+      bars.className = "preview-audio-pod-bars"
+      bars.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+
+      const ripple = document.createElement("span")
+      ripple.className = "preview-audio-ripple"
+
+      audioButton.append(bars, ripple)
+      audioButton.addEventListener("click", () => {
+        playPreviewVocabularyPod(pod, audioButton)
+      })
+      previewAudioTrack.append(audioButton)
+    })
+
+    return
 
     moments.forEach((moment) => {
       const imageFrame = document.createElement("figure")
@@ -788,13 +1000,15 @@ export function createExperience(): void {
         imageFrame.append(fallbackSymbol)
       }
 
-      previewImageTrack.append(imageFrame)
+      void imageFrame
 
       const audioButton = document.createElement("button")
-      audioButton.className = "preview-sound"
+      audioButton.className = "preview-sound preview-audio-node"
       audioButton.type = "button"
-      audioButton.setAttribute("aria-label", `Play ${moment.id} audio`)
-      audioButton.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
+      audioButton.setAttribute("aria-label", `Play ${moment.symbol ?? moment.id} audio`)
+      const ripple = document.createElement("span")
+      ripple.className = "preview-audio-ripple"
+      audioButton.append(ripple)
       audioButton.addEventListener("click", () => {
         playPreviewMomentAudio(moment, audioButton)
       })
@@ -1155,6 +1369,12 @@ export function createExperience(): void {
 
     if (!appState.selectedStoryId) return
 
+    if (demoConfig.enabled && previousSection === "story" && section === "recall") {
+      renderDemoFinishScreen(appState.selectedStoryId)
+      setSurface("demoFinish")
+      return
+    }
+
     if (section === "preview") renderMeaningPreviewWorld(appState.selectedStoryId)
     if (section === "primer") renderMeaningPrimer(appState.selectedStoryId)
     if (section === "story") renderMeaningStory(appState.selectedStoryId)
@@ -1165,12 +1385,25 @@ export function createExperience(): void {
 
   function goBackToStorySelection(): void {
     stopStoryAudio()
+    if (demoConfig.enabled) {
+      const story = appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined
+      renderDemoMeaningTreeIntro(story)
+      setSurface("meaningArc")
+      return
+    }
+
     if (appState.selectedArcId) renderStoryPods(getStoriesForArc(appState.selectedArcId))
     setSurface("storyBranch")
   }
 
   function goForwardFromStory(): void {
     stopStoryAudio()
+    if (demoConfig.enabled) {
+      if (appState.selectedStoryId) renderDemoFinishScreen(appState.selectedStoryId)
+      setSurface("demoFinish")
+      return
+    }
+
     if (appState.selectedStoryId) renderMeaningRecall(appState.selectedStoryId)
     setSurface("recall")
   }
@@ -2568,6 +2801,13 @@ export function createExperience(): void {
     appState.selectedArcId = null
     selectedSoundSectionId = null
     selectedSoundLessonId = null
+    if (demoConfig.enabled) {
+      appState.selectedPath = null
+      restoreLanguageSeedVisibility()
+      setSurface("language")
+      return
+    }
+
     setSurface("path")
   }
 
@@ -2604,6 +2844,100 @@ export function createExperience(): void {
       }
     })
   }
+
+  function renderDemoMeaningTreeIntro(story?: Story): void {
+    clearNode(arcList)
+    clearNode(storyPodBed)
+
+    const arc = meaningArcs.find((candidate) => candidate.id === demoConfig.arcId)
+    const item = document.createElement("li")
+    item.className = "arc-node-item demo-arc-item is-unlocked"
+    item.dataset.endpoint = "1"
+
+    const button = document.createElement("button")
+    button.className = "arc-button demo-cat-arc-button"
+    button.type = "button"
+    button.dataset.arcId = demoConfig.arcId
+    button.dataset.subject = arc?.subject ?? "cat"
+    button.disabled = !story
+    button.setAttribute("aria-label", story ? `Start ${story.title}` : "Story unavailable")
+    button.setAttribute("aria-disabled", String(!story))
+
+    const icon = document.createElement("span")
+    icon.className = "arc-icon"
+    icon.setAttribute("aria-hidden", "true")
+
+    if (arc?.svg) {
+      icon.innerHTML = arc.svg.trim()
+      muteInlineSvg(icon)
+    } else {
+      icon.textContent = arc?.fallbackSymbol ?? "cat"
+    }
+
+    button.append(icon)
+
+    if (story) {
+      button.addEventListener("click", () => {
+        appState.selectedStoryId = demoConfig.storyId
+        renderMeaningPreviewWorld(story.id)
+        setSurface("meaningPreview")
+      })
+    }
+
+    item.append(button)
+    arcList.append(item)
+  }
+
+  function renderDemoFinishScreen(storyId: string): void {
+    const story = getStoryById(storyId)
+    if (story) appState.completedStoryIds.add(storyId)
+
+    clearNode(demoFinishStorySymbols)
+    ;(story ? getStorySignature(story) : defaultSignature).forEach((concept) => {
+      const symbol = document.createElement("span")
+      symbol.textContent = conceptIcons[concept] ?? "○"
+      demoFinishStorySymbols.append(symbol)
+    })
+  }
+
+  function replayDemoStory(): void {
+    if (appState.selectedStoryId) renderMeaningStory(appState.selectedStoryId)
+    setSurface("story")
+  }
+
+  function tryAnotherDemoLanguage(): void {
+    stopStoryAudio()
+    resetActivePreview()
+    restoreLanguageSeedVisibility()
+    pendingLanguage = null
+    visibleLanguageName = null
+    appState.selectedPath = null
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
+    allStories = []
+    storyAudioBase = ""
+    syncLanguageSeedStates()
+    setSurface("language")
+  }
+
+  function returnToDemoStart(): void {
+    stopStoryAudio()
+    stopRecallAudio()
+    resetActivePreview()
+    restoreLanguageSeedVisibility()
+    pendingLanguage = null
+    visibleLanguageName = null
+    appState.selectedPath = null
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
+    allStories = []
+    storyAudioBase = ""
+    hasBegun = false
+    delete app.dataset.opening
+    syncLanguageSeedStates()
+    setSurface("start")
+  }
+
   function renderStoryArcContext(): void {
     const arc = meaningArcs.find((candidate) => candidate.id === appState.selectedArcId)
     clearNode(storyArcSymbol)
@@ -2620,6 +2954,12 @@ export function createExperience(): void {
   function returnToMeaningArcs(): void {
     appState.selectedArcId = null
     appState.selectedStoryId = null
+    if (demoConfig.enabled) {
+      renderDemoMeaningTreeIntro()
+      setSurface("meaningArc")
+      return
+    }
+
     renderArcButtons()
     setSurface("meaningArc")
   }
@@ -2697,6 +3037,29 @@ export function createExperience(): void {
       })
   }
 
+  function openDemoMeaningTree(): void {
+    appState.selectedPath = "meaning-tree"
+    appState.selectedArcId = demoConfig.arcId
+    appState.selectedStoryId = demoConfig.storyId
+    clearNode(arcList)
+    clearNode(storyPodBed)
+
+    loadLearningData(appState.selectedLanguage)
+      .then((data) => {
+        allStories = data.stories
+        storyAudioBase = data.storyAudio
+        const story = allStories.find((candidate) => candidate.id === demoConfig.storyId)
+        renderDemoMeaningTreeIntro(story)
+        setSurface("meaningArc")
+      })
+      .catch(() => {
+        allStories = []
+        storyAudioBase = ""
+        renderDemoMeaningTreeIntro()
+        setSurface("meaningArc")
+      })
+  }
+
   function plantSelectedLanguage(startRectOverride?: DOMRect): void {
     if (!pendingLanguage || isPlantingLanguage) return
 
@@ -2742,6 +3105,7 @@ export function createExperience(): void {
       languageSelectGarden.dataset.planting = "false"
       languageMoundButton.dataset.planting = "false"
       languageSelectGarden.querySelector(".language-planting-seed")?.remove()
+      sourceSeed?.classList.remove("is-being-dragged")
       isPlantingLanguage = false
       selectLanguage(code)
     }, prefersReducedMotion() ? 80 : 1220)
@@ -2952,6 +3316,11 @@ export function createExperience(): void {
 
   meaningTreeButton.addEventListener("click", () => {
     revealGardenLabel(meaningTreeButton)
+    if (demoConfig.enabled) {
+      openDemoMeaningTree()
+      return
+    }
+
     openMeaningArcs()
   })
 
@@ -3027,12 +3396,38 @@ export function createExperience(): void {
   previewStoryReturnButton.addEventListener("click", goBackToStorySelection)
 
   previewTrackBackButton.addEventListener("click", () => {
-    scrollStoryTrack(previewImageTrack, -1)
+    setPreviewStoryImageIndex(previewStoryImageIndex - 1)
   })
 
   previewTrackNextButton.addEventListener("click", () => {
-    scrollStoryTrack(previewImageTrack, 1)
+    setPreviewStoryImageIndex(previewStoryImageIndex + 1)
   })
+
+  previewImageTrack.addEventListener("pointerdown", (event) => {
+    previewStoryImageStartX = event.clientX
+    previewStoryImageStartY = event.clientY
+  })
+
+  previewImageTrack.addEventListener("pointerup", (event) => {
+    if (previewStoryImageStartX === null || previewStoryImageStartY === null) return
+    const deltaX = event.clientX - previewStoryImageStartX
+    const deltaY = event.clientY - previewStoryImageStartY
+    previewStoryImageStartX = null
+    previewStoryImageStartY = null
+    if (Math.abs(deltaX) < 32 || Math.abs(deltaX) < Math.abs(deltaY)) return
+    setPreviewStoryImageIndex(previewStoryImageIndex + (deltaX < 0 ? 1 : -1))
+  })
+
+  previewImageTrack.addEventListener("pointercancel", () => {
+    previewStoryImageStartX = null
+    previewStoryImageStartY = null
+  })
+
+  previewImageTrack.addEventListener("wheel", (event) => {
+    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return
+    event.preventDefault()
+    setPreviewStoryImageIndex(previewStoryImageIndex + (event.deltaX > 0 ? 1 : -1))
+  }, { passive: false })
 
   primerTrackBackButton.addEventListener("click", () => {
     collapsePrimerCard()
@@ -3081,6 +3476,10 @@ export function createExperience(): void {
     else startAutoStory(story)
   })
 
+  demoFinishReplayButton.addEventListener("click", replayDemoStory)
+  demoFinishLanguageButton.addEventListener("click", tryAnotherDemoLanguage)
+  demoFinishStartButton.addEventListener("click", returnToDemoStart)
+
   recallPromptButton.addEventListener("click", playRecallPrompt)
 
   reflectionReplayButton.addEventListener("click", replayStoryFromReflection)
@@ -3125,6 +3524,9 @@ export function createExperience(): void {
   setAssetIcon(storyReplayButton, replaySvgMarkup)
   setAssetIcon(storySectionBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(storyForwardButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
+  setAssetIcon(demoFinishReplayButton, replaySvgMarkup)
+  setAssetIcon(demoFinishLanguageButton, returnToMainNavSvgMarkup)
+  setAssetIcon(demoFinishStartButton, seedLogoSvgMarkup)
   setAssetIcon(reflectionReplayButton, replaySvgMarkup)
   setAssetIcon(reflectionPathsButton, returnToMainNavSvgMarkup)
   setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
@@ -3144,6 +3546,7 @@ export function createExperience(): void {
   muteInlineSvg(soundGardenSecondaryArt)
   muteInlineSvg(soundGardenTertiaryArt)
   renderLanguageSeeds()
+  if (demoConfig.enabled) app.dataset.demo = "meaning-tree"
   setSurface(surface)
 }
 
