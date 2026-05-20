@@ -3505,6 +3505,22 @@ button:focus-visible {
   font-size: 2rem;
 }
 
+.image-fallback-symbol {
+  display: grid;
+  width: 100%;
+  min-height: 100%;
+  place-items: center;
+  color: rgba(244, 239, 192, 0.86);
+  font-size: clamp(2rem, 12vw, 4rem);
+}
+
+.story-stage > .image-fallback-symbol {
+  height: var(--story-stage-height);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(157, 187, 116, 0.16), transparent 46%),
+    rgba(8, 22, 13, 0.66);
+}
+
 .preview-sound {
   position: relative;
   display: grid;

@@ -105,7 +105,7 @@ const previewVocabularyAudioFiles: Partial<Record<SupportedLanguage, string[]>> 
 }
 
 const demoConfig = {
-  enabled: false,
+  enabled: true,
   arcId: "cat-stray",
   storyId: "s0-001"
 } as const
@@ -713,6 +713,7 @@ export function createExperience(): void {
 
     window.setTimeout(() => {
       if (demoConfig.enabled) {
+        // Demo branch: bypass full path selection and enter the Cat Story Meaning Tree flow.
         openDemoMeaningTree()
         return
       }
@@ -737,6 +738,44 @@ export function createExperience(): void {
 
   function runEchoGap(duration = 1200): void {
     runAudioEchoGap(primerEcho, duration)
+  }
+
+  function clearImageFallback(img: HTMLImageElement, fallbackClassName = "image-fallback-symbol"): void {
+    img.parentElement?.querySelectorAll(`.${fallbackClassName}`).forEach((fallback) => fallback.remove())
+  }
+
+  function showImageFallback(img: HTMLImageElement, fallbackSymbol = "o", fallbackClassName = "image-fallback-symbol"): void {
+    clearImageFallback(img, fallbackClassName)
+    img.hidden = true
+    const fallback = document.createElement("span")
+    fallback.className = fallbackClassName
+    fallback.textContent = fallbackSymbol
+    fallback.setAttribute("aria-hidden", "true")
+    img.insertAdjacentElement("afterend", fallback)
+  }
+
+  function setImageSourceWithFallback(
+    img: HTMLImageElement,
+    src: string | undefined,
+    fallbackSymbol = "o",
+    fallbackClassName = "image-fallback-symbol"
+  ): void {
+    clearImageFallback(img, fallbackClassName)
+    img.hidden = false
+    img.onerror = () => {
+      const missingSrc = img.currentSrc || img.src
+      img.onerror = null
+      showImageFallback(img, fallbackSymbol, fallbackClassName)
+      if (missingSrc) console.warn(`Missing demo image asset: ${missingSrc}`)
+    }
+
+    if (src) {
+      img.src = src
+      return
+    }
+
+    img.removeAttribute("src")
+    showImageFallback(img, fallbackSymbol, fallbackClassName)
   }
 
   function playPrimerAudio(audioSrc: string | undefined, sourceElement: HTMLElement, echo = false): void {
@@ -896,8 +935,8 @@ export function createExperience(): void {
     if (moment.image) {
       const img = document.createElement("img")
       img.className = "preview-image"
-      img.src = moment.image
       img.alt = ""
+      setImageSourceWithFallback(img, moment.image, conceptIcons[moment.symbol ?? "cat"] ?? "o")
       imageFrame.append(img)
     } else {
       const scene = document.createElement("span")
@@ -996,8 +1035,8 @@ export function createExperience(): void {
       if (moment.image) {
         const img = document.createElement("img")
         img.className = "preview-image"
-        img.src = moment.image
         img.alt = ""
+        setImageSourceWithFallback(img, moment.image, conceptIcons[moment.symbol ?? moment.id] ?? "o")
         imageFrame.append(img)
       } else {
         const fallbackSymbol = document.createElement("span")
@@ -1112,9 +1151,9 @@ export function createExperience(): void {
     if (item.image) {
       const img = document.createElement("img")
       img.className = "primer-image"
-      img.src = item.image
       img.alt = ""
       img.setAttribute("aria-hidden", "true")
+      setImageSourceWithFallback(img, item.image, conceptIcons[item.id] ?? "o", "primer-fallback-symbol")
       expandButton.append(img)
     } else {
       const symbol = document.createElement("span")
@@ -1223,7 +1262,7 @@ export function createExperience(): void {
     storyImage.classList.add("is-changing")
 
     window.setTimeout(() => {
-      storyImage.src = scene.image || ""
+      setImageSourceWithFallback(storyImage, scene.image, conceptIcons.cat ?? "o")
       storyImage.classList.remove("is-changing")
     }, 180)
 
@@ -1428,12 +1467,6 @@ export function createExperience(): void {
 
     if (!appState.selectedStoryId) return
 
-    if (demoConfig.enabled && previousSection === "story" && section === "recall") {
-      renderDemoFinishScreen(appState.selectedStoryId)
-      setSurface("demoFinish")
-      return
-    }
-
     if (section === "preview") renderMeaningPreviewWorld(appState.selectedStoryId)
     if (section === "primer") renderMeaningPrimer(appState.selectedStoryId)
     if (section === "story") renderMeaningStory(appState.selectedStoryId)
@@ -1457,12 +1490,6 @@ export function createExperience(): void {
 
   function goForwardFromStory(): void {
     stopStoryAudio()
-    if (demoConfig.enabled) {
-      if (appState.selectedStoryId) renderDemoFinishScreen(appState.selectedStoryId)
-      setSurface("demoFinish")
-      return
-    }
-
     if (appState.selectedStoryId) renderMeaningRecall(appState.selectedStoryId)
     setSurface("recall")
   }
@@ -1578,9 +1605,9 @@ export function createExperience(): void {
   function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" | "image" }>, button: HTMLElement): void {
     if (choice.image) {
       const img = document.createElement("img")
-      img.src = choice.image
       img.alt = ""
       img.setAttribute("aria-hidden", "true")
+      setImageSourceWithFallback(img, choice.image, choice.symbol ?? conceptIcons[choice.id] ?? "o")
       button.append(img)
       return
     }
@@ -1720,9 +1747,9 @@ export function createExperience(): void {
 
     if (image) {
       const img = document.createElement("img")
-      img.src = image
       img.alt = ""
       img.setAttribute("aria-hidden", "true")
+      setImageSourceWithFallback(img, image, symbol ?? "o")
       promptCard.append(img)
     } else {
       const fallback = document.createElement("span")
@@ -1881,6 +1908,13 @@ export function createExperience(): void {
   }
 
   function continueFromReflection(): void {
+    if (demoConfig.enabled) {
+      // Demo branch: reflection completes the focused Cat Story lesson and lands on the demo finish screen.
+      if (appState.selectedStoryId) renderDemoFinishScreen(appState.selectedStoryId)
+      setSurface("demoFinish")
+      return
+    }
+
     goBackToStorySelection()
   }
 
@@ -3114,6 +3148,7 @@ export function createExperience(): void {
   }
 
   function renderDemoMeaningTreeIntro(story?: Story): void {
+    // Demo branch: show only the Cat arc entry point for the focused walkthrough.
     clearNode(arcList)
     clearNode(storyPodBed)
 
@@ -3306,6 +3341,7 @@ export function createExperience(): void {
   }
 
   function openDemoMeaningTree(): void {
+    // Demo branch: load only the Cat Story data and enter the Meaning Tree demo directly.
     appState.selectedPath = "meaning-tree"
     appState.selectedArcId = demoConfig.arcId
     appState.selectedStoryId = demoConfig.storyId
