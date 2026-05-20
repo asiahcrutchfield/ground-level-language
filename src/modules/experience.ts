@@ -38,6 +38,7 @@ import {
   resolveStoryAsset,
   type MeaningArc,
   type RecallChoice,
+  type RecallMode,
   type RecallPrompt
 } from "./meaning"
 import type { SoundLesson, SoundLessonPreviewItem, SoundLessonStepId, SoundPreview, SoundSection, SoundVisualType } from "./sound"
@@ -433,6 +434,7 @@ export function createExperience(): void {
   const primerTrackNextButton = mustQuery<HTMLButtonElement>("#primer-track-next-button")
   const primerEcho = mustQuery<HTMLElement>("#primer-echo")
   const storyScreen = mustQuery<HTMLElement>("#meaning-story-screen")
+  const storyWorld = mustQuery<HTMLElement>("#story-world")
   const storyModeGate = mustQuery<HTMLElement>("#story-mode-gate")
   const storyAutoButton = mustQuery<HTMLButtonElement>("#story-auto-button")
   const storyManualButton = mustQuery<HTMLButtonElement>("#story-manual-button")
@@ -454,9 +456,10 @@ export function createExperience(): void {
   const demoFinishLanguageButton = mustQuery<HTMLButtonElement>("#demo-finish-language-button")
   const demoFinishStartButton = mustQuery<HTMLButtonElement>("#demo-finish-start-button")
   const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
-  const recallPromptOrb = mustQuery<HTMLElement>("#recall-prompt-orb")
-  const recallPromptButton = mustQuery<HTMLButtonElement>("#recall-audio-button")
-  const recallChoiceBed = mustQuery<HTMLElement>("#recall-choice-bed")
+  const recallWorld = mustQuery<HTMLElement>("#recall-world")
+  const recallPromptZone = mustQuery<HTMLElement>("#recall-prompt-zone")
+  const recallAnswerZone = mustQuery<HTMLElement>("#recall-answer-zone")
+  const recallFeedbackZone = mustQuery<HTMLElement>("#recall-feedback-zone")
   const recallProgress = mustQuery<HTMLElement>("#recall-progress")
   const reflectionScreen = mustQuery<HTMLElement>("#meaning-reflection-screen")
   const reflectionGrowth = mustQuery<HTMLElement>("#reflection-growth")
@@ -506,6 +509,8 @@ export function createExperience(): void {
   let previewStoryImageStartX: number | null = null
   let previewStoryImageStartY: number | null = null
   let currentRecallPrompts: RecallPrompt[] = []
+  let activeRecallPromptButton: HTMLButtonElement | null = null
+  let selectedRecallAudioAnswer: { promptId: string; index: number; element: HTMLElement } | null = null
   let allStories: Story[] = []
   const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
     code: language.code,
@@ -582,6 +587,7 @@ export function createExperience(): void {
     demoFinishScreen.hidden = surface !== "demoFinish"
     meaningPreviewScreen.hidden = !isStoryLessonSurface(surface)
     const storyLessonSection = storyLessonSurfaceSections[surface]
+    meaningPreviewScreen.classList.toggle("is-reflection", storyLessonSection === "reflection")
     if (storyLessonSection) storyLessonShell.setSection(storyLessonSection)
     app.dataset.surface = surface
     if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
@@ -1250,9 +1256,9 @@ export function createExperience(): void {
     storyStage.classList.remove("is-playing")
     storyAudioButton.classList.remove("is-playing")
     currentStoryAudio = null
-    storyModeGate.hidden = false
+    storyModeGate.hidden = true
     updateStoryModeButtons()
-    storyReplayButton.hidden = false
+    storyReplayButton.hidden = true
     storyAudioButton.hidden = false
   }
 
@@ -1303,10 +1309,13 @@ export function createExperience(): void {
   function startAutoStory(story: Story): void {
     selectedStoryMode = "auto"
     stopStoryAudio()
+    storyWorld.dataset.storyMode = "auto"
     updateStoryModeButtons()
     storyStage.classList.add("is-playing")
     storyAudioButton.classList.add("is-playing")
-    storyModeGate.hidden = false
+    storyModeGate.hidden = true
+    storyControls.hidden = true
+    storyProgress.hidden = true
     storyAudioButton.hidden = false
     storyPrevButton.hidden = true
     storyNextButton.hidden = true
@@ -1375,13 +1384,16 @@ export function createExperience(): void {
   function startManualStory(story: Story): void {
     selectedStoryMode = "manual"
     stopStoryAudio()
+    storyWorld.dataset.storyMode = "manual"
     updateStoryModeButtons()
     appState.currentStorySceneIndex = Math.min(appState.currentStorySceneIndex, getStoryScenes(story, appState.selectedLanguage, storyAudioBase).length - 1)
-    storyModeGate.hidden = false
+    storyModeGate.hidden = true
+    storyControls.hidden = false
+    storyProgress.hidden = false
     storyAudioButton.hidden = false
     storyPrevButton.hidden = false
     storyNextButton.hidden = false
-    storyReplayButton.hidden = false
+    storyReplayButton.hidden = true
     storyForwardButton.hidden = false
     showStoryScene(story, appState.currentStorySceneIndex)
     updateStoryProgress(story, appState.currentStorySceneIndex)
@@ -1394,9 +1406,15 @@ export function createExperience(): void {
     stopStoryAudio()
     currentStory = story
     appState.currentStorySceneIndex = 0
-    selectedStoryMode = "manual"
-    storyControls.hidden = false
-    startManualStory(story)
+    selectedStoryMode = null
+    storyWorld.dataset.storyMode = "gate"
+    storyModeGate.hidden = false
+    storyControls.hidden = true
+    storyProgress.hidden = true
+    storyAudioButton.hidden = true
+    storyReplayButton.hidden = true
+    updateStoryModeButtons()
+    showStoryScene(story, 0)
   }
 
   function enterStoryLessonSection(section: StoryLessonSectionId, previousSection: StoryLessonSectionId): void {
@@ -1450,27 +1468,64 @@ export function createExperience(): void {
   }
 
   function stopRecallAudio(): void {
-    recallPromptButton.classList.remove("is-playing")
+    activeRecallPromptButton?.classList.remove("is-playing")
     recallScreen.querySelectorAll(".is-playing").forEach((element) => element.classList.remove("is-playing"))
     stopAudio(recallAudio)
   }
 
+  function getRecallPromptAudio(prompt: RecallPrompt | undefined): string | undefined {
+    if (!prompt) return undefined
+    if (prompt.prompt?.kind === "audio") return prompt.prompt.audio
+    return prompt.audio
+  }
+
+  function getRecallPromptImage(prompt: RecallPrompt | undefined): { image?: string; symbol?: string } {
+    if (!prompt) return {}
+    if (prompt.prompt?.kind === "image") return { image: prompt.prompt.image, symbol: prompt.prompt.symbol }
+    return { image: prompt.image, symbol: prompt.symbol }
+  }
+
+  function recallChoiceHasImage(choice: RecallChoice): boolean {
+    return choice.kind === "meaning" || choice.kind === "image"
+  }
+
+  function recallChoiceHasAudio(choice: RecallChoice): boolean {
+    return Boolean(choice.audio) || choice.kind === "audio" || choice.kind === "perception"
+  }
+
+  function getRecallMode(prompt: RecallPrompt): RecallMode {
+    if (prompt.mode) return prompt.mode
+
+    const hasPromptAudio = Boolean(getRecallPromptAudio(prompt))
+    const promptImage = getRecallPromptImage(prompt)
+    const hasPromptImage = Boolean(promptImage.image || promptImage.symbol)
+    const choicesAreImages = prompt.choices.every(recallChoiceHasImage)
+    const choicesHaveAudio = prompt.choices.every(recallChoiceHasAudio)
+
+    if (hasPromptAudio && choicesAreImages) return "audio-image"
+    if (hasPromptImage && choicesHaveAudio) return "image-audio"
+    if (hasPromptAudio && choicesHaveAudio) return "audio-audio"
+
+    return "audio-image"
+  }
+
   function playRecallPrompt(): void {
     const prompt = currentRecallPrompts[appState.currentRecallIndex]
+    const audio = getRecallPromptAudio(prompt)
     stopRecallAudio()
-    if (!prompt?.audio) return
+    if (!audio || !activeRecallPromptButton) return
 
-    recallPromptButton.classList.add("is-playing")
-    recallAudio.src = prompt.audio
+    activeRecallPromptButton.classList.add("is-playing")
+    recallAudio.src = audio
     recallAudio.currentTime = 0
     recallAudio.onended = () => {
-      recallPromptButton.classList.remove("is-playing")
+      activeRecallPromptButton?.classList.remove("is-playing")
     }
     recallAudio.onerror = () => {
-      recallPromptButton.classList.remove("is-playing")
+      activeRecallPromptButton?.classList.remove("is-playing")
     }
     recallAudio.play().catch(() => {
-      recallPromptButton.classList.remove("is-playing")
+      activeRecallPromptButton?.classList.remove("is-playing")
     })
   }
 
@@ -1520,7 +1575,7 @@ export function createExperience(): void {
     button.append(track)
   }
 
-  function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" }>, button: HTMLElement): void {
+  function renderMeaningChoice(choice: Extract<RecallChoice, { kind: "meaning" | "image" }>, button: HTMLElement): void {
     if (choice.image) {
       const img = document.createElement("img")
       img.src = choice.image
@@ -1537,67 +1592,234 @@ export function createExperience(): void {
     button.append(symbol)
   }
 
-  function renderRecallPrompt(): void {
-    const prompt = currentRecallPrompts[appState.currentRecallIndex]
-    clearNode(recallChoiceBed)
-    renderRecallProgress()
-    recallPromptButton.dataset.family = prompt?.family ?? "meaning"
-    if (!prompt) return
+  function createRecallPromptButton(className = "recall-prompt-button"): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = className
+    button.id = "recall-audio-button"
+    button.type = "button"
+    button.setAttribute("aria-label", "Replay recall prompt")
+    button.innerHTML = "<span class=\"recall-prompt-orb\" aria-hidden=\"true\"></span>"
+    button.addEventListener("click", playRecallPrompt)
+    activeRecallPromptButton = button
+    return button
+  }
+
+  function clearRecallConfirmButtons(): void {
+    recallAnswerZone.querySelectorAll(".recall-confirm-button").forEach((button) => button.remove())
+  }
+
+  function renderRecallConfirmButton(prompt: RecallPrompt, index: number, element: HTMLElement): HTMLButtonElement {
+    const confirmButton = document.createElement("button")
+    confirmButton.className = "recall-confirm-button"
+    confirmButton.type = "button"
+    confirmButton.setAttribute("aria-label", "Confirm answer")
+    confirmButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    confirmButton.addEventListener("click", (event) => {
+      event.stopPropagation()
+      confirmAudioAnswer(prompt, index, element)
+    })
+    return confirmButton
+  }
+
+  function selectAudioAnswerPreview(prompt: RecallPrompt, index: number, element: HTMLElement, audioSrc: string | undefined): void {
+    clearRecallConfirmButtons()
+    recallAnswerZone.querySelectorAll(".recall-answer-orb").forEach((choiceElement) => {
+      choiceElement.classList.remove("is-selected", "is-soft-miss")
+    })
+    recallFeedbackZone.className = "recall-feedback-zone"
+    selectedRecallAudioAnswer = { promptId: prompt.id, index, element }
+    element.classList.add("is-selected", "is-heard")
+    element.append(renderRecallConfirmButton(prompt, index, element))
+    playRecallChoiceAudio(audioSrc, element)
+  }
+
+  function confirmAudioAnswer(prompt: RecallPrompt, index: number, element: HTMLElement): void {
+    if (selectedRecallAudioAnswer?.promptId !== prompt.id || selectedRecallAudioAnswer.index !== index) return
+    selectRecallChoice(prompt, index, element)
+  }
+
+  function createRecallAnswerOrb(choice: RecallChoice, prompt: RecallPrompt, index: number): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = "recall-choice recall-answer-orb"
+    button.type = "button"
+    button.setAttribute("role", "listitem")
+    button.setAttribute("aria-label", "Audio answer choice")
+
+    const core = document.createElement("span")
+    core.className = "recall-answer-orb-core"
+    core.setAttribute("aria-hidden", "true")
+
+    const bars = document.createElement("span")
+    bars.className = "recall-answer-orb-bars"
+    bars.setAttribute("aria-hidden", "true")
+    bars.innerHTML = "<span></span><span></span><span></span>"
+    core.append(bars)
+
+    button.append(core)
+    button.addEventListener("click", () => {
+      selectAudioAnswerPreview(prompt, index, button, choice.audio)
+    })
+    return button
+  }
+
+  function createRecallImageChoice(choice: Extract<RecallChoice, { kind: "meaning" | "image" }>, prompt: RecallPrompt, index: number): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = "recall-choice recall-image-choice"
+    button.type = "button"
+    button.setAttribute("role", "listitem")
+    button.setAttribute("aria-label", "Image answer choice")
+    renderMeaningChoice(choice, button)
+    button.addEventListener("click", () => selectRecallChoice(prompt, index, button))
+    return button
+  }
+
+  function selectRecallChoice(prompt: RecallPrompt, index: number, element: HTMLElement): void {
+    clearRecallConfirmButtons()
+    selectedRecallAudioAnswer = null
+    recallAnswerZone.querySelectorAll(".recall-choice").forEach((choiceElement) => {
+      choiceElement.classList.remove("is-selected", "is-correct", "is-soft-miss")
+    })
+
+    element.classList.add("is-selected")
+
+    if (index !== prompt.correctIndex) {
+      element.classList.add("is-soft-miss")
+      recallFeedbackZone.className = "recall-feedback-zone is-soft-miss"
+      window.setTimeout(() => {
+        element.classList.remove("is-soft-miss")
+        recallFeedbackZone.className = "recall-feedback-zone"
+      }, 520)
+      return
+    }
+
+    element.classList.add("is-correct")
+    recallFeedbackZone.className = "recall-feedback-zone is-correct"
+
+    window.setTimeout(() => {
+      if (currentRecallPrompts[appState.currentRecallIndex] !== prompt) return
+      stopRecallAudio()
+      recallFeedbackZone.className = "recall-feedback-zone"
+
+      if (appState.currentRecallIndex < currentRecallPrompts.length - 1) {
+        appState.currentRecallIndex += 1
+        renderRecallPrompt()
+        playRecallPrompt()
+        return
+      }
+
+      if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
+      setSurface("reflection")
+    }, 420)
+  }
+
+  function renderImagePrompt(prompt: RecallPrompt): void {
+    const { image, symbol } = getRecallPromptImage(prompt)
+    const promptCard = document.createElement("div")
+    promptCard.className = "recall-image-prompt"
+    promptCard.setAttribute("aria-hidden", "true")
+
+    if (image) {
+      const img = document.createElement("img")
+      img.src = image
+      img.alt = ""
+      img.setAttribute("aria-hidden", "true")
+      promptCard.append(img)
+    } else {
+      const fallback = document.createElement("span")
+      fallback.className = "recall-choice-symbol"
+      fallback.textContent = symbol ?? "○"
+      fallback.setAttribute("aria-hidden", "true")
+      promptCard.append(fallback)
+    }
+
+    recallPromptZone.append(promptCard)
+  }
+
+  function renderRecallPromptZone(prompt: RecallPrompt): void {
+    clearNode(recallPromptZone)
+    activeRecallPromptButton = null
+
+    const mode = getRecallMode(prompt)
+    recallPromptZone.hidden = mode === "audio-image"
+
+    if (mode === "image-audio") {
+      renderImagePrompt(prompt)
+      return
+    }
+
+    const promptButton = createRecallPromptButton(mode === "audio-audio" ? "recall-prompt-button recall-prompt-orb-large" : "recall-prompt-button")
+    promptButton.dataset.family = prompt.family ?? "meaning"
+    recallPromptZone.append(promptButton)
+  }
+
+  function renderAudioImageRecall(prompt: RecallPrompt): void {
+    const field = document.createElement("div")
+    field.className = `recall-field recall-choice-count-${prompt.choices.length}`
 
     prompt.choices.forEach((choice, index) => {
-      const button = document.createElement("div")
-      button.className = `recall-choice recall-choice-${choice.kind}`
-      button.tabIndex = 0
-      button.setAttribute("role", "listitem")
-      button.setAttribute("aria-label", choice.kind === "meaning" ? "Meaning choice" : "Sound shape choice")
-
-      if (choice.kind === "meaning") renderMeaningChoice(choice, button)
-      else renderPerceptionChoice(choice, button)
-
-      if (choice.audio) {
-        const answerAudioButton = document.createElement("button")
-        answerAudioButton.className = "recall-answer-audio"
-        answerAudioButton.type = "button"
-        answerAudioButton.setAttribute("aria-label", "Play answer sound")
-        answerAudioButton.innerHTML = "<span aria-hidden=\"true\"></span>"
-        answerAudioButton.addEventListener("click", (event) => {
-          event.stopPropagation()
-          playRecallChoiceAudio(choice.audio, answerAudioButton)
-        })
-        button.append(answerAudioButton)
-      }
-
-      const selectChoice = () => {
-        recallChoiceBed.querySelectorAll(".recall-choice").forEach((element) => {
-          element.classList.remove("is-selected", "is-correct")
-        })
-        button.classList.add("is-selected")
-        if (index !== prompt.correctIndex) return
-
-        button.classList.add("is-correct")
-        window.setTimeout(() => {
-          if (currentRecallPrompts[appState.currentRecallIndex] !== prompt) return
-          stopRecallAudio()
-          if (appState.currentRecallIndex < currentRecallPrompts.length - 1) {
-            appState.currentRecallIndex += 1
-            renderRecallPrompt()
-            playRecallPrompt()
-            return
-          }
-          if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
-          setSurface("reflection")
-        }, 420)
-      }
-
-      button.addEventListener("click", selectChoice)
-      button.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return
-        event.preventDefault()
-        selectChoice()
-      })
-
-      recallChoiceBed.append(button)
+      const imageChoice = recallChoiceHasImage(choice)
+        ? createRecallImageChoice(choice as Extract<RecallChoice, { kind: "meaning" | "image" }>, prompt, index)
+        : createRecallImageChoice({ kind: "image", id: choice.id, symbol: conceptIcons[choice.id] ?? "○" }, prompt, index)
+      imageChoice.classList.add(
+        ["recall-choice-top-left", "recall-choice-top-right", "recall-choice-bottom-left", "recall-choice-bottom-right"][index] ?? "recall-choice-hidden"
+      )
+      field.append(imageChoice)
     })
+
+    const promptButton = createRecallPromptButton("recall-prompt-button recall-prompt-center")
+    promptButton.dataset.family = prompt.family ?? "meaning"
+    field.append(promptButton)
+    recallAnswerZone.append(field)
+  }
+
+  function renderImageAudioRecall(prompt: RecallPrompt): void {
+    const grid = document.createElement("div")
+    grid.className = `recall-audio-choice-grid${prompt.choices.length === 3 ? " recall-audio-choice-grid-triangle" : ""}`
+    prompt.choices.forEach((choice, index) => {
+      grid.append(createRecallAnswerOrb(choice, prompt, index))
+    })
+    recallAnswerZone.append(grid)
+  }
+
+  function renderAudioAudioRecall(prompt: RecallPrompt): void {
+    const grid = document.createElement("div")
+    grid.className = `recall-audio-choice-grid${prompt.choices.length === 3 ? " recall-audio-choice-grid-triangle" : ""}`
+    prompt.choices.forEach((choice, index) => {
+      grid.append(createRecallAnswerOrb(choice, prompt, index))
+    })
+    recallAnswerZone.append(grid)
+  }
+
+  function renderRecallAnswerZone(prompt: RecallPrompt): void {
+    clearNode(recallAnswerZone)
+    const mode = getRecallMode(prompt)
+
+    if (mode === "image-audio") {
+      renderImageAudioRecall(prompt)
+      return
+    }
+
+    if (mode === "audio-audio") {
+      renderAudioAudioRecall(prompt)
+      return
+    }
+
+    renderAudioImageRecall(prompt)
+  }
+
+  function renderRecallPrompt(): void {
+    const prompt = currentRecallPrompts[appState.currentRecallIndex]
+    selectedRecallAudioAnswer = null
+    clearNode(recallFeedbackZone)
+    recallFeedbackZone.className = "recall-feedback-zone"
+    renderRecallProgress()
+    if (!prompt) return
+
+    const mode = getRecallMode(prompt)
+    recallWorld.classList.remove("recall--audio-image", "recall--image-audio", "recall--audio-audio")
+    recallWorld.classList.add(`recall--${mode}`)
+    renderRecallPromptZone(prompt)
+    renderRecallAnswerZone(prompt)
   }
 
   function renderMeaningRecall(storyId: string): void {
@@ -1653,6 +1875,15 @@ export function createExperience(): void {
     setSurface("path")
   }
 
+  function retryRecallFromReflection(): void {
+    if (appState.selectedStoryId) renderMeaningRecall(appState.selectedStoryId)
+    setSurface("recall")
+  }
+
+  function continueFromReflection(): void {
+    goBackToStorySelection()
+  }
+
   function enterSoundGardenWithTransition(sourceButton?: HTMLElement): void {
     if (isGardenTransitioning) return
 
@@ -1673,10 +1904,6 @@ export function createExperience(): void {
       },
       prefersReducedMotion() ? 0 : soundGardenEnterDuration
     )
-  }
-
-  function enterSoundGardenFromReflection(): void {
-    enterSoundGardenWithTransition()
   }
 
   function createSectionIcon(section: SoundSection): string {
@@ -3521,11 +3748,10 @@ export function createExperience(): void {
   demoFinishLanguageButton.addEventListener("click", tryAnotherDemoLanguage)
   demoFinishStartButton.addEventListener("click", returnToDemoStart)
 
-  recallPromptButton.addEventListener("click", playRecallPrompt)
 
   reflectionReplayButton.addEventListener("click", replayStoryFromReflection)
-  reflectionPathsButton.addEventListener("click", returnToPathSelection)
-  reflectionSoundGardenButton.addEventListener("click", enterSoundGardenFromReflection)
+  reflectionPathsButton.addEventListener("click", retryRecallFromReflection)
+  reflectionSoundGardenButton.addEventListener("click", continueFromReflection)
 
   primerBackdrop.className = "primer-backdrop"
   primerBackdrop.type = "button"
@@ -3569,7 +3795,6 @@ export function createExperience(): void {
   setAssetIcon(demoFinishLanguageButton, returnToMainNavSvgMarkup)
   setAssetIcon(demoFinishStartButton, seedLogoSvgMarkup)
   setAssetIcon(reflectionReplayButton, replaySvgMarkup)
-  setAssetIcon(reflectionPathsButton, returnToMainNavSvgMarkup)
   setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
 
   languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()

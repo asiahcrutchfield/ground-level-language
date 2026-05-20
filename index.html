@@ -376,18 +376,10 @@
             <!-- recall screen -->
             <section class="meaning-recall-screen" id="meaning-recall-screen" aria-label="Recall" hidden>
               <div class="recall-world story-section-container" id="recall-world">
-                <button class="recall-prompt-button" id="recall-audio-button" type="button"
-                  aria-label="Replay recall prompt">
-                  <span class="recall-prompt-orb" id="recall-prompt-orb" aria-hidden="true">
-                    <span class="recall-pulse"></span>
-                  </span>
-                  <span class="recall-prompt-dot" aria-hidden="true"></span>
-                </button>
-
-                <div class="recall-choice-bed" id="recall-choice-bed" role="list"></div>
-
+                <div class="recall-prompt-zone" id="recall-prompt-zone"></div>
+                <div class="recall-answer-zone" id="recall-answer-zone" role="list"></div>
+                <div class="recall-feedback-zone" id="recall-feedback-zone" aria-hidden="true"></div>
                 <div class="recall-progress" id="recall-progress" aria-hidden="true"></div>
-
               </div>
             </section>
 
@@ -414,13 +406,13 @@
                     <span aria-hidden="true"></span>
                   </button>
 
-                  <button class="reflection-action reflection-paths-button" id="reflection-paths-button" type="button"
-                    aria-label="Return to path selection">
+                  <button class="reflection-action reflection-retry-recall-button" id="reflection-paths-button"
+                    type="button" aria-label="Try recall again">
                     <span aria-hidden="true"></span>
                   </button>
 
-                  <button class="reflection-action reflection-sound-garden-button" id="reflection-sound-garden-button"
-                    type="button" aria-label="Enter Sound Garden">
+                  <button class="reflection-action reflection-continue-button" id="reflection-sound-garden-button"
+                    type="button" aria-label="Continue">
                     <span aria-hidden="true"></span>
                   </button>
                 </div>

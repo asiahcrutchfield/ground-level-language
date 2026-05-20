@@ -9,14 +9,26 @@ export type MeaningArc = {
   unlocked: boolean
 }
 
+export type RecallMode = "audio-image" | "image-audio" | "audio-audio"
+
+export type RecallPromptContent =
+  | { kind: "audio"; audio?: string }
+  | { kind: "image"; image?: string; symbol?: string }
+
 export type RecallChoice =
   | { kind: "meaning"; image?: string; symbol?: string; id: string; audio?: string }
-  | { kind: "perception"; pattern: number[]; id: string; audio?: string }
+  | { kind: "perception"; pattern: number[]; id: string; audio?: string; symbol?: string }
+  | { kind: "image"; image?: string; symbol?: string; id: string; audio?: string }
+  | { kind: "audio"; audio?: string; symbol?: string; id: string }
 
 export type RecallPrompt = {
   id: string
   family: "perception" | "meaning"
+  mode?: RecallMode
+  prompt?: RecallPromptContent
   audio?: string
+  image?: string
+  symbol?: string
   choices: RecallChoice[]
   correctIndex: number
 }
@@ -308,9 +320,15 @@ export function getRecallPrompts(
   const first = items[0]
   const second = items[1] ?? items[0]
   const third = items[2] ?? items[0]
+  const recallItems = items.slice(0, 4)
   if (!first || !second || !third) return []
+  const beginnerItems = recallItems.slice(0, 2)
+  let imageAudioItems = [third, first].filter(
+    (item, index, itemList) => itemList.findIndex((candidate) => candidate.id === item.id) === index
+  )
+  if (imageAudioItems.length < 2 && second.id !== imageAudioItems[0]?.id) imageAudioItems = [...imageAudioItems, second]
 
-  const meaningChoices = items.slice(0, 3).map((item) => ({
+  const meaningChoices = beginnerItems.map((item) => ({
     kind: "meaning" as const,
     id: item.id,
     image: item.image,
@@ -318,17 +336,27 @@ export function getRecallPrompts(
     audio: item.wholeAudio
   }))
 
-  const perceptionChoices = [first, second, third].map((item, index) => ({
+  const perceptionChoices = beginnerItems.map((item, index) => ({
     kind: "perception" as const,
     id: item.id,
     pattern: getRecallPattern(item, index),
-    audio: item.wholeAudio
+    audio: item.wholeAudio,
+    symbol: conceptIcons[item.id]
+  }))
+
+  const audioChoices = imageAudioItems.map((item) => ({
+    kind: "audio" as const,
+    id: item.id,
+    audio: item.wholeAudio,
+    symbol: conceptIcons[item.id]
   }))
 
   return [
     {
       id: `${first.id}-hear-shape`,
       family: "perception",
+      mode: "audio-audio",
+      prompt: { kind: "audio", audio: first.wholeAudio },
       audio: first.wholeAudio,
       choices: perceptionChoices,
       correctIndex: 0
@@ -336,20 +364,27 @@ export function getRecallPrompts(
     {
       id: `${second.id}-meaning`,
       family: "meaning",
+      mode: "audio-image",
+      prompt: { kind: "audio", audio: second.wholeAudio },
       audio: second.wholeAudio,
       choices: meaningChoices,
       correctIndex: Math.min(1, meaningChoices.length - 1)
     },
     {
-      id: `${third.id}-hear-shape`,
+      id: `${third.id}-image-sound`,
       family: "perception",
-      audio: third.wholeAudio,
-      choices: [...perceptionChoices].reverse(),
-      correctIndex: Math.max(0, perceptionChoices.length - 1 - 2)
+      mode: "image-audio",
+      prompt: { kind: "image", image: third.image, symbol: conceptIcons[third.id] },
+      image: third.image,
+      symbol: conceptIcons[third.id],
+      choices: audioChoices,
+      correctIndex: 0
     },
     {
       id: `${first.id}-meaning-return`,
       family: "meaning",
+      mode: "audio-image",
+      prompt: { kind: "audio", audio: first.wholeAudio },
       audio: first.wholeAudio,
       choices: [...meaningChoices].reverse(),
       correctIndex: Math.max(0, meaningChoices.length - 1)
