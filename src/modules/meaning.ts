@@ -74,6 +74,7 @@ const universalImages = [
 ]
 
 const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
+  en: ["en_u0001.mp3", "en_u0002.mp3", "en_u0003.mp3", "en_u0004.mp3", "en_u0005.mp3"],
   nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
   zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
 }
@@ -92,7 +93,8 @@ function getVocabAudioFiles(lang: SupportedLanguage): string[] {
 
 function getPrimerAudioFiles(selectedLanguage: SupportedLanguage): string[] {
   return getVocabAudioFiles(selectedLanguage).map(
-    (audio) => `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}`
+    (audio) =>
+      selectedLanguage === "en" ? `/engine/vocab/en/audio/natural/${audio}` : `engine/vocab/${selectedLanguage}/audio/${audio}`
   )
 }
 
@@ -119,9 +121,10 @@ export function renderArcButtons(options: {
   arcList: HTMLElement
   arcs: MeaningArc[]
   prefersReducedMotion: () => boolean
+  selectionDelay?: number
   onArcSelected: (arc: MeaningArc, button: HTMLButtonElement) => void
 }): void {
-  const { arcList, arcs, prefersReducedMotion, onArcSelected } = options
+  const { arcList, arcs, prefersReducedMotion, selectionDelay, onArcSelected } = options
   arcs.forEach((arc, index) => {
     const item = document.createElement("li")
     item.className = arc.unlocked ? "arc-node-item is-unlocked" : "arc-node-item is-dormant"
@@ -164,7 +167,7 @@ export function renderArcButtons(options: {
           delete arcList.dataset.selecting
           delete button.dataset.selected
         },
-        prefersReducedMotion() ? 20 : 520
+        selectionDelay ?? (prefersReducedMotion() ? 20 : 520)
       )
     })
 
@@ -234,7 +237,11 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
       id: concept,
       symbol: concept,
       image: `engine/universal/images/${image}`,
-      audio: audio ? `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}` : undefined
+      audio: audio
+        ? selectedLanguage === "en"
+          ? `/engine/vocab/en/audio/natural/${audio}`
+          : `engine/vocab/${selectedLanguage}/audio/${audio}`
+        : undefined
     }
   })
 }
@@ -252,7 +259,7 @@ export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage
 
   return moments.slice(0, 5).map((moment, index) => {
     const id = concepts[index % concepts.length] ?? moment.id
-    const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? fallbackPrimerAudio
+    const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? (selectedLanguage === "en" ? undefined : fallbackPrimerAudio)
     const phonemeCount = Math.max(2, Math.min(4, id.length || 3))
     const syllableCount = Math.max(1, Math.min(3, Math.ceil((id.length || 3) / 3)))
 
@@ -290,7 +297,9 @@ export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage
         }))
       ] satisfies StoryScene[]
 
-  return sourceScenes.slice(0, 5).map((scene, index) => {
+  const maxScenes = providedScenes?.length ? providedScenes.length : 5
+
+  return sourceScenes.slice(0, maxScenes).map((scene, index) => {
     const start = scene.start ?? index * 3.8
     const end = scene.end ?? start + 3.8
 
@@ -298,6 +307,7 @@ export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage
       id: scene.id || `scene-${index + 1}`,
       image: scene.image ? resolveStoryAsset(scene.image, storyAudioBase) : `engine/universal/images/${universalImages[index % universalImages.length]}`,
       audio: scene.audio ? resolveStoryAsset(scene.audio, storyAudioBase) : undefined,
+      audioPieces: scene.audioPieces?.map((piece) => resolveStoryAsset(piece, storyAudioBase)),
       start,
       end
     }

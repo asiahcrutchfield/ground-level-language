@@ -100,15 +100,29 @@ const previewVocabularyPods = [
   { id: "ending", label: "Big, small, night, sleep", items: ["大", "小", "晚上", "睡著"] }
 ] as const
 const previewVocabularyAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
+  en: [
+    "en_u0001.mp3",
+    "en_u0002.mp3",
+    "en_u0003.mp3",
+    "en_u0004.mp3",
+    "en_u0005.mp3",
+    "en_u0006.mp3",
+    "en_u0007.mp3",
+    "en_u0008.mp3",
+    "en_u0009.mp3",
+    "en_u0010.mp3"
+  ],
   nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
   zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
 }
 
 const demoConfig = {
   enabled: true,
+  language: "en" as SupportedLanguage,
   arcId: "cat-stray",
   storyId: "s0-001"
 } as const
+const demoLanguageOptions = demoConfig.enabled ? languageOptions.filter((language) => language.code === demoConfig.language) : languageOptions
 
 const soundSections: SoundSection[] = [
   {
@@ -302,7 +316,7 @@ const meaningArcs: MeaningArc[] = [
 ]
 
 const getDisplayName = (code: SupportedLanguage): string => {
-  const option = languageOptions.find((language) => language.code === code)
+  const option = demoLanguageOptions.find((language) => language.code === code) ?? languageOptions.find((language) => language.code === code)
   if (!option) return code
   return option.nativeName === option.name ? option.nativeName : `${option.nativeName} (${option.name})`
 }
@@ -488,7 +502,7 @@ export function createExperience(): void {
   let suppressNextLanguageSeedClick = false
   let gardenLabelTimer = 0
   let isGardenTransitioning = false
-  const appState = createAppState(getInitialLanguage())
+  const appState = createAppState(demoConfig.enabled ? demoConfig.language : getInitialLanguage())
   let selectedSoundSectionId: string | null = null
   let selectedSoundLessonId: string | null = null
   let currentSoundPreviewAudio: HTMLAudioElement | null = null
@@ -503,6 +517,7 @@ export function createExperience(): void {
   let selectedStoryMode: StoryMode | null = null
   let currentStoryAudio: HTMLAudioElement | null = null
   let currentStory: Story | null = null
+  let storyPlaybackRun = 0
   let storySceneTimer = 0
   let storyAudioBase = ""
   let previewStoryImageIndex = 0
@@ -512,7 +527,7 @@ export function createExperience(): void {
   let activeRecallPromptButton: HTMLButtonElement | null = null
   let selectedRecallAudioAnswer: { promptId: string; index: number; element: HTMLElement } | null = null
   let allStories: Story[] = []
-  const languageSeeds: LanguageSeed[] = languageOptions.map((language) => ({
+  const languageSeeds: LanguageSeed[] = demoLanguageOptions.map((language) => ({
     code: language.code,
     state: "idle"
   }))
@@ -780,7 +795,12 @@ export function createExperience(): void {
 
   function playPrimerAudio(audioSrc: string | undefined, sourceElement: HTMLElement, echo = false): void {
     stopPrimerAudio()
-    const src = audioSrc || fallbackPrimerAudio
+    const src = audioSrc || (appState.selectedLanguage === "en" ? "" : fallbackPrimerAudio)
+    if (!src) {
+      console.warn("Missing English primer audio; continuing without playback.")
+      if (echo) runEchoGap()
+      return
+    }
     sourceElement.classList.add("is-primer-playing")
     sourceElement.closest(".primer-card")?.classList.add("is-primer-playing")
     primerAudio.src = src
@@ -868,20 +888,25 @@ export function createExperience(): void {
   }
 
   function getPreviewVocabularyPods(): PreviewVocabularyPod[] {
-    const audioLanguage = appState.selectedLanguage === "en" ? "nan" : appState.selectedLanguage
-    const audioFiles = previewVocabularyAudioFiles[audioLanguage] ?? previewVocabularyAudioFiles.nan ?? []
+    const audioLanguage = appState.selectedLanguage
+    const audioFiles = previewVocabularyAudioFiles[audioLanguage] ?? []
 
     return previewVocabularyPods.map((pod, podIndex) => {
-      const audio = pod.items.map((_, itemIndex) => {
-        const audio = audioFiles[(podIndex * 3 + itemIndex) % Math.max(1, audioFiles.length)]
-        return audio ? `engine/vocab/${audioLanguage}/audio/${audio}` : fallbackPrimerAudio
-      })
+      const audio = pod.items
+        .map((_, itemIndex) => {
+          const audio = audioFiles[(podIndex * 3 + itemIndex) % Math.max(1, audioFiles.length)]
+          if (!audio) return undefined
+          return audioLanguage === "en" ? `/engine/vocab/en/audio/natural/${audio}` : `engine/vocab/${audioLanguage}/audio/${audio}`
+        })
+        .filter((src): src is string => Boolean(src))
 
       return { ...pod, audio }
     })
   }
 
   function getStoryImagePreviewMoments(story: Story): StoryImagePreviewMoment[] {
+    const sceneOrder: StoryImagePreviewMoment["scene"][] = ["wake", "smell", "ground", "big-cat", "sleep"]
+
     const catStoryScenes: StoryImagePreviewMoment[] = [
       { id: "cat-wakes-up", scene: "wake", symbol: "cat" },
       { id: "cat-smells-food", scene: "smell", symbol: "food" },
@@ -890,10 +915,18 @@ export function createExperience(): void {
       { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night" }
     ]
 
-    if (story.id === "s0-001" && getStoryArcId(story) === "cat-stray") return catStoryScenes
-
     const moments = getPreviewMoments(story, appState.selectedLanguage)
-    const sceneOrder: StoryImagePreviewMoment["scene"][] = ["wake", "smell", "ground", "big-cat", "sleep"]
+    if (story.previewMoments?.length) {
+      return moments.map((moment, index) => ({
+        id: moment.id,
+        image: moment.image,
+        audio: moment.audio,
+        symbol: moment.symbol,
+        scene: sceneOrder[index] ?? "ground"
+      }))
+    }
+
+    if (story.id === "s0-001" && getStoryArcId(story) === "cat-stray") return catStoryScenes
 
     return moments.slice(0, 5).map((moment, index) => ({
       id: moment.id,
@@ -987,7 +1020,10 @@ export function createExperience(): void {
 
   function renderMeaningPreviewWorld(storyId: string): void {
     const story = allStories.find((candidate) => candidate.id === storyId)
-    if (!story) return
+    if (!story) {
+      console.warn(`Cannot render preview. Story ${storyId} is not loaded.`)
+      return
+    }
 
     stopPreviewMomentAudio()
     clearNode(previewSignature)
@@ -1068,7 +1104,9 @@ export function createExperience(): void {
     track.className = `sound-track sound-track-${type}`
     track.setAttribute("aria-label", `${type} track`)
 
-    const playablePieces = pieces.length ? pieces : [{ id: `${type}-fallback`, audio: fallbackPrimerAudio }]
+    const playablePieces = pieces.length
+      ? pieces
+      : [{ id: `${type}-fallback`, audio: appState.selectedLanguage === "en" ? undefined : fallbackPrimerAudio }]
 
     playablePieces.forEach((piece) => {
       const button = document.createElement("button")
@@ -1280,6 +1318,7 @@ export function createExperience(): void {
   }
 
   function stopStoryAudio(): void {
+    storyPlaybackRun += 1
     window.clearTimeout(storySceneTimer)
     storyStage.classList.remove("is-playing")
     storyAudioButton.classList.remove("is-playing")
@@ -1288,6 +1327,38 @@ export function createExperience(): void {
 
     stopAudio(currentStoryAudio)
     currentStoryAudio = null
+  }
+
+  function playStoryAudioSources(sources: string[], onComplete: () => void): void {
+    const run = storyPlaybackRun
+    let sourceIndex = 0
+
+    const playNext = (): void => {
+      if (run !== storyPlaybackRun) return
+
+      const src = sources[sourceIndex]
+      sourceIndex += 1
+
+      if (!src) {
+        currentStoryAudio = null
+        onComplete()
+        return
+      }
+
+      const audio = new Audio(src)
+      currentStoryAudio = audio
+      audio.addEventListener("ended", playNext)
+      audio.addEventListener("error", () => {
+        console.warn(`Missing story audio piece: ${src}`)
+        playNext()
+      })
+      audio.play().catch(() => {
+        console.warn(`Unable to play story audio piece: ${src}`)
+        playNext()
+      })
+    }
+
+    playNext()
   }
 
   function finishStory(): void {
@@ -1299,6 +1370,8 @@ export function createExperience(): void {
     updateStoryModeButtons()
     storyReplayButton.hidden = true
     storyAudioButton.hidden = false
+    storyForwardButton.hidden = false
+    storyForwardButton.disabled = false
   }
 
   function runTimedAutoStory(story: Story, sceneIndex = 0): void {
@@ -1316,8 +1389,33 @@ export function createExperience(): void {
     }, duration)
   }
 
+  function runPieceBasedAutoStory(story: Story, sceneIndex = 0): void {
+    const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
+    const scene = scenes[sceneIndex]
+    if (!scene) {
+      finishStory()
+      return
+    }
+
+    showStoryScene(story, sceneIndex)
+    const sources = scene.audioPieces?.length ? scene.audioPieces : scene.audio ? [scene.audio] : []
+    if (!sources.length) {
+      storySceneTimer = window.setTimeout(() => runPieceBasedAutoStory(story, sceneIndex + 1), 1200)
+      return
+    }
+
+    playStoryAudioSources(sources, () => {
+      runPieceBasedAutoStory(story, sceneIndex + 1)
+    })
+  }
+
   function playFullStoryAudio(story: Story): void {
     const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
+    if (scenes.some((scene) => scene.audioPieces?.length)) {
+      runPieceBasedAutoStory(story)
+      return
+    }
+
     const src = resolveStoryAsset(story.audio, storyAudioBase)
 
     if (!src) {
@@ -1373,9 +1471,19 @@ export function createExperience(): void {
     storyStage.classList.add("is-playing")
     storyAudioButton.classList.add("is-playing")
 
+    const sceneAudioPieces = scene.audioPieces ?? []
     const sceneAudio = scene.audio
     const fullStoryAudio = resolveStoryAsset(story.audio, storyAudioBase)
-    const audio = new Audio(sceneAudio || fullStoryAudio)
+
+    if (sceneAudioPieces.length) {
+      playStoryAudioSources(sceneAudioPieces, () => {
+        storyStage.classList.remove("is-playing")
+        storyAudioButton.classList.remove("is-playing")
+        currentStoryAudio = null
+        runStoryEcho()
+      })
+      return
+    }
 
     if (!sceneAudio && !fullStoryAudio) {
       storyStage.classList.remove("is-playing")
@@ -1384,6 +1492,7 @@ export function createExperience(): void {
       return
     }
 
+    const audio = new Audio(sceneAudio || fullStoryAudio)
     currentStoryAudio = audio
     const sceneEnd = scene.end
 
@@ -1478,14 +1587,59 @@ export function createExperience(): void {
   function goBackToStorySelection(): void {
     stopStoryAudio()
     if (demoConfig.enabled) {
-      const story = appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined
-      renderDemoMeaningTreeIntro(story)
-      setSurface("meaningArc")
+      openDemoMeaningTree()
       return
     }
 
     if (appState.selectedArcId) renderStoryPods(getStoriesForArc(appState.selectedArcId))
     setSurface("storyBranch")
+  }
+
+  async function ensureEnglishDemoStory(): Promise<Story | null> {
+    const existing = allStories.find((story) => story.id === demoConfig.storyId)
+    if (existing) return existing
+
+    try {
+      const response = await fetch("stories/langs/en/stories.json")
+      if (!response.ok) throw new Error(`Unable to load English stories: ${response.status}`)
+
+      const file = (await response.json()) as Story[] | Story[][]
+      const stories = Array.isArray(file[0]) ? (file[0] as Story[]) : (file as Story[])
+      const demoStory = stories.find((story) => story.id === demoConfig.storyId)
+
+      if (!demoStory) {
+        console.warn("English demo story s0-001 was not found in stories/langs/en/stories.json")
+        return null
+      }
+
+      allStories = stories
+      storyAudioBase = "stories/langs/en/"
+      return demoStory
+    } catch (error) {
+      console.warn("Failed to load English demo story JSON.", error)
+      return null
+    }
+  }
+
+  async function enterDemoCatPreview(): Promise<void> {
+    appState.selectedLanguage = demoConfig.language
+    saveLanguage(demoConfig.language)
+
+    const story = await ensureEnglishDemoStory()
+    if (!story) {
+      console.warn("Cannot enter demo preview because s0-001 is missing.")
+      return
+    }
+
+    appState.selectedArcId = demoConfig.arcId
+    appState.selectedStoryId = story.id
+
+    try {
+      renderMeaningPreviewWorld(story.id)
+      setSurface("meaningPreview")
+    } catch (error) {
+      console.error("Failed to enter demo preview.", error)
+    }
   }
 
   function goForwardFromStory(): void {
@@ -3119,11 +3273,18 @@ export function createExperience(): void {
 
   function renderArcButtons(): void {
     clearNode(arcList)
+    const arcs = demoConfig.enabled ? meaningArcs.filter((arc) => arc.id === demoConfig.arcId) : meaningArcs
     renderMeaningArcButtons({
       arcList,
-      arcs: meaningArcs,
+      arcs,
       prefersReducedMotion,
+      selectionDelay: demoConfig.enabled ? 0 : undefined,
       onArcSelected: (arc) => {
+        if (demoConfig.enabled && arc.id === demoConfig.arcId) {
+          void enterDemoCatPreview()
+          return
+        }
+
         appState.selectedArcId = arc.id
         renderStoryPods(getStoriesForArc(arc.id))
         setSurface("storyBranch")
@@ -3145,50 +3306,6 @@ export function createExperience(): void {
         setSurface("meaningPreview")
       }
     })
-  }
-
-  function renderDemoMeaningTreeIntro(story?: Story): void {
-    // Demo branch: show only the Cat arc entry point for the focused walkthrough.
-    clearNode(arcList)
-    clearNode(storyPodBed)
-
-    const arc = meaningArcs.find((candidate) => candidate.id === demoConfig.arcId)
-    const item = document.createElement("li")
-    item.className = "arc-node-item demo-arc-item is-unlocked"
-    item.dataset.endpoint = "1"
-
-    const button = document.createElement("button")
-    button.className = "arc-button demo-cat-arc-button"
-    button.type = "button"
-    button.dataset.arcId = demoConfig.arcId
-    button.dataset.subject = arc?.subject ?? "cat"
-    button.disabled = !story
-    button.setAttribute("aria-label", story ? `Start ${story.title}` : "Story unavailable")
-    button.setAttribute("aria-disabled", String(!story))
-
-    const icon = document.createElement("span")
-    icon.className = "arc-icon"
-    icon.setAttribute("aria-hidden", "true")
-
-    if (arc?.svg) {
-      icon.innerHTML = arc.svg.trim()
-      muteInlineSvg(icon)
-    } else {
-      icon.textContent = arc?.fallbackSymbol ?? "cat"
-    }
-
-    button.append(icon)
-
-    if (story) {
-      button.addEventListener("click", () => {
-        appState.selectedStoryId = demoConfig.storyId
-        renderMeaningPreviewWorld(story.id)
-        setSurface("meaningPreview")
-      })
-    }
-
-    item.append(button)
-    arcList.append(item)
   }
 
   function renderDemoFinishScreen(storyId: string): void {
@@ -3258,8 +3375,7 @@ export function createExperience(): void {
     appState.selectedArcId = null
     appState.selectedStoryId = null
     if (demoConfig.enabled) {
-      renderDemoMeaningTreeIntro()
-      setSurface("meaningArc")
+      openDemoMeaningTree()
       return
     }
 
@@ -3341,10 +3457,11 @@ export function createExperience(): void {
   }
 
   function openDemoMeaningTree(): void {
-    // Demo branch: load only the Cat Story data and enter the Meaning Tree demo directly.
+    // Demo branch: bypass full path selection and show only the Cat Story arc.
     appState.selectedPath = "meaning-tree"
-    appState.selectedArcId = demoConfig.arcId
-    appState.selectedStoryId = demoConfig.storyId
+    appState.selectedLanguage = demoConfig.language
+    appState.selectedArcId = null
+    appState.selectedStoryId = null
     clearNode(arcList)
     clearNode(storyPodBed)
 
@@ -3352,15 +3469,15 @@ export function createExperience(): void {
       .then((data) => {
         allStories = data.stories
         storyAudioBase = data.storyAudio
-        const story = allStories.find((candidate) => candidate.id === demoConfig.storyId)
-        renderDemoMeaningTreeIntro(story)
         setSurface("meaningArc")
+        renderArcButtons()
       })
       .catch(() => {
         allStories = []
         storyAudioBase = ""
-        renderDemoMeaningTreeIntro()
+        console.warn("Unable to load demo learning data.")
         setSurface("meaningArc")
+        renderArcButtons()
       })
   }
 
@@ -3543,7 +3660,7 @@ export function createExperience(): void {
     languageSeedbed.classList.add("language-seed-layer")
 
     languageSeeds.forEach((languageSeed, index) => {
-      const option = languageOptions.find((language) => language.code === languageSeed.code)
+      const option = demoLanguageOptions.find((language) => language.code === languageSeed.code)
       if (!option) return
 
       const row = document.createElement("div")
@@ -3851,9 +3968,6 @@ export function createExperience(): void {
   if (demoConfig.enabled) app.dataset.demo = "meaning-tree"
   setSurface(surface)
 }
-
-
-
 
 
 

@@ -74,6 +74,10 @@ export type Story = {
   previewMoments?: PreviewMoment[]
   primerItems?: PrimerItem[]
   scenes?: StoryScene[]
+  audioPieces?: {
+    natural?: string[]
+    slow?: string[]
+  }
   lines: string[]
   audio: string
 }
@@ -105,6 +109,7 @@ export type StoryScene = {
   id: string
   image?: string
   audio?: string
+  audioPieces?: string[]
   start?: number
   end?: number
 }

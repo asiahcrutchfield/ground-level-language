@@ -609,13 +609,14 @@ button:focus-visible {
   position: absolute;
   left: 50%;
   top: var(--root-top);
-  z-index: 2;
+  z-index: 5;
   width: var(--root-w);
   height: calc(var(--root-w) * 1.25);
   margin: 0;
   padding: 0;
   overflow: visible;
   list-style: none;
+  pointer-events: auto;
   transform: translateX(-50%);
 }
 
@@ -725,6 +726,7 @@ button:focus-visible {
     inset 8px 10px 18px rgba(246, 226, 165, 0.06),
     inset -10px -14px 20px rgba(8, 22, 13, 0.34);
   cursor: pointer;
+  pointer-events: auto;
   animation: arc-breathe 5.4s ease-in-out infinite;
   -webkit-tap-highlight-color: transparent;
 }
@@ -790,12 +792,19 @@ button:focus-visible {
   place-items: center;
   font-size: 2.4rem;
   filter: drop-shadow(0 0 28px rgba(157, 187, 116, 0.16));
+  pointer-events: none;
 }
 
 .arc-icon svg {
   display: block;
   width: 100%;
   height: auto;
+  pointer-events: none;
+}
+
+.meaning-root-art,
+.meaning-root-mound {
+  pointer-events: none;
 }
 
 .story-branch-screen {
@@ -4524,6 +4533,8 @@ button:focus-visible {
 }
 
 .story-section-actions {
+  position: relative;
+  z-index: 60;
   grid-area: nav;
   display: flex;
   min-height: 54px;
@@ -5358,23 +5369,6 @@ button:focus-visible {
 .reflection-sound-garden-button span::after {
   right: 5px;
   height: 14px;
-}
-
-.demo-arc-item {
-  justify-self: center;
-}
-
-.demo-cat-arc-button {
-  cursor: pointer;
-}
-
-.demo-cat-arc-button:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-.app[data-demo="meaning-tree"] .story-lesson-progress span:nth-child(n + 4) {
-  display: none;
 }
 
 .demo-finish-screen {
