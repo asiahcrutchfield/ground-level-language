@@ -422,10 +422,8 @@ export function createExperience(): void {
   const storyBranchReturnButton = mustQuery<HTMLButtonElement>("#story-branch-return-button")
   const storyArcSymbol = mustQuery<HTMLElement>("#story-arc-symbol")
   const storyPodBed = mustQuery<HTMLElement>("#story-pod-bed")
-  const previewSignature = mustQuery<HTMLElement>("#preview-signature")
+  const previewSignature = mustQuery<HTMLElement>("#story-title")
   const previewImageTrack = mustQuery<HTMLElement>("#preview-image-track")
-  const previewTrackBackButton = mustQuery<HTMLButtonElement>("#preview-track-back-button")
-  const previewTrackNextButton = mustQuery<HTMLButtonElement>("#preview-track-next-button")
   const previewAudioTrack = mustQuery<HTMLElement>("#preview-audio-track")
   const previewStoryReturnButton = mustQuery<HTMLButtonElement>("#story-lessons-return-button")
   const primerScreen = mustQuery<HTMLElement>("#meaning-primer-screen")
@@ -505,9 +503,8 @@ export function createExperience(): void {
   let currentStory: Story | null = null
   let storySceneTimer = 0
   let storyAudioBase = ""
-  let previewStoryImageIndex = 0
-  let previewStoryImageStartX: number | null = null
-  let previewStoryImageStartY: number | null = null
+  let previewGlimpsesRevealed = false
+  let previewGlimpseRevealTimer = 0
   let currentRecallPrompts: RecallPrompt[] = []
   let activeRecallPromptButton: HTMLButtonElement | null = null
   let selectedRecallAudioAnswer: { promptId: string; index: number; element: HTMLElement } | null = null
@@ -844,11 +841,11 @@ export function createExperience(): void {
 
   function getStoryImagePreviewMoments(story: Story): StoryImagePreviewMoment[] {
     const catStoryScenes: StoryImagePreviewMoment[] = [
-      { id: "cat-wakes-up", scene: "wake", symbol: "cat" },
-      { id: "cat-smells-food", scene: "smell", symbol: "food" },
-      { id: "food-on-ground", scene: "ground", symbol: "food" },
-      { id: "big-cat-appears", scene: "big-cat", symbol: "cat" },
-      { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night" }
+      { id: "cat-wakes-up", scene: "wake", symbol: "cat", image: "/stories/arcs/cat/s0/s0-01.png" },
+      { id: "cat-smells-food", scene: "smell", symbol: "food", image: "/stories/arcs/cat/s0/s0-02.png" },
+      { id: "food-on-ground", scene: "ground", symbol: "food", image: "/stories/arcs/cat/s0/s0-03.png" },
+      { id: "big-cat-appears", scene: "big-cat", symbol: "cat", image: "/stories/arcs/cat/s0/s0-06.png" },
+      { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night", image: "/stories/arcs/cat/s0/s0-09.png" }
     ]
 
     if (story.id === "s0-001" && getStoryArcId(story) === "cat-stray") return catStoryScenes
@@ -864,41 +861,50 @@ export function createExperience(): void {
     }))
   }
 
-  function updateStoryImageCarousel(activeIndex: number): void {
-    const cards = Array.from(previewImageTrack.querySelectorAll<HTMLElement>(".story-image-card"))
-    const boundedIndex = Math.max(0, Math.min(activeIndex, cards.length - 1))
-    previewStoryImageIndex = boundedIndex
+  function revealStoryGlimpses(): void {
+    if (previewGlimpsesRevealed) return
+    if (previewImageTrack.classList.contains("is-glimpse-revealing")) return
+    window.clearTimeout(previewGlimpseRevealTimer)
+    previewImageTrack.classList.add("is-glimpse-revealing")
+    previewImageTrack.classList.remove("is-glimpse-waiting")
+    meaningPreviewScreen.classList.remove("is-story-glimpse-waiting")
+    meaningPreviewScreen.classList.add("is-story-glimpse-revealing")
 
-    cards.forEach((card, index) => {
-      const offset = index - boundedIndex
-      card.classList.toggle("story-image-card-active", offset === 0)
-      card.classList.toggle("story-image-card-prev", offset === -1)
-      card.classList.toggle("story-image-card-next", offset === 1)
-      card.classList.toggle("story-image-card-hidden", Math.abs(offset) > 1)
-      card.dataset.offset = String(offset)
-      card.setAttribute("aria-current", String(offset === 0))
-    })
+    const cards = previewImageTrack.querySelectorAll(".story-glimpse-card")
+    const revealDuration = prefersReducedMotion() ? 80 : Math.max(520, cards.length * 120 + 360)
 
-    previewTrackBackButton.disabled = boundedIndex === 0
-    previewTrackNextButton.disabled = boundedIndex === cards.length - 1
+    previewGlimpseRevealTimer = window.setTimeout(() => {
+      previewGlimpsesRevealed = true
+      previewImageTrack.classList.add("is-glimpse-revealed")
+      previewImageTrack.classList.remove("is-glimpse-revealing")
+      meaningPreviewScreen.classList.remove("is-story-glimpse-revealing")
+      meaningPreviewScreen.classList.add("is-story-glimpse-complete")
+      storyForwardButton.classList.add("is-preview-next-ready")
+      previewGlimpseRevealTimer = 0
+    }, revealDuration)
   }
 
-  function setPreviewStoryImageIndex(nextIndex: number): void {
-    updateStoryImageCarousel(nextIndex)
-  }
-
-  function createStoryImageCard(moment: StoryImagePreviewMoment, index: number): HTMLElement {
+  function createStoryFragmentCard(moment: StoryImagePreviewMoment, index: number, total: number): HTMLElement {
     const imageFrame = document.createElement("figure")
-    imageFrame.className = "preview-moment story-image-card"
+    imageFrame.className = "preview-moment story-fragment-card story-glimpse-card"
     imageFrame.dataset.scene = moment.scene
+    imageFrame.dataset.fragmentIndex = String(index)
+    imageFrame.style.setProperty("--glimpse-index", String(index))
+    imageFrame.style.setProperty("--fragment-count", String(total))
     imageFrame.setAttribute("aria-label", `Story image ${index + 1}`)
+    imageFrame.setAttribute("role", "button")
+    imageFrame.tabIndex = 0
+
+    const fragmentFrame = document.createElement("span")
+    fragmentFrame.className = "preview-fragment-frame"
+    fragmentFrame.setAttribute("aria-hidden", "true")
 
     if (moment.image) {
       const img = document.createElement("img")
       img.className = "preview-image"
       img.src = moment.image
       img.alt = ""
-      imageFrame.append(img)
+      fragmentFrame.append(img)
     } else {
       const scene = document.createElement("span")
       scene.className = `story-image-scene story-image-scene-${moment.scene}`
@@ -916,22 +922,71 @@ export function createExperience(): void {
       accent.className = "story-image-scene-accent"
 
       scene.append(cat, food, accent)
-      imageFrame.append(scene)
+      fragmentFrame.append(scene)
     }
+
+    const vignette = document.createElement("span")
+    vignette.className = "preview-fragment-vignette"
+    vignette.setAttribute("aria-hidden", "true")
+
+    const vine = document.createElement("span")
+    vine.className = "preview-fragment-vine"
+    vine.setAttribute("aria-hidden", "true")
+
+    const leaves = document.createElement("span")
+    leaves.className = "preview-fragment-leaves"
+    leaves.setAttribute("aria-hidden", "true")
+
+    fragmentFrame.append(vignette, vine, leaves)
+    imageFrame.append(fragmentFrame)
+
+    imageFrame.addEventListener("click", () => {
+      if (!previewGlimpsesRevealed) return
+      imageFrame.classList.add("is-glimpse-peek")
+      window.setTimeout(() => imageFrame.classList.remove("is-glimpse-peek"), 520)
+    })
+
+    imageFrame.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return
+      event.preventDefault()
+      imageFrame.click()
+    })
 
     return imageFrame
   }
 
-  function renderStoryImageCarousel(story: Story): void {
-    previewStoryImageIndex = 0
+  function createStoryGlimpseSeed(): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = "story-glimpse-seed"
+    button.type = "button"
+    button.setAttribute("aria-label", "Reveal story glimpses")
+
+    const core = document.createElement("span")
+    core.className = "story-glimpse-seed-core"
+    core.setAttribute("aria-hidden", "true")
+
+    button.append(core)
+    button.addEventListener("click", revealStoryGlimpses)
+
+    return button
+  }
+
+  function renderStoryFragmentPath(story: Story): void {
+    previewGlimpsesRevealed = false
+    window.clearTimeout(previewGlimpseRevealTimer)
     clearNode(previewImageTrack)
-    previewImageTrack.classList.add("story-image-track", "story-image-carousel")
+    previewImageTrack.className = "story-fragment-list is-glimpse-waiting"
+    previewImageTrack.classList.remove("is-glimpse-revealing", "is-glimpse-revealed")
+    meaningPreviewScreen.classList.add("is-story-glimpse-waiting")
+    meaningPreviewScreen.classList.remove("is-story-glimpse-revealing", "is-story-glimpse-complete")
+    storyForwardButton.classList.remove("is-preview-next-ready")
 
-    getStoryImagePreviewMoments(story).forEach((moment, index) => {
-      previewImageTrack.append(createStoryImageCard(moment, index))
+    previewImageTrack.append(createStoryGlimpseSeed())
+
+    const moments = getStoryImagePreviewMoments(story).slice(0, 5)
+    moments.forEach((moment, index) => {
+      previewImageTrack.append(createStoryFragmentCard(moment, index, moments.length))
     })
-
-    updateStoryImageCarousel(0)
   }
 
   function expandPrimerCard(card: HTMLElement): void {
@@ -953,6 +1008,7 @@ export function createExperience(): void {
     stopPreviewMomentAudio()
     clearNode(previewSignature)
     clearNode(previewAudioTrack)
+    previewAudioTrack.hidden = true
 
     getStorySignature(story).forEach((concept) => {
       const symbol = document.createElement("span")
@@ -962,29 +1018,7 @@ export function createExperience(): void {
     })
 
     const moments: PreviewMoment[] = []
-    const vocabularyPods = getPreviewVocabularyPods()
-    renderStoryImageCarousel(story)
-
-    vocabularyPods.forEach((pod) => {
-      const audioButton = document.createElement("button")
-      audioButton.className = "preview-sound preview-audio-pod"
-      audioButton.type = "button"
-      audioButton.setAttribute("aria-label", `Play ${pod.label} vocabulary audio`)
-      audioButton.dataset.pod = pod.id
-
-      const bars = document.createElement("span")
-      bars.className = "preview-audio-pod-bars"
-      bars.append(document.createElement("span"), document.createElement("span"), document.createElement("span"))
-
-      const ripple = document.createElement("span")
-      ripple.className = "preview-audio-ripple"
-
-      audioButton.append(bars, ripple)
-      audioButton.addEventListener("click", () => {
-        playPreviewVocabularyPod(pod, audioButton)
-      })
-      previewAudioTrack.append(audioButton)
-    })
+    renderStoryFragmentPath(story)
 
     return
 
@@ -1418,7 +1452,12 @@ export function createExperience(): void {
   }
 
   function enterStoryLessonSection(section: StoryLessonSectionId, previousSection: StoryLessonSectionId): void {
-    if (previousSection === "preview" && section !== "preview") stopPreviewMomentAudio()
+    if (previousSection === "preview" && section !== "preview") {
+      stopPreviewMomentAudio()
+      window.clearTimeout(previewGlimpseRevealTimer)
+      storyForwardButton.classList.remove("is-preview-next-ready")
+      meaningPreviewScreen.classList.remove("is-story-glimpse-waiting", "is-story-glimpse-revealing", "is-story-glimpse-complete")
+    }
     if (previousSection === "primer" && section !== "primer") {
       collapsePrimerCard()
       stopPrimerAudio()
@@ -3663,40 +3702,6 @@ export function createExperience(): void {
 
   previewStoryReturnButton.addEventListener("click", goBackToStorySelection)
 
-  previewTrackBackButton.addEventListener("click", () => {
-    setPreviewStoryImageIndex(previewStoryImageIndex - 1)
-  })
-
-  previewTrackNextButton.addEventListener("click", () => {
-    setPreviewStoryImageIndex(previewStoryImageIndex + 1)
-  })
-
-  previewImageTrack.addEventListener("pointerdown", (event) => {
-    previewStoryImageStartX = event.clientX
-    previewStoryImageStartY = event.clientY
-  })
-
-  previewImageTrack.addEventListener("pointerup", (event) => {
-    if (previewStoryImageStartX === null || previewStoryImageStartY === null) return
-    const deltaX = event.clientX - previewStoryImageStartX
-    const deltaY = event.clientY - previewStoryImageStartY
-    previewStoryImageStartX = null
-    previewStoryImageStartY = null
-    if (Math.abs(deltaX) < 32 || Math.abs(deltaX) < Math.abs(deltaY)) return
-    setPreviewStoryImageIndex(previewStoryImageIndex + (deltaX < 0 ? 1 : -1))
-  })
-
-  previewImageTrack.addEventListener("pointercancel", () => {
-    previewStoryImageStartX = null
-    previewStoryImageStartY = null
-  })
-
-  previewImageTrack.addEventListener("wheel", (event) => {
-    if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return
-    event.preventDefault()
-    setPreviewStoryImageIndex(previewStoryImageIndex + (event.deltaX > 0 ? 1 : -1))
-  }, { passive: false })
-
   primerTrackBackButton.addEventListener("click", () => {
     collapsePrimerCard()
     scrollStoryTrack(primerCardTrack, -1)
@@ -3780,8 +3785,6 @@ export function createExperience(): void {
   setAssetIcon(meaningArcReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(storyBranchReturnButton, returnToMainNavSvgMarkup)
   setAssetIcon(previewStoryReturnButton, returnToMainNavSvgMarkup)
-  setAssetIcon(previewTrackBackButton, currentLessonBackNavSvgMarkup)
-  setAssetIcon(previewTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(primerTrackBackButton, currentLessonBackNavSvgMarkup)
   setAssetIcon(primerTrackNextButton, currentLessonForwardNavSvgMarkup, "asset-icon-forward")
   setAssetIcon(storyAutoButton, autoplaySvgMarkup, "asset-icon-story-mode")
