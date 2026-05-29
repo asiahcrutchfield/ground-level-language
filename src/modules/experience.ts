@@ -1165,7 +1165,8 @@ export function createExperience(): void {
     audioButton.innerHTML = "<span aria-hidden=\"true\"></span>"
     audioButton.addEventListener("click", (event) => {
       event.stopPropagation()
-      playPrimerAudio(item.wholeAudio, audioButton, true)
+      card.classList.add("is-heard")
+      playPrimerAudio(item.wholeAudio, audioButton)
     })
 
     const collapseButton = document.createElement("button")
@@ -1199,7 +1200,16 @@ export function createExperience(): void {
     stopPrimerAudio()
     collapsePrimerCard()
     clearNode(primerCardTrack)
-    getPrimerItems(story, appState.selectedLanguage).forEach((item) => {
+    clearNode(previewSignature)
+    getStorySignature(story).forEach((concept) => {
+      const symbol = document.createElement("span")
+      symbol.className = "preview-title-symbol"
+      symbol.textContent = conceptIcons[concept] ?? "â—‹"
+      previewSignature.append(symbol)
+    })
+    const primerItems = getPrimerItems(story, appState.selectedLanguage)
+    primerCardTrack.dataset.count = String(primerItems.length)
+    primerItems.forEach((item) => {
       primerCardTrack.append(renderPrimerCard(item))
     })
   }

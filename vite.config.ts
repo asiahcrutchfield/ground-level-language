@@ -10,9 +10,11 @@ function copyLearningAssets(): Plugin {
 
   const contentTypes: Record<string, string> = {
     ".json": "application/json",
+    ".gif": "image/gif",
     ".jpg": "image/jpeg",
     ".mp3": "audio/mpeg",
     ".png": "image/png",
+    ".webp": "image/webp",
     ".wav": "audio/wav"
   }
 

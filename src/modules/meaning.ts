@@ -63,15 +63,67 @@ export const fallbackPrimerAudio = "engine/vocab/nan/audio/nan_u0002.wav"
 
 const universalImages = [
   "u0001.webp",
+  "u00013.jpg",
+  "u00016.jpg",
   "u0002.webp",
+  "u00021.jpg",
+  "u00022.jpg",
+  "u00023.jpg",
+  "u00026.jpg",
   "u0003.gif",
+  "u0003.webp",
   "u0004.webp",
   "u0005.gif",
+  "u0005.webp",
+  "u0006.gif",
   "u0006.webp",
   "u0007.gif",
+  "u0007.jpg",
+  "u0008.gif",
   "u0008.webp",
-  "u0009.webp"
+  "u0009.png",
+  "u0009.webp",
+  "u0010.png",
+  "u0011.webp",
+  "u0012.png",
+  "u0014.webp",
+  "u0015.webp",
+  "u0017.gif",
+  "u0018.png",
+  "u0019.gif",
+  "u0020.webp",
+  "u0024.webp",
+  "u0025.png",
+  "u0027.webp"
 ]
+
+const conceptImageFiles: Partial<Record<string, string>> = {
+  cat: "u0001.webp",
+  food: "u0002.webp",
+  ground: "u0003.webp",
+  grass: "u00021.jpg",
+  night: "u0020.webp",
+  sleep: "u0009.webp",
+  hungry: "u0018.png",
+  smell: "u0004.webp",
+  walk: "u0003.gif",
+  see: "u00026.jpg",
+  look: "u00026.jpg",
+  eat: "u0007.gif",
+  sound: "u0009.png",
+  hear: "u0009.png",
+  stop: "u00013.jpg",
+  big: "u0012.png",
+  small: "u0012.png",
+  mad: "u0014.webp",
+  fast: "u0017.gif",
+  run: "u0017.gif"
+}
+
+function getConceptImage(concept: string | undefined): string | undefined {
+  const image = concept ? conceptImageFiles[concept] : undefined
+  return image ? `engine/universal/images/${image}` : undefined
+}
 
 const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
   nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
@@ -240,7 +292,7 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
 }
 
 export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage): PrimerItem[] {
-  if (story.primerItems?.length) return story.primerItems.slice(0, 5)
+  if (story.primerItems?.length) return story.primerItems.slice(0, 6)
 
   const moments = getPreviewMoments(story, selectedLanguage)
   const concepts = [
@@ -250,7 +302,8 @@ export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage
   ].filter(Boolean)
   const audioFiles = getPrimerAudioFiles(selectedLanguage)
 
-  return moments.slice(0, 5).map((moment, index) => {
+  return concepts.slice(0, 6).map((concept, index) => {
+    const moment = moments[index % Math.max(1, moments.length)]
     const id = concepts[index % concepts.length] ?? moment.id
     const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? fallbackPrimerAudio
     const phonemeCount = Math.max(2, Math.min(4, id.length || 3))
@@ -258,7 +311,7 @@ export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage
 
     return {
       id,
-      image: moment.image,
+      image: getConceptImage(id) ?? moment.image,
       wholeAudio,
       phonemes: createSoundPieces(phonemeCount, `${id}-sound`, wholeAudio),
       syllables: createSoundPieces(syllableCount, `${id}-pulse`, wholeAudio),
