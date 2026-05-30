@@ -3615,7 +3615,10 @@ button:focus-visible {
 }
 
 .app[data-surface="primer"] .story-lesson-shell {
-  padding-top: calc(max(22px, env(safe-area-inset-top)) + 112px);
+  width: min(100%, 620px);
+  padding-top: calc(max(22px, env(safe-area-inset-top)) + 84px);
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  gap: clamp(6px, 1.4svh, 10px) clamp(10px, 2.4vw, 16px);
   overflow: hidden;
 }
 
@@ -3628,6 +3631,7 @@ button:focus-visible {
   align-items: stretch;
   align-content: stretch;
   justify-items: center;
+  grid-auto-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -3636,6 +3640,7 @@ button:focus-visible {
   min-height: 0;
   height: 100%;
   max-height: 100%;
+  align-self: stretch;
   overflow: hidden;
 }
 
@@ -4156,20 +4161,22 @@ button:focus-visible {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   gap: clamp(16px, 3svh, 24px);
-  width: min(100%, 500px);
+  width: min(100%, 560px);
   height: 100%;
   min-height: 0;
-  align-self: start;
-  padding: 0 clamp(6px, 2vw, 14px) clamp(14px, 3svh, 28px);
+  align-self: stretch;
+  padding: 0 clamp(6px, 2vw, 14px);
   overflow: hidden;
 }
 
 .primer-track-shell {
-  display: block;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   height: 100%;
   max-height: 100%;
+  align-self: stretch;
   overflow: hidden;
 }
 
@@ -4190,20 +4197,36 @@ button:focus-visible {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: clamp(14px, 3.6vw, 18px) clamp(14px, 3.6vw, 18px) clamp(34px, 7svh, 58px);
-  scroll-padding-bottom: clamp(34px, 7svh, 58px);
+  min-height: 100%;
+  padding: clamp(14px, 3.6vw, 18px) clamp(14px, 3.6vw, 18px) clamp(26px, 5svh, 44px);
+  scroll-padding-bottom: clamp(26px, 5svh, 44px);
   touch-action: pan-y;
-  border: 1px solid rgba(244, 239, 192, 0.1);
+  border: 0;
   border-radius: 28px 18px 30px 20px;
-  background:
-    radial-gradient(ellipse at 28% 12%, rgba(244, 239, 192, 0.08), transparent 36%),
-    radial-gradient(ellipse at 74% 88%, rgba(111, 168, 106, 0.1), transparent 42%),
-    rgba(8, 22, 13, 0.24);
-  box-shadow:
-    inset 0 0 0 1px rgba(8, 22, 13, 0.28),
-    0 0 34px rgba(157, 187, 116, 0.06);
+  background: transparent;
+  box-shadow: none;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 720px) {
+  .app[data-surface="primer"] .story-lesson-shell {
+    width: min(100%, 700px);
+  }
+
+  .primer-world {
+    width: min(100%, 620px);
+  }
+
+  .primer-card-track {
+    grid-template-columns: repeat(2, minmax(160px, 190px));
+    gap: 18px;
+    padding-inline: 22px;
+  }
+
+  .primer-card-track[data-count="3"] {
+    grid-template-columns: repeat(4, minmax(80px, 95px));
+  }
 }
 
 .primer-card-track[data-count="3"] {
