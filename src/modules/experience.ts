@@ -7,6 +7,9 @@ import mandarinSeedSvgMarkup from "../../assets/language_select/lang_zh.html?raw
 import autoplaySvgMarkup from "../../assets/path_screen/meaning_tree/autoplay.html?raw"
 import manualPlaySvgMarkup from "../../assets/path_screen/meaning_tree/manual_play.html?raw"
 import primerSoundwaveSvgMarkup from "../../assets/meaning_tree_lesson/primer/soundwave.html?raw"
+import reflectionFormSvgMarkup from "../../assets/meaning_tree_lesson/reflection/form.html?raw"
+import reflectionThumbsDownSvgMarkup from "../../assets/meaning_tree_lesson/reflection/thumbs_down.html?raw"
+import reflectionThumbsUpSvgMarkup from "../../assets/meaning_tree_lesson/reflection/thumbs_up.html?raw"
 import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
 import gardenMoundSvgMarkup from "../../assets/path_screen/meaning_tree/tree/mound.html?raw"
 import soundFlowerOneSvgMarkup from "../../assets/path_screen/sound_garden/flower_1.html?raw"
@@ -114,6 +117,12 @@ const demoConfig = {
   enabled: false,
   arcId: "cat-stray",
   storyId: "s0-001"
+} as const
+
+const feedbackFormUrls = {
+  generic: "PASTE_GOOGLE_FORM_URL_HERE",
+  positive: "PASTE_OPTIONAL_PREFILLED_POSITIVE_URL_HERE",
+  negative: "PASTE_OPTIONAL_PREFILLED_NEGATIVE_URL_HERE"
 } as const
 
 const soundSections: SoundSection[] = [
@@ -523,6 +532,7 @@ export function createExperience(): void {
   const recallProgress = mustQuery<HTMLElement>("#recall-progress")
   const reflectionScreen = mustQuery<HTMLElement>("#meaning-reflection-screen")
   const reflectionGrowth = mustQuery<HTMLElement>("#reflection-growth")
+  const reflectionStoryPod = mustQuery<HTMLElement>("#reflection-story-pod")
   const reflectionStorySymbols = mustQuery<HTMLElement>("#reflection-story-symbols")
   const reflectionReplayButton = mustQuery<HTMLButtonElement>("#reflection-replay-button")
   const reflectionPathsButton = mustQuery<HTMLButtonElement>("#reflection-paths-button")
@@ -649,6 +659,13 @@ export function createExperience(): void {
     const storyLessonSection = storyLessonSurfaceSections[surface]
     meaningPreviewScreen.classList.toggle("is-reflection", storyLessonSection === "reflection")
     if (storyLessonSection) storyLessonShell.setSection(storyLessonSection)
+    if (storyLessonSection === "recall") {
+      setRecallComplete(recallWorld.dataset.recallComplete === "true")
+    } else {
+      storyForwardButton.disabled = false
+      storyForwardButton.removeAttribute("aria-disabled")
+      storyForwardButton.classList.remove("is-recall-ready")
+    }
     app.dataset.surface = surface
     if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
     if (surface !== "path") clearGardenLabels()
@@ -1656,6 +1673,13 @@ export function createExperience(): void {
     return "audio-image"
   }
 
+  function setRecallComplete(isComplete: boolean): void {
+    recallWorld.dataset.recallComplete = String(isComplete)
+    storyForwardButton.disabled = !isComplete
+    storyForwardButton.setAttribute("aria-disabled", String(!isComplete))
+    storyForwardButton.classList.toggle("is-recall-ready", isComplete)
+  }
+
   function playRecallPrompt(): void {
     const prompt = currentRecallPrompts[appState.currentRecallIndex]
     const audio = getRecallPromptAudio(prompt)
@@ -1665,18 +1689,22 @@ export function createExperience(): void {
       return
     }
 
-    recallWorld.dataset.promptHeard = "true"
     activeRecallPromptButton.classList.add("is-playing")
     recallAudio.src = audio
     recallAudio.currentTime = 0
     recallAudio.onended = () => {
       activeRecallPromptButton?.classList.remove("is-playing")
+      window.setTimeout(() => {
+        if (currentRecallPrompts[appState.currentRecallIndex] === prompt) recallWorld.dataset.promptHeard = "true"
+      }, 100)
     }
     recallAudio.onerror = () => {
       activeRecallPromptButton?.classList.remove("is-playing")
+      recallWorld.dataset.promptHeard = "true"
     }
     recallAudio.play().catch(() => {
       activeRecallPromptButton?.classList.remove("is-playing")
+      recallWorld.dataset.promptHeard = "true"
     })
   }
 
@@ -1863,7 +1891,17 @@ export function createExperience(): void {
       window.setTimeout(() => {
         element.classList.remove("is-soft-miss")
         recallFeedbackZone.className = "recall-feedback-zone"
-      }, 520)
+
+        const promptAudio = getRecallPromptAudio(prompt)
+        if (promptAudio) {
+          playRecallPrompt()
+        } else {
+          recallPromptZone.classList.add("is-reprompting")
+          window.setTimeout(() => {
+            recallPromptZone.classList.remove("is-reprompting")
+          }, 520)
+        }
+      }, 420)
       return
     }
 
@@ -1881,8 +1919,8 @@ export function createExperience(): void {
         return
       }
 
-      if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
-      setSurface("reflection")
+      setRecallComplete(true)
+      renderRecallProgress()
     }, 420)
   }
 
@@ -1993,7 +2031,11 @@ export function createExperience(): void {
     clearNode(recallAnswerZone)
     clearNode(recallFeedbackZone)
     recallFeedbackZone.className = "recall-feedback-zone"
-    if (!prompt) return
+    if (!prompt) {
+      setRecallComplete(true)
+      return
+    }
+    setRecallComplete(false)
 
     const mode = getRecallMode(prompt)
     recallWorld.dataset.recallMode = mode
@@ -2019,8 +2061,8 @@ export function createExperience(): void {
     currentStory = story
     currentRecallPrompts = getRecallPrompts(story, appState.selectedLanguage, storyAudioBase)
     appState.currentRecallIndex = 0
+    setRecallComplete(currentRecallPrompts.length === 0)
     renderRecallPrompt()
-    window.setTimeout(playRecallPrompt, 180)
   }
 
   function goBackToStory(): void {
@@ -2035,11 +2077,40 @@ export function createExperience(): void {
     setSurface("reflection")
   }
 
+  function openFeedbackForm(kind: "generic" | "positive" | "negative" = "generic"): void {
+    const url = feedbackFormUrls[kind] || feedbackFormUrls.generic
+    if (!url || url.includes("PASTE_")) {
+      reflectionScreen.classList.add("is-feedback-missing")
+      window.setTimeout(() => reflectionScreen.classList.remove("is-feedback-missing"), 520)
+      return
+    }
+
+    window.open(url, "_blank", "noopener,noreferrer")
+  }
+
+  function createReflectionFeedbackButton(kind: "positive" | "negative", markup: string): HTMLButtonElement {
+    const button = document.createElement("button")
+    button.className = `reflection-feedback-button reflection-feedback-${kind}`
+    button.type = "button"
+    button.setAttribute("aria-label", kind === "positive" ? "Positive demo feedback" : "Negative demo feedback")
+    button.innerHTML = `
+      <span class="reflection-feedback-icon" aria-hidden="true">
+        ${markup.trim()}
+      </span>
+    `
+    button.addEventListener("click", () => {
+      reflectionScreen.dataset.feedback = kind
+      openFeedbackForm(kind)
+    })
+    return button
+  }
+
   function renderMeaningReflection(storyId: string): void {
     const story = getStoryById(storyId)
     if (!story) return
 
     appState.completedStoryIds.add(storyId)
+    delete reflectionScreen.dataset.feedback
     reflectionGrowth.innerHTML = reflectionSproutSvgMarkup.trim()
     reflectionGrowth.querySelectorAll("svg").forEach((svg) => {
       svg.setAttribute("focusable", "false")
@@ -2051,11 +2122,23 @@ export function createExperience(): void {
       symbol.textContent = conceptIcons[concept] ?? "○"
       reflectionStorySymbols.append(symbol)
     })
+    reflectionStoryPod.removeAttribute("aria-hidden")
+    reflectionStoryPod.classList.add("is-feedback-pod")
+    clearNode(reflectionStorySymbols)
+    reflectionStorySymbols.className = "reflection-feedback-row"
+    reflectionStorySymbols.append(
+      createReflectionFeedbackButton("positive", reflectionThumbsUpSvgMarkup),
+      createReflectionFeedbackButton("negative", reflectionThumbsDownSvgMarkup)
+    )
+    muteInlineSvg(reflectionStorySymbols)
   }
 
   function replayStoryFromReflection(): void {
-    if (appState.selectedStoryId) renderMeaningStory(appState.selectedStoryId)
-    setSurface("story")
+    if (!appState.selectedStoryId) return
+    stopStoryAudio()
+    stopRecallAudio()
+    renderMeaningPreviewWorld(appState.selectedStoryId)
+    setSurface("meaningPreview")
   }
 
   function returnToPathSelection(): void {
@@ -2065,8 +2148,7 @@ export function createExperience(): void {
   }
 
   function retryRecallFromReflection(): void {
-    if (appState.selectedStoryId) renderMeaningRecall(appState.selectedStoryId)
-    setSurface("recall")
+    openFeedbackForm("generic")
   }
 
   function continueFromReflection(): void {
@@ -3963,6 +4045,9 @@ export function createExperience(): void {
   setAssetIcon(demoFinishLanguageButton, returnToMainNavSvgMarkup)
   setAssetIcon(demoFinishStartButton, seedLogoSvgMarkup)
   setAssetIcon(reflectionReplayButton, replaySvgMarkup)
+  reflectionPathsButton.setAttribute("aria-label", "Open feedback form")
+  setAssetIcon(reflectionPathsButton, reflectionFormSvgMarkup, "asset-icon-reflection-form")
+  reflectionSoundGardenButton.setAttribute("aria-label", "Continue")
   setAssetIcon(reflectionSoundGardenButton, sectionNavForwardSvgMarkup, "asset-icon-forward")
 
   languageMoundArt.innerHTML = languageSelectMoundSvgMarkup.trim()
