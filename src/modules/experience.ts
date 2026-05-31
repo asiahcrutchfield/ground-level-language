@@ -22,6 +22,11 @@ import replaySvgMarkup from "../../assets/ui/replay.html?raw"
 import returnToMainNavSvgMarkup from "../../assets/ui/return_to_main_nav.html?raw"
 import sectionNavBackSvgMarkup from "../../assets/ui/section_nav_back.html?raw"
 import sectionNavForwardSvgMarkup from "../../assets/ui/section_nav_forward.html?raw"
+import storyGrassSvgMarkup from "../../assets/meaning_tree_lesson/story/grass_curtains.html?raw"
+import storyFlowerOneSvgMarkup from "../../assets/meaning_tree_lesson/story/stage_flower1.html?raw"
+import storyFlowerThreeSvgMarkup from "../../assets/meaning_tree_lesson/story/stage_flower3.html?raw"
+import storyPlayButtonSvgMarkup from "../../assets/meaning_tree_lesson/story/play_button.html?raw"
+import storyReplaySvgMarkup from "../../assets/meaning_tree_lesson/story/replay.html?raw"
 import { makeChime, runEchoGap as runAudioEchoGap, stopAudio } from "./audio"
 import { getInitialLanguage, languageOptions, loadLearningData, saveLanguage } from "./data"
 import { clearNode, mustQuery } from "./dom"
@@ -454,6 +459,62 @@ export function createExperience(): void {
   const demoFinishReplayButton = mustQuery<HTMLButtonElement>("#demo-finish-replay-button")
   const demoFinishLanguageButton = mustQuery<HTMLButtonElement>("#demo-finish-language-button")
   const demoFinishStartButton = mustQuery<HTMLButtonElement>("#demo-finish-start-button")
+
+  function createStoryStageDecoration(): DocumentFragment {
+    const fragment = document.createDocumentFragment()
+
+    const glow = document.createElement("span")
+    glow.className = "story-stage-glow"
+    glow.setAttribute("aria-hidden", "true")
+
+    const frame = document.createElement("span")
+    frame.className = "story-stage-frame"
+    frame.setAttribute("aria-hidden", "true")
+
+    const grassLeft = document.createElement("span")
+    grassLeft.className = "story-stage-grass story-stage-grass-left"
+    grassLeft.setAttribute("aria-hidden", "true")
+    grassLeft.innerHTML = storyGrassSvgMarkup.trim()
+
+    const grassRight = document.createElement("span")
+    grassRight.className = "story-stage-grass story-stage-grass-right"
+    grassRight.setAttribute("aria-hidden", "true")
+    grassRight.innerHTML = storyGrassSvgMarkup.trim()
+
+    const flowerLeft = document.createElement("span")
+    flowerLeft.className = "story-stage-flower story-stage-flower-left"
+    flowerLeft.setAttribute("aria-hidden", "true")
+    flowerLeft.innerHTML = storyFlowerOneSvgMarkup.trim()
+
+    const flowerRight = document.createElement("span")
+    flowerRight.className = "story-stage-flower story-stage-flower-right"
+    flowerRight.setAttribute("aria-hidden", "true")
+    flowerRight.innerHTML = storyFlowerThreeSvgMarkup.trim()
+
+    const base = document.createElement("span")
+    base.className = "story-stage-base"
+    base.setAttribute("aria-hidden", "true")
+
+    fragment.append(glow, frame, grassLeft, grassRight, flowerLeft, flowerRight, base)
+    fragment.querySelectorAll("svg").forEach((svg) => {
+      svg.setAttribute("focusable", "false")
+      svg.setAttribute("aria-hidden", "true")
+    })
+
+    return fragment
+  }
+
+  function setStoryAudioButtonIcon(kind: "play" | "replay"): void {
+    const markup = kind === "replay" ? storyReplaySvgMarkup : storyPlayButtonSvgMarkup
+
+    storyAudioButton.dataset.icon = kind
+    storyAudioButton.innerHTML = `
+      <span class="story-play-button-art" aria-hidden="true">
+        ${markup.trim()}
+      </span>
+    `
+    muteInlineSvg(storyAudioButton)
+  }
   const recallScreen = mustQuery<HTMLElement>("#meaning-recall-screen")
   const recallWorld = mustQuery<HTMLElement>("#recall-world")
   const recallPromptZone = mustQuery<HTMLElement>("#recall-prompt-zone")
@@ -1306,6 +1367,11 @@ export function createExperience(): void {
     runAudioEchoGap(storyEcho, duration)
   }
 
+  function getStoryAudioSource(story: Story): string {
+    if (story.id === "s0-001") return "/stories/langs/zh/s0-001.mp3"
+    return resolveStoryAsset(story.audio, storyAudioBase)
+  }
+
   function stopStoryAudio(): void {
     window.clearTimeout(storySceneTimer)
     storyStage.classList.remove("is-playing")
@@ -1322,10 +1388,15 @@ export function createExperience(): void {
     storyStage.classList.remove("is-playing")
     storyAudioButton.classList.remove("is-playing")
     currentStoryAudio = null
+    selectedStoryMode = null
+    storyWorld.dataset.storyMode = "complete"
     storyModeGate.hidden = true
+    storyControls.hidden = true
+    storyProgress.hidden = true
     updateStoryModeButtons()
     storyReplayButton.hidden = true
     storyAudioButton.hidden = false
+    setStoryAudioButtonIcon("replay")
   }
 
   function runTimedAutoStory(story: Story, sceneIndex = 0): void {
@@ -1345,7 +1416,7 @@ export function createExperience(): void {
 
   function playFullStoryAudio(story: Story): void {
     const scenes = getStoryScenes(story, appState.selectedLanguage, storyAudioBase)
-    const src = resolveStoryAsset(story.audio, storyAudioBase)
+    const src = getStoryAudioSource(story)
 
     if (!src) {
       runTimedAutoStory(story)
@@ -1375,7 +1446,8 @@ export function createExperience(): void {
   function startAutoStory(story: Story): void {
     selectedStoryMode = "auto"
     stopStoryAudio()
-    storyWorld.dataset.storyMode = "auto"
+    storyWorld.dataset.storyMode = "playing"
+    setStoryAudioButtonIcon("play")
     updateStoryModeButtons()
     storyStage.classList.add("is-playing")
     storyAudioButton.classList.add("is-playing")
@@ -1401,7 +1473,7 @@ export function createExperience(): void {
     storyAudioButton.classList.add("is-playing")
 
     const sceneAudio = scene.audio
-    const fullStoryAudio = resolveStoryAsset(story.audio, storyAudioBase)
+    const fullStoryAudio = getStoryAudioSource(story)
     const audio = new Audio(sceneAudio || fullStoryAudio)
 
     if (!sceneAudio && !fullStoryAudio) {
@@ -1473,12 +1545,16 @@ export function createExperience(): void {
     currentStory = story
     appState.currentStorySceneIndex = 0
     selectedStoryMode = null
-    storyWorld.dataset.storyMode = "gate"
-    storyModeGate.hidden = false
+    storyWorld.dataset.storyMode = "ready"
+    storyModeGate.hidden = true
     storyControls.hidden = true
     storyProgress.hidden = true
-    storyAudioButton.hidden = true
+    storyAudioButton.hidden = false
     storyReplayButton.hidden = true
+    storyPrevButton.hidden = true
+    storyNextButton.hidden = true
+    storyForwardButton.hidden = false
+    setStoryAudioButtonIcon("play")
     updateStoryModeButtons()
     showStoryScene(story, 0)
   }
@@ -1584,8 +1660,12 @@ export function createExperience(): void {
     const prompt = currentRecallPrompts[appState.currentRecallIndex]
     const audio = getRecallPromptAudio(prompt)
     stopRecallAudio()
-    if (!audio || !activeRecallPromptButton) return
+    if (!audio || !activeRecallPromptButton) {
+      recallWorld.dataset.promptHeard = "true"
+      return
+    }
 
+    recallWorld.dataset.promptHeard = "true"
     activeRecallPromptButton.classList.add("is-playing")
     recallAudio.src = audio
     recallAudio.currentTime = 0
@@ -1630,7 +1710,7 @@ export function createExperience(): void {
     clearNode(recallProgress)
     currentRecallPrompts.forEach((_, index) => {
       const dot = document.createElement("span")
-      dot.className = index === appState.currentRecallIndex ? "is-active" : ""
+      dot.className = index === appState.currentRecallIndex ? "is-active" : index < appState.currentRecallIndex ? "is-complete" : ""
       recallProgress.append(dot)
     })
   }
@@ -1661,6 +1741,30 @@ export function createExperience(): void {
     symbol.textContent = choice.symbol ?? conceptIcons[choice.id] ?? "○"
     symbol.setAttribute("aria-hidden", "true")
     button.append(symbol)
+  }
+
+  function createRecallPromptImage(prompt: RecallPrompt): HTMLElement {
+    const frame = document.createElement("figure")
+    frame.className = "recall-prompt-image"
+    frame.setAttribute("aria-label", "Recall image prompt")
+
+    const promptImage = getRecallPromptImage(prompt)
+
+    if (promptImage.image) {
+      const img = document.createElement("img")
+      img.src = promptImage.image
+      img.alt = ""
+      img.setAttribute("aria-hidden", "true")
+      frame.append(img)
+    } else {
+      const symbol = document.createElement("span")
+      symbol.className = "recall-choice-symbol"
+      symbol.textContent = promptImage.symbol ? conceptIcons[promptImage.symbol] ?? "○" : "○"
+      symbol.setAttribute("aria-hidden", "true")
+      frame.append(symbol)
+    }
+
+    return frame
   }
 
   function createRecallPromptButton(className = "recall-prompt-button"): HTMLButtonElement {
@@ -1774,7 +1878,6 @@ export function createExperience(): void {
       if (appState.currentRecallIndex < currentRecallPrompts.length - 1) {
         appState.currentRecallIndex += 1
         renderRecallPrompt()
-        playRecallPrompt()
         return
       }
 
@@ -1811,14 +1914,14 @@ export function createExperience(): void {
     activeRecallPromptButton = null
 
     const mode = getRecallMode(prompt)
-    recallPromptZone.hidden = mode === "audio-image"
+    recallPromptZone.hidden = false
 
     if (mode === "image-audio") {
-      renderImagePrompt(prompt)
+      recallPromptZone.append(createRecallPromptImage(prompt))
       return
     }
 
-    const promptButton = createRecallPromptButton(mode === "audio-audio" ? "recall-prompt-button recall-prompt-orb-large" : "recall-prompt-button")
+    const promptButton = createRecallPromptButton("recall-prompt-button recall-prompt-sound")
     promptButton.dataset.family = prompt.family ?? "meaning"
     recallPromptZone.append(promptButton)
   }
@@ -1864,33 +1967,48 @@ export function createExperience(): void {
   function renderRecallAnswerZone(prompt: RecallPrompt): void {
     clearNode(recallAnswerZone)
     const mode = getRecallMode(prompt)
+    recallAnswerZone.className = "recall-answer-zone"
+    recallAnswerZone.classList.add(`recall-answer-zone-${mode}`)
+    if (mode === "audio-audio" || mode === "image-audio") recallAnswerZone.classList.add("recall-answer-zone-sound-pair")
 
-    if (mode === "image-audio") {
-      renderImageAudioRecall(prompt)
-      return
-    }
+    prompt.choices.forEach((choice, index) => {
+      if (mode === "audio-image") {
+        const imageChoice = recallChoiceHasImage(choice)
+          ? createRecallImageChoice(choice as Extract<RecallChoice, { kind: "meaning" | "image" }>, prompt, index)
+          : createRecallImageChoice({ kind: "image", id: choice.id, symbol: conceptIcons[choice.id] ?? "○" }, prompt, index)
+        recallAnswerZone.append(imageChoice)
+        return
+      }
 
-    if (mode === "audio-audio") {
-      renderAudioAudioRecall(prompt)
-      return
-    }
-
-    renderAudioImageRecall(prompt)
+      recallAnswerZone.append(createRecallAnswerOrb(choice, prompt, index))
+    })
   }
 
   function renderRecallPrompt(): void {
     const prompt = currentRecallPrompts[appState.currentRecallIndex]
     selectedRecallAudioAnswer = null
+    activeRecallPromptButton = null
+    stopRecallAudio()
+    clearNode(recallPromptZone)
+    clearNode(recallAnswerZone)
     clearNode(recallFeedbackZone)
     recallFeedbackZone.className = "recall-feedback-zone"
-    renderRecallProgress()
     if (!prompt) return
 
     const mode = getRecallMode(prompt)
+    recallWorld.dataset.recallMode = mode
+    recallWorld.dataset.choiceCount = String(prompt.choices.length)
+    recallWorld.dataset.promptHeard = mode === "image-audio" ? "true" : "false"
     recallWorld.classList.remove("recall--audio-image", "recall--image-audio", "recall--audio-audio")
+    recallWorld.classList.toggle("is-audio-audio", mode === "audio-audio")
+    recallWorld.classList.toggle("is-audio-image", mode === "audio-image")
+    recallWorld.classList.toggle("is-image-audio", mode === "image-audio")
     recallWorld.classList.add(`recall--${mode}`)
     renderRecallPromptZone(prompt)
     renderRecallAnswerZone(prompt)
+    renderRecallProgress()
+
+    if (mode === "audio-audio" || mode === "audio-image") window.setTimeout(playRecallPrompt, 220)
   }
 
   function renderMeaningRecall(storyId: string): void {
@@ -3757,8 +3875,21 @@ export function createExperience(): void {
   storyAudioButton.addEventListener("click", () => {
     const story = currentStory ?? (appState.selectedStoryId ? getStoryById(appState.selectedStoryId) : undefined)
     if (!story) return
-    if (selectedStoryMode === "manual") playSceneAudio(story, appState.currentStorySceneIndex)
-    else startAutoStory(story)
+
+    const storyMode = storyWorld.dataset.storyMode
+    if (storyMode === "playing" || storyStage.classList.contains("is-playing")) return
+
+    if (storyMode === "ready" || storyMode === "complete" || !selectedStoryMode) {
+      startAutoStory(story)
+      return
+    }
+
+    if (selectedStoryMode === "manual") {
+      playSceneAudio(story, appState.currentStorySceneIndex)
+      return
+    }
+
+    startAutoStory(story)
   })
 
   storyPrevButton.addEventListener("click", () => {
@@ -3796,6 +3927,8 @@ export function createExperience(): void {
   primerBackdrop.setAttribute("aria-label", "Collapse primer card")
   primerBackdrop.addEventListener("click", collapsePrimerCard)
   primerScreen.append(primerBackdrop)
+  storyStage.prepend(createStoryStageDecoration())
+  setStoryAudioButtonIcon("play")
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && surface === "primer") collapsePrimerCard()

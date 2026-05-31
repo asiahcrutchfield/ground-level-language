@@ -327,23 +327,38 @@ export function resolveStoryAsset(path: string | undefined, base = ""): string {
   return `${base}${path}`
 }
 
+function getBuiltInStoryScenes(story: Story): StoryScene[] {
+  const arcId = story.arcId ?? `${story.perspective}-${story.arc}`
+  if (story.id !== "s0-001" || arcId !== "cat-stray") return []
+
+  return [
+    { id: "cat-food-01-wake", image: "/stories/arcs/cat/s0/s0-01.png", start: 0, end: 7.6 },
+    { id: "cat-food-02-smell-walk", image: "/stories/arcs/cat/s0/s0-02.png", start: 7.6, end: 15.2 },
+    { id: "cat-food-03-food-ground", image: "/stories/arcs/cat/s0/s0-03.png", start: 15.2, end: 26.6 },
+    { id: "cat-food-04-eat", image: "/stories/arcs/cat/s0/s0-04.png", start: 26.6, end: 30.4 },
+    { id: "cat-food-05-hear-stop-look", image: "/stories/arcs/cat/s0/s0-05.png", start: 30.4, end: 41.8 },
+    { id: "cat-food-06-big-cat", image: "/stories/arcs/cat/s0/s0-06.png", start: 41.8, end: 64.6 },
+    { id: "cat-food-07-fight-back", image: "/stories/arcs/cat/s0/s0-07.png", start: 64.6, end: 87.4 },
+    { id: "cat-food-08-big-cat-runs", image: "/stories/arcs/cat/s0/s0-08.png", start: 87.4, end: 106.4 },
+    { id: "cat-food-09-sleep-grass-night", image: "/stories/arcs/cat/s0/s0-09.png", start: 106.4, end: 136.8 }
+  ]
+}
+
 export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage, storyAudioBase = ""): StoryScene[] {
   const providedScenes = story.scenes?.filter((scene) => scene.image || scene.audio || scene.start !== undefined)
+  const builtInStoryScenes = getBuiltInStoryScenes(story)
   const sourceScenes: StoryScene[] = providedScenes?.length
     ? providedScenes
-    : [
-        ...getPrimerItems(story, selectedLanguage).map((item) => ({
-          id: item.id,
-          image: item.image,
-          audio: item.wholeAudio
-        })),
-        ...universalImages.map((image, index) => ({
+    : builtInStoryScenes.length
+      ? builtInStoryScenes
+      : universalImages.map((image, index) => ({
           id: `fallback-scene-${index + 1}`,
           image: `engine/universal/images/${image}`
-        }))
-      ] satisfies StoryScene[]
+        })) satisfies StoryScene[]
 
-  return sourceScenes.slice(0, 5).map((scene, index) => {
+  const maxScenes = providedScenes?.length || builtInStoryScenes.length ? sourceScenes.length : 5
+
+  return sourceScenes.slice(0, maxScenes).map((scene, index) => {
     const start = scene.start ?? index * 3.8
     const end = scene.end ?? start + 3.8
 
