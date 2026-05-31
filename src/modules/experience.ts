@@ -649,6 +649,13 @@ export function createExperience(): void {
     const storyLessonSection = storyLessonSurfaceSections[surface]
     meaningPreviewScreen.classList.toggle("is-reflection", storyLessonSection === "reflection")
     if (storyLessonSection) storyLessonShell.setSection(storyLessonSection)
+    if (storyLessonSection === "recall") {
+      setRecallComplete(recallWorld.dataset.recallComplete === "true")
+    } else {
+      storyForwardButton.disabled = false
+      storyForwardButton.removeAttribute("aria-disabled")
+      storyForwardButton.classList.remove("is-recall-ready")
+    }
     app.dataset.surface = surface
     if (surface === "soundGarden") updateSoundGardenPreviewAlignment()
     if (surface !== "path") clearGardenLabels()
@@ -1656,6 +1663,13 @@ export function createExperience(): void {
     return "audio-image"
   }
 
+  function setRecallComplete(isComplete: boolean): void {
+    recallWorld.dataset.recallComplete = String(isComplete)
+    storyForwardButton.disabled = !isComplete
+    storyForwardButton.setAttribute("aria-disabled", String(!isComplete))
+    storyForwardButton.classList.toggle("is-recall-ready", isComplete)
+  }
+
   function playRecallPrompt(): void {
     const prompt = currentRecallPrompts[appState.currentRecallIndex]
     const audio = getRecallPromptAudio(prompt)
@@ -1863,7 +1877,17 @@ export function createExperience(): void {
       window.setTimeout(() => {
         element.classList.remove("is-soft-miss")
         recallFeedbackZone.className = "recall-feedback-zone"
-      }, 520)
+
+        const promptAudio = getRecallPromptAudio(prompt)
+        if (promptAudio) {
+          playRecallPrompt()
+        } else {
+          recallPromptZone.classList.add("is-reprompting")
+          window.setTimeout(() => {
+            recallPromptZone.classList.remove("is-reprompting")
+          }, 520)
+        }
+      }, 420)
       return
     }
 
@@ -1881,8 +1905,8 @@ export function createExperience(): void {
         return
       }
 
-      if (appState.selectedStoryId) renderMeaningReflection(appState.selectedStoryId)
-      setSurface("reflection")
+      setRecallComplete(true)
+      renderRecallProgress()
     }, 420)
   }
 
@@ -1993,7 +2017,11 @@ export function createExperience(): void {
     clearNode(recallAnswerZone)
     clearNode(recallFeedbackZone)
     recallFeedbackZone.className = "recall-feedback-zone"
-    if (!prompt) return
+    if (!prompt) {
+      setRecallComplete(true)
+      return
+    }
+    setRecallComplete(false)
 
     const mode = getRecallMode(prompt)
     recallWorld.dataset.recallMode = mode
@@ -2019,8 +2047,8 @@ export function createExperience(): void {
     currentStory = story
     currentRecallPrompts = getRecallPrompts(story, appState.selectedLanguage, storyAudioBase)
     appState.currentRecallIndex = 0
+    setRecallComplete(currentRecallPrompts.length === 0)
     renderRecallPrompt()
-    window.setTimeout(playRecallPrompt, 180)
   }
 
   function goBackToStory(): void {

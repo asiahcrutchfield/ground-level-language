@@ -3906,8 +3906,14 @@ button:focus-visible {
 
   .story-world[data-story-mode="ready"] .story-audio-button,
   .story-world[data-story-mode="complete"] .story-audio-button,
-  .story-world[data-story-mode="playing"] .story-play-button-art {
+  .story-world[data-story-mode="playing"] .story-play-button-art,
+  .recall-world[data-prompt-heard="false"] .recall-prompt-button,
+  .recall-prompt-zone.is-reprompting .recall-prompt-button,
+  .recall-prompt-zone.is-reprompting .recall-prompt-image,
+  .recall-answer-orb.is-playing .recall-answer-orb-bars,
+  .recall-prompt-button.is-playing .recall-prompt-orb {
     animation: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -5514,6 +5520,20 @@ button:focus-visible {
   animation: story-preview-next-pulse 1.8s ease-in-out infinite;
 }
 
+.app[data-surface="recall"] .story-forward-button:disabled,
+.app[data-surface="recall"] .story-forward-button[aria-disabled="true"] {
+  opacity: 0.34;
+  cursor: default;
+  pointer-events: none;
+}
+
+.app[data-surface="recall"] .story-forward-button.is-recall-ready {
+  opacity: 1;
+  box-shadow:
+    0 0 28px rgba(240, 207, 122, 0.16),
+    0 0 52px rgba(183, 217, 130, 0.1);
+}
+
 .story-prev-button span,
 .story-next-button span,
 .story-section-back-button span,
@@ -5991,31 +6011,34 @@ button:focus-visible {
 
 .recall-confirm-button {
   position: absolute;
-  right: -6px;
-  bottom: -6px;
-  z-index: 20;
+  left: 50%;
+  bottom: -12px;
+  z-index: 4;
   display: grid;
-  width: 30px;
-  height: 30px;
-  min-height: 30px;
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
   aspect-ratio: 1;
   place-items: center;
-  border: 1px solid rgba(244, 239, 192, 0.42);
+  border: 1px solid rgba(246, 226, 165, 0.42);
   border-radius: 999px;
   background:
-    radial-gradient(circle, rgba(244, 239, 192, 0.18), transparent 54%),
-    rgba(8, 22, 13, 0.88);
-  box-shadow: 0 0 18px rgba(157, 187, 116, 0.22);
+    radial-gradient(circle at 50% 42%, rgba(246, 226, 165, 0.32), transparent 42%),
+    rgba(8, 22, 13, 0.86);
+  box-shadow:
+    0 0 22px rgba(240, 207, 122, 0.2),
+    inset 0 0 12px rgba(244, 239, 192, 0.08);
   cursor: pointer;
   pointer-events: auto;
+  transform: translateX(-50%);
 }
 
 .recall-confirm-button span {
-  width: 11px;
-  height: 7px;
-  border-right: 2px solid rgba(244, 239, 192, 0.84);
-  border-bottom: 2px solid rgba(244, 239, 192, 0.84);
-  transform: translateY(-1px) rotate(45deg);
+  width: 9px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(246, 226, 165, 0.86);
+  box-shadow: 0 0 12px rgba(246, 226, 165, 0.26);
 }
 
 .recall-perception-track {
@@ -6119,11 +6142,17 @@ button:focus-visible {
 
 .recall-progress span {
   background: rgba(244, 239, 192, 0.14);
+  transition:
+    width 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
 }
 
 .recall-progress span.is-complete {
-  background: rgba(244, 239, 192, 0.26);
-  border-color: rgba(244, 239, 192, 0.28);
+  background: rgba(183, 217, 130, 0.34);
+  border-color: rgba(183, 217, 130, 0.28);
 }
 
 .recall-progress span.is-active {
@@ -6143,6 +6172,7 @@ button:focus-visible {
 }
 
 .recall-world[data-recall-mode="audio-image"] {
+  grid-template-columns: 1fr;
   grid-template-areas:
     "prompt"
     "answers"
@@ -6151,13 +6181,22 @@ button:focus-visible {
   gap: clamp(0.8rem, 2.2svh, 1.2rem);
 }
 
-.recall-answer-zone-sound-pair,
-.recall-world[data-recall-mode="audio-image"] .recall-answer-zone {
+.recall-answer-zone-sound-pair {
   grid-template-columns: repeat(2, auto);
 }
 
+.recall-world[data-recall-mode="audio-image"] .recall-prompt-zone {
+  justify-self: center;
+}
+
+.recall-world[data-recall-mode="audio-image"] .recall-answer-zone {
+  grid-template-columns: repeat(2, minmax(86px, 116px));
+  justify-content: center;
+  gap: clamp(0.8rem, 3vw, 1rem);
+}
+
 .recall-prompt-button {
-  width: clamp(108px, 30vw, 142px);
+  width: clamp(104px, 29vw, 136px);
   border-color: rgba(244, 239, 192, 0.22);
   background:
     radial-gradient(circle at 50% 45%, rgba(244, 239, 192, 0.13), transparent 34%),
@@ -6165,6 +6204,10 @@ button:focus-visible {
   box-shadow:
     0 0 44px rgba(157, 187, 116, 0.16),
     inset 0 0 24px rgba(244, 239, 192, 0.05);
+}
+
+.recall-world[data-recall-mode="audio-image"] .recall-prompt-button {
+  width: clamp(92px, 25vw, 118px);
 }
 
 .recall-prompt-orb {
@@ -6183,13 +6226,17 @@ button:focus-visible {
 }
 
 .recall-image-choice {
-  width: clamp(96px, 31vw, 132px);
+  width: clamp(92px, 28vw, 116px);
   min-height: 0;
   aspect-ratio: 1;
   border-radius: 24px;
   box-shadow:
     0 0 32px rgba(157, 187, 116, 0.1),
     inset 0 0 22px rgba(244, 239, 192, 0.04);
+}
+
+.recall-world[data-recall-mode="audio-image"] .recall-image-choice {
+  width: clamp(88px, 27vw, 112px);
 }
 
 .recall-image-choice img,
@@ -6218,7 +6265,7 @@ button:focus-visible {
 }
 
 .recall-answer-orb {
-  width: clamp(72px, 22vw, 96px);
+  width: clamp(72px, 21vw, 92px);
   min-height: 0;
   border-color: rgba(244, 239, 192, 0.18);
   background:
@@ -6236,10 +6283,11 @@ button:focus-visible {
 
 .recall-image-choice.is-selected,
 .recall-answer-orb.is-selected {
-  border-color: rgba(246, 226, 165, 0.42);
+  border-color: rgba(246, 226, 165, 0.48);
   box-shadow:
-    0 0 32px rgba(240, 207, 122, 0.16),
-    inset 0 0 22px rgba(244, 239, 192, 0.06);
+    0 0 34px rgba(240, 207, 122, 0.18),
+    0 0 58px rgba(183, 217, 130, 0.1),
+    inset 0 0 22px rgba(244, 239, 192, 0.07);
 }
 
 .recall-image-choice.is-correct,
@@ -6257,8 +6305,8 @@ button:focus-visible {
 }
 
 .recall-world[data-prompt-heard="false"] .recall-choice {
-  opacity: 0.72;
-  filter: saturate(0.84);
+  opacity: 0.68;
+  filter: saturate(0.82) brightness(0.92);
 }
 
 .recall-world[data-prompt-heard="true"] .recall-choice {
@@ -6266,7 +6314,16 @@ button:focus-visible {
   filter: none;
 }
 
-@media (min-width: 360px) {
+.recall-world[data-prompt-heard="false"] .recall-prompt-button {
+  animation: recall-question-invite 2.3s ease-in-out infinite;
+}
+
+.recall-prompt-zone.is-reprompting .recall-prompt-button,
+.recall-prompt-zone.is-reprompting .recall-prompt-image {
+  animation: recall-reprompt 520ms ease;
+}
+
+@media (min-width: 520px), (orientation: landscape) and (min-width: 600px) {
   .recall-world[data-recall-mode="audio-image"][data-choice-count="2"] {
     width: min(100%, 390px);
     grid-template-columns: minmax(92px, 1fr) auto minmax(92px, 1fr);
@@ -6293,7 +6350,7 @@ button:focus-visible {
   }
 }
 
-@media (max-width: 380px), (max-height: 700px) {
+@media (max-width: 370px) {
   .recall-world[data-recall-mode="audio-image"] {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -6305,7 +6362,12 @@ button:focus-visible {
 
   .recall-world[data-recall-mode="audio-image"] .recall-answer-zone {
     display: grid;
-    grid-template-columns: repeat(2, minmax(86px, 108px));
+    grid-template-columns: repeat(2, minmax(78px, 104px));
+    gap: 0.65rem;
+  }
+
+  .recall-world[data-recall-mode="audio-image"] .recall-image-choice {
+    width: min(100%, 104px);
   }
 }
 
@@ -8046,6 +8108,35 @@ button:focus-visible {
 
   70% {
     transform: translateX(4px);
+  }
+}
+
+@keyframes recall-question-invite {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 38px rgba(157, 187, 116, 0.14),
+      inset 0 0 22px rgba(244, 239, 192, 0.05);
+  }
+
+  50% {
+    transform: scale(1.035);
+    box-shadow:
+      0 0 48px rgba(240, 207, 122, 0.18),
+      0 0 72px rgba(183, 217, 130, 0.1),
+      inset 0 0 24px rgba(244, 239, 192, 0.07);
+  }
+}
+
+@keyframes recall-reprompt {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.035);
   }
 }
 
