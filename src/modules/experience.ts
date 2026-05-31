@@ -702,13 +702,17 @@ export function createExperience(): void {
       row.dataset.previewing = String(activePreview === seed.code)
       row.dataset.previewRelease = String(previewRelease === seed.code)
       row.dataset.nameVisible = String(visibleLanguageName === seed.code)
-      row.querySelector(".language-seed-button")?.setAttribute("aria-pressed", String(seed.state === "selected"))
+      row.dataset.pending = String(pendingLanguage === seed.code)
+      row
+        .querySelector(".language-seed-button")
+        ?.setAttribute("aria-pressed", String(seed.state === "selected" || pendingLanguage === seed.code))
       row
         .querySelector(".language-name")
         ?.setAttribute("aria-hidden", String(visibleLanguageName !== seed.code))
     })
 
     const moundActive = Boolean(pendingLanguage)
+    languageSelectGarden.dataset.hasPending = String(moundActive)
     languageMoundButton.dataset.active = String(moundActive)
     languageMoundButton.disabled = isPlantingLanguage
     languageMoundButton.setAttribute("aria-disabled", String(!moundActive || isPlantingLanguage))
@@ -771,7 +775,7 @@ export function createExperience(): void {
       if (visibleLanguageName !== code) return
       visibleLanguageName = null
       syncLanguageSeedStates()
-    }, 1500)
+    }, 1100)
   }
 
   function selectLanguage(code: SupportedLanguage): void {
@@ -3594,25 +3598,20 @@ export function createExperience(): void {
     if (sourceRect && !prefersReducedMotion()) {
       const plantedSeed = createSeedSvg(code)
       plantedSeed.classList.add("language-planting-seed")
-      plantedSeed.style.setProperty("--plant-start-x", `${sourceRect.left - gardenRect.left}px`)
-      plantedSeed.style.setProperty("--plant-start-y", `${sourceRect.top - gardenRect.top}px`)
+      const startX = sourceRect.left - gardenRect.left + sourceRect.width * 0.5
+      const startY = sourceRect.top - gardenRect.top + sourceRect.height * 0.5
+      const endX = moundRect.left - gardenRect.left + moundRect.width * 0.5
+      const endY = moundRect.top - gardenRect.top + moundRect.height * 0.46
+      plantedSeed.style.left = `${startX}px`
+      plantedSeed.style.top = `${startY}px`
+      plantedSeed.style.setProperty("--plant-start-x", `${startX}px`)
+      plantedSeed.style.setProperty("--plant-start-y", `${startY}px`)
+      plantedSeed.style.setProperty("--plant-x", `${endX - startX}px`)
+      plantedSeed.style.setProperty("--plant-y", `${endY - startY}px`)
       plantedSeed.style.setProperty(
-        "--plant-hover-x",
-        `${moundRect.left + moundRect.width * 0.5 - gardenRect.left - sourceRect.width * 0.5}px`
+        "--plant-start-w",
+        `${sourceRect.width}px`
       )
-      plantedSeed.style.setProperty(
-        "--plant-hover-y",
-        `${moundRect.top + moundRect.height * 0.08 - gardenRect.top - sourceRect.height * 0.5}px`
-      )
-      plantedSeed.style.setProperty(
-        "--plant-rise-y",
-        `${moundRect.top + moundRect.height * 0.02 - gardenRect.top - sourceRect.height * 0.5}px`
-      )
-      plantedSeed.style.setProperty(
-        "--plant-drop-y",
-        `${moundRect.top + moundRect.height * 0.44 - gardenRect.top - sourceRect.height * 0.5}px`
-      )
-      plantedSeed.style.setProperty("--plant-start-w", `${sourceRect.width}px`)
       languageSelectGarden.append(plantedSeed)
       sourceSeed?.classList.add("is-being-dragged")
     }
@@ -3753,6 +3752,7 @@ export function createExperience(): void {
   function renderLanguageSeeds(): void {
     clearNode(languageSeedbed)
     languageSeedbed.classList.add("language-seed-layer")
+    languageSeedbed.dataset.count = String(languageSeeds.length)
 
     languageSeeds.forEach((languageSeed, index) => {
       const option = languageOptions.find((language) => language.code === languageSeed.code)
@@ -3767,7 +3767,7 @@ export function createExperience(): void {
       const button = document.createElement("button")
       button.className = "language-seed-button"
       button.type = "button"
-      button.setAttribute("aria-label", `${option.name} preview`)
+      button.setAttribute("aria-label", `Preview ${option.name}`)
       button.setAttribute("aria-pressed", String(languageSeed.state === "selected"))
       button.append(createSeedSvg(languageSeed.code))
       button.addEventListener("click", () => {
@@ -3786,13 +3786,13 @@ export function createExperience(): void {
 
       const nameGroup = document.createElement("span")
       nameGroup.className = "language-name"
-      nameGroup.setAttribute("aria-hidden", String(languageSeed.state === "idle" || languageSeed.state === "previewing"))
+      nameGroup.setAttribute("aria-hidden", "true")
 
       const name = document.createElement("span")
       name.textContent = getDisplayName(languageSeed.code)
 
       nameGroup.append(name)
-      row.append(button, nameGroup)
+      row.append(nameGroup, button)
       languageSeedbed.append(row)
     })
 
@@ -3819,7 +3819,7 @@ export function createExperience(): void {
   })
 
   languageMoundButton.addEventListener("click", () => {
-    if (!pendingLanguage) {
+    if (!pendingLanguage || isPlantingLanguage) {
       languageMoundButton.dataset.inactiveTap = "true"
       window.setTimeout(() => {
         delete languageMoundButton.dataset.inactiveTap
