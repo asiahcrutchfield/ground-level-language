@@ -1689,6 +1689,7 @@ export function createExperience(): void {
       return
     }
 
+    recallWorld.dataset.promptHeard = "true"
     activeRecallPromptButton.classList.add("is-playing")
     recallAudio.src = audio
     recallAudio.currentTime = 0
@@ -1964,44 +1965,6 @@ export function createExperience(): void {
     recallPromptZone.append(promptButton)
   }
 
-  function renderAudioImageRecall(prompt: RecallPrompt): void {
-    const field = document.createElement("div")
-    field.className = `recall-field recall-choice-count-${prompt.choices.length}`
-
-    prompt.choices.forEach((choice, index) => {
-      const imageChoice = recallChoiceHasImage(choice)
-        ? createRecallImageChoice(choice as Extract<RecallChoice, { kind: "meaning" | "image" }>, prompt, index)
-        : createRecallImageChoice({ kind: "image", id: choice.id, symbol: conceptIcons[choice.id] ?? "○" }, prompt, index)
-      imageChoice.classList.add(
-        ["recall-choice-top-left", "recall-choice-top-right", "recall-choice-bottom-left", "recall-choice-bottom-right"][index] ?? "recall-choice-hidden"
-      )
-      field.append(imageChoice)
-    })
-
-    const promptButton = createRecallPromptButton("recall-prompt-button recall-prompt-center")
-    promptButton.dataset.family = prompt.family ?? "meaning"
-    field.append(promptButton)
-    recallAnswerZone.append(field)
-  }
-
-  function renderImageAudioRecall(prompt: RecallPrompt): void {
-    const grid = document.createElement("div")
-    grid.className = `recall-audio-choice-grid${prompt.choices.length === 3 ? " recall-audio-choice-grid-triangle" : ""}`
-    prompt.choices.forEach((choice, index) => {
-      grid.append(createRecallAnswerOrb(choice, prompt, index))
-    })
-    recallAnswerZone.append(grid)
-  }
-
-  function renderAudioAudioRecall(prompt: RecallPrompt): void {
-    const grid = document.createElement("div")
-    grid.className = `recall-audio-choice-grid${prompt.choices.length === 3 ? " recall-audio-choice-grid-triangle" : ""}`
-    prompt.choices.forEach((choice, index) => {
-      grid.append(createRecallAnswerOrb(choice, prompt, index))
-    })
-    recallAnswerZone.append(grid)
-  }
-
   function renderRecallAnswerZone(prompt: RecallPrompt): void {
     clearNode(recallAnswerZone)
     const mode = getRecallMode(prompt)
@@ -2009,16 +1972,30 @@ export function createExperience(): void {
     recallAnswerZone.classList.add(`recall-answer-zone-${mode}`)
     if (mode === "audio-audio" || mode === "image-audio") recallAnswerZone.classList.add("recall-answer-zone-sound-pair")
 
-    prompt.choices.forEach((choice, index) => {
-      if (mode === "audio-image") {
+    if (mode === "audio-image") {
+      prompt.choices.forEach((choice, index) => {
         const imageChoice = recallChoiceHasImage(choice)
           ? createRecallImageChoice(choice as Extract<RecallChoice, { kind: "meaning" | "image" }>, prompt, index)
           : createRecallImageChoice({ kind: "image", id: choice.id, symbol: conceptIcons[choice.id] ?? "○" }, prompt, index)
+        imageChoice.dataset.choiceIndex = String(index)
         recallAnswerZone.append(imageChoice)
-        return
-      }
+      })
+      return
+    }
 
-      recallAnswerZone.append(createRecallAnswerOrb(choice, prompt, index))
+    if (mode === "image-audio") {
+      prompt.choices.forEach((choice, index) => {
+        const audioChoice = createRecallAnswerOrb(choice, prompt, index)
+        audioChoice.dataset.choiceIndex = String(index)
+        recallAnswerZone.append(audioChoice)
+      })
+      return
+    }
+
+    prompt.choices.forEach((choice, index) => {
+      const audioChoice = createRecallAnswerOrb(choice, prompt, index)
+      audioChoice.dataset.choiceIndex = String(index)
+      recallAnswerZone.append(audioChoice)
     })
   }
 
