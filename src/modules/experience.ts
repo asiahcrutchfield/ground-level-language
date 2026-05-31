@@ -6,6 +6,7 @@ import taiwaneseSeedSvgMarkup from "../../assets/language_select/lang_nan.html?r
 import mandarinSeedSvgMarkup from "../../assets/language_select/lang_zh.html?raw"
 import autoplaySvgMarkup from "../../assets/path_screen/meaning_tree/autoplay.html?raw"
 import manualPlaySvgMarkup from "../../assets/path_screen/meaning_tree/manual_play.html?raw"
+import primerSoundwaveSvgMarkup from "../../assets/meaning_tree_lesson/primer/soundwave.html?raw"
 import reflectionSproutSvgMarkup from "../../assets/path_screen/meaning_tree/reflection/reflection_sprout.html?raw"
 import gardenMoundSvgMarkup from "../../assets/path_screen/meaning_tree/tree/mound.html?raw"
 import soundFlowerOneSvgMarkup from "../../assets/path_screen/sound_garden/flower_1.html?raw"
@@ -504,6 +505,7 @@ export function createExperience(): void {
   let storySceneTimer = 0
   let storyAudioBase = ""
   let previewGlimpsesRevealed = false
+  const revealedPreviewStoryIds = new Set<string>()
   let previewGlimpseRevealTimer = 0
   let currentRecallPrompts: RecallPrompt[] = []
   let activeRecallPromptButton: HTMLButtonElement | null = null
@@ -732,6 +734,11 @@ export function createExperience(): void {
     })
   }
 
+  function markPrimerItemHeard(card: HTMLElement | null): void {
+    if (!card) return
+    card.classList.add("is-heard")
+  }
+
   function runEchoGap(duration = 1200): void {
     runAudioEchoGap(primerEcho, duration)
   }
@@ -739,23 +746,25 @@ export function createExperience(): void {
   function playPrimerAudio(audioSrc: string | undefined, sourceElement: HTMLElement, echo = false): void {
     stopPrimerAudio()
     const src = audioSrc || fallbackPrimerAudio
+    const card = sourceElement.closest<HTMLElement>(".primer-card")
     sourceElement.classList.add("is-primer-playing")
-    sourceElement.closest(".primer-card")?.classList.add("is-primer-playing")
+    card?.classList.add("is-primer-playing")
     primerAudio.src = src
     primerAudio.currentTime = 0
     primerAudio.onended = () => {
       sourceElement.classList.remove("is-primer-playing")
-      sourceElement.closest(".primer-card")?.classList.remove("is-primer-playing")
+      card?.classList.remove("is-primer-playing")
+      markPrimerItemHeard(card)
       if (echo) runEchoGap(Number.isFinite(primerAudio.duration) ? Math.min(1800, Math.max(900, primerAudio.duration * 420)) : 1200)
     }
     primerAudio.onerror = () => {
       sourceElement.classList.remove("is-primer-playing")
-      sourceElement.closest(".primer-card")?.classList.remove("is-primer-playing")
+      card?.classList.remove("is-primer-playing")
       if (echo) runEchoGap()
     }
     primerAudio.play().catch(() => {
       sourceElement.classList.remove("is-primer-playing")
-      sourceElement.closest(".primer-card")?.classList.remove("is-primer-playing")
+      card?.classList.remove("is-primer-playing")
       if (echo) runEchoGap()
     })
   }
@@ -875,6 +884,7 @@ export function createExperience(): void {
 
     previewGlimpseRevealTimer = window.setTimeout(() => {
       previewGlimpsesRevealed = true
+      if (appState.selectedStoryId) revealedPreviewStoryIds.add(appState.selectedStoryId)
       previewImageTrack.classList.add("is-glimpse-revealed")
       previewImageTrack.classList.remove("is-glimpse-revealing")
       meaningPreviewScreen.classList.remove("is-story-glimpse-revealing")
@@ -972,16 +982,17 @@ export function createExperience(): void {
   }
 
   function renderStoryFragmentPath(story: Story): void {
-    previewGlimpsesRevealed = false
+    const shouldShowRevealed = revealedPreviewStoryIds.has(story.id)
+    previewGlimpsesRevealed = shouldShowRevealed
     window.clearTimeout(previewGlimpseRevealTimer)
     clearNode(previewImageTrack)
-    previewImageTrack.className = "story-fragment-list is-glimpse-waiting"
-    previewImageTrack.classList.remove("is-glimpse-revealing", "is-glimpse-revealed")
-    meaningPreviewScreen.classList.add("is-story-glimpse-waiting")
-    meaningPreviewScreen.classList.remove("is-story-glimpse-revealing", "is-story-glimpse-complete")
-    storyForwardButton.classList.remove("is-preview-next-ready")
+    previewImageTrack.className = shouldShowRevealed ? "story-fragment-list is-glimpse-revealed" : "story-fragment-list is-glimpse-waiting"
+    meaningPreviewScreen.classList.toggle("is-story-glimpse-waiting", !shouldShowRevealed)
+    meaningPreviewScreen.classList.remove("is-story-glimpse-revealing")
+    meaningPreviewScreen.classList.toggle("is-story-glimpse-complete", shouldShowRevealed)
+    storyForwardButton.classList.toggle("is-preview-next-ready", shouldShowRevealed)
 
-    previewImageTrack.append(createStoryGlimpseSeed())
+    if (!shouldShowRevealed) previewImageTrack.append(createStoryGlimpseSeed())
 
     const moments = getStoryImagePreviewMoments(story).slice(0, 5)
     moments.forEach((moment, index) => {
@@ -1162,12 +1173,23 @@ export function createExperience(): void {
     audioButton.className = "primer-audio-button"
     audioButton.type = "button"
     audioButton.setAttribute("aria-label", "Play full sound")
-    audioButton.innerHTML = "<span aria-hidden=\"true\"></span>"
+    audioButton.innerHTML = `
+      <span class="primer-soundwave-play" aria-hidden="true">
+        ${primerSoundwaveSvgMarkup.trim()}
+      </span>
+    `
+    audioButton.querySelectorAll("svg").forEach((svg) => {
+      svg.setAttribute("focusable", "false")
+      svg.setAttribute("aria-hidden", "true")
+    })
     audioButton.addEventListener("click", (event) => {
       event.stopPropagation()
-      card.classList.add("is-heard")
       playPrimerAudio(item.wholeAudio, audioButton)
     })
+
+    const expandCue = document.createElement("span")
+    expandCue.className = "primer-expand-cue"
+    expandCue.setAttribute("aria-hidden", "true")
 
     const collapseButton = document.createElement("button")
     collapseButton.className = "primer-collapse-button primer-expanded-close"
@@ -1189,7 +1211,7 @@ export function createExperience(): void {
       expandPrimerCard(card)
     })
 
-    card.append(expandButton, audioButton, collapseButton, breakdown)
+    card.append(expandButton, audioButton, expandCue, collapseButton, breakdown)
     return card
   }
 

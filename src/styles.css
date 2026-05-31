@@ -4160,7 +4160,7 @@ button:focus-visible {
   position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  gap: clamp(16px, 3svh, 24px);
+  gap: 0;
   width: min(100%, 560px);
   height: 100%;
   min-height: 0;
@@ -4203,8 +4203,9 @@ button:focus-visible {
   touch-action: pan-y;
   border: 0;
   border-radius: 28px 18px 30px 20px;
-  background: transparent;
-  box-shadow: none;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(183, 217, 130, 0.035), transparent 42%);
+  box-shadow: inset 0 0 32px rgba(244, 239, 192, 0.018);
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -4275,8 +4276,11 @@ button:focus-visible {
     transform 260ms ease;
 }
 
-.primer-card::before,
-.primer-card::after {
+.primer-card:not(.is-expanded):active {
+  transform: scale(0.985);
+}
+
+.primer-card::before {
   position: absolute;
   z-index: 1;
   pointer-events: none;
@@ -4289,16 +4293,35 @@ button:focus-visible {
   border-radius: 17px 10px 19px 12px;
 }
 
-.primer-card::after {
-  right: 13px;
-  top: 13px;
-  width: 9px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgba(244, 239, 192, 0.55);
+.primer-expand-cue {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  border-radius: 0 12px 0 14px;
+  background:
+    linear-gradient(135deg, rgba(246, 226, 165, 0.42), rgba(183, 217, 130, 0.12));
   box-shadow:
-    -14px 5px 0 -3px rgba(183, 217, 130, 0.34),
-    -5px 17px 0 -4px rgba(244, 239, 192, 0.24);
+    0 0 0 1px rgba(8, 22, 13, 0.34),
+    0 4px 12px rgba(2, 9, 5, 0.28),
+    inset 0 0 10px rgba(244, 239, 192, 0.12);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  pointer-events: none;
+}
+
+.primer-expand-cue::before {
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgba(8, 22, 13, 0.3);
+  content: "";
+}
+
+.primer-card.is-expanded .primer-expand-cue {
+  display: none;
 }
 
 .primer-card.is-heard {
@@ -4306,6 +4329,27 @@ button:focus-visible {
   box-shadow:
     0 0 26px rgba(183, 217, 130, 0.14),
     inset 0 0 24px rgba(244, 239, 192, 0.04);
+}
+
+.primer-card.is-heard .primer-audio-button::before {
+  border-color: rgba(183, 217, 130, 0.22);
+}
+
+.primer-card.is-heard .primer-soundwave-play {
+  color: rgba(246, 226, 165, 0.88);
+  background: rgba(8, 22, 13, 0.88);
+  box-shadow:
+    0 0 0 6px rgba(8, 22, 13, 0.44),
+    0 0 18px rgba(183, 217, 130, 0.12),
+    inset 0 0 0 8px rgba(183, 217, 130, 0.14);
+}
+
+.primer-card.is-primer-playing {
+  border-color: rgba(246, 226, 165, 0.46);
+  box-shadow:
+    0 0 34px rgba(246, 226, 165, 0.16),
+    0 0 60px rgba(183, 217, 130, 0.08),
+    inset 0 0 26px rgba(244, 239, 192, 0.05);
 }
 
 .primer-card-track.has-expanded-card .primer-card:not(.is-expanded) {
@@ -4412,8 +4456,8 @@ button:focus-visible {
   bottom: 16px;
   z-index: 4;
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   place-items: center;
   border: 0;
   border-radius: 999px;
@@ -4425,6 +4469,26 @@ button:focus-visible {
   transition: transform 180ms ease;
 }
 
+.primer-audio-button::before,
+.primer-audio-button::after {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  content: "";
+}
+
+.primer-audio-button::before {
+  inset: -7px;
+  border: 1px solid rgba(246, 226, 165, 0.14);
+  opacity: 0.72;
+}
+
+.primer-audio-button::after {
+  inset: -14px;
+  background: radial-gradient(circle, rgba(246, 226, 165, 0.18), transparent 62%);
+  opacity: 0;
+}
+
 .primer-audio-button:hover,
 .primer-audio-button:focus-visible {
   transform: translateX(-50%) translateY(-1px);
@@ -4434,31 +4498,63 @@ button:focus-visible {
   display: none;
 }
 
-.primer-audio-button span {
-  width: 31px;
+.primer-soundwave-play {
+  position: relative;
+  display: grid;
+  width: 36px;
   aspect-ratio: 1;
+  place-items: center;
   border: 1px solid rgba(244, 239, 192, 0.3);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(244, 239, 192, 0.86) 0 5px, transparent 6px),
-    rgba(8, 22, 13, 0.82);
+  color: rgba(246, 226, 165, 0.88);
+  background: rgba(8, 22, 13, 0.86);
   box-shadow:
-    0 0 0 6px rgba(8, 22, 13, 0.42),
-    inset 0 0 0 8px rgba(244, 239, 192, 0.2);
-  transition: background 180ms ease, border-color 180ms ease;
+    0 0 0 6px rgba(8, 22, 13, 0.48),
+    inset 0 0 0 8px rgba(244, 239, 192, 0.13);
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
-.primer-audio-button:hover span,
-.primer-audio-button:focus-visible span {
+.primer-soundwave-play svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
+.primer-soundwave-play svg,
+.primer-soundwave-play svg [fill] {
+  fill: currentColor;
+}
+
+.primer-audio-button:hover .primer-soundwave-play,
+.primer-audio-button:focus-visible .primer-soundwave-play {
   border-color: rgba(244, 239, 192, 0.44);
   background: rgba(8, 22, 13, 0.88);
+  color: rgba(246, 226, 165, 0.96);
 }
 
-.primer-card.is-primer-playing .primer-audio-button span,
-.primer-audio-button.is-primer-playing span,
+.primer-card.is-primer-playing .primer-soundwave-play,
+.primer-audio-button.is-primer-playing .primer-soundwave-play,
 .sound-particle.is-primer-playing,
 .sound-contour.is-primer-playing {
   animation: primer-pulse 1.2s ease-out infinite;
+}
+
+.primer-card.is-primer-playing .primer-soundwave-play,
+.primer-audio-button.is-primer-playing .primer-soundwave-play {
+  color: rgba(246, 226, 165, 1);
+  box-shadow:
+    0 0 0 6px rgba(8, 22, 13, 0.48),
+    0 0 20px rgba(246, 226, 165, 0.2),
+    inset 0 0 0 8px rgba(244, 239, 192, 0.18);
+}
+
+.primer-card:not(.is-heard):not(.is-primer-playing) .primer-audio-button::after {
+  animation: primer-idle-invite 2.4s ease-in-out infinite;
+}
+
+.primer-card.is-primer-playing .primer-audio-button::after,
+.primer-audio-button.is-primer-playing::after {
+  animation: primer-audio-ripple 1.1s ease-out infinite;
 }
 
 .primer-collapse-button {
@@ -7304,6 +7400,32 @@ button:focus-visible {
 
   100% {
     box-shadow: 0 0 0 18px rgba(244, 239, 192, 0);
+  }
+}
+
+@keyframes primer-idle-invite {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes primer-audio-ripple {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.78);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
   }
 }
 

@@ -292,17 +292,17 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
 }
 
 export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage): PrimerItem[] {
-  if (story.primerItems?.length) return story.primerItems.slice(0, 6)
+  if (story.primerItems?.length) return story.primerItems
 
   const moments = getPreviewMoments(story, selectedLanguage)
-  const concepts = [
+  const concepts = Array.from(new Set([
     ...(story.visualSignature ?? []),
     ...story.coreConcepts,
     ...defaultSignature
-  ].filter(Boolean)
+  ].filter(Boolean)))
   const audioFiles = getPrimerAudioFiles(selectedLanguage)
 
-  return concepts.slice(0, 6).map((concept, index) => {
+  return concepts.map((concept, index) => {
     const moment = moments[index % Math.max(1, moments.length)]
     const id = concepts[index % concepts.length] ?? moment.id
     const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? fallbackPrimerAudio
