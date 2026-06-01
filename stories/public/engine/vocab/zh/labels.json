@@ -9,18 +9,11 @@
     ],
     "audio": [
       {
-        "filename": "zh_u0001.mp3",
-        "gender": "male"
+        "filename": "zh_u0001.mp3"
       }
     ],
     "syllables": 1,
-    "phonemes": [
-      "v01",
-      "c01",
-      "v02"
-    ],
     "syllablePattern": "sy001",
-    "rhythmPattern": "rh01",
     "tonePattern": ""
   },
   "u0002": {

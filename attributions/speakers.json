@@ -1,21 +1,39 @@
 {
-    "sp0001": {
-        "name": {
-            "en": {
-                "first": "Chelsea",
-                "last": "Huang"
-            },
-            "zh": {
-                "first": "品喬",
-                "last": "黃"
-            }
-        },
-
-        "social": {
-            "instagram": {
-                "handle": "chelsea.ringh",
-                "url": "https://www.instagram.com/chelsea.ringh/"
-            }
+  "sp0001": {
+    "displayName": {
+      "en": "Chelsea Huang",
+      "zh": "黃品喬"
+    },
+    "name": {
+      "en": {
+        "first": "Chelsea",
+        "last": "Huang"
+      },
+      "zh": {
+        "first": "品喬",
+        "last": "黃"
+      }
+    },
+    "languages": [
+      {
+        "name": "Mandarin Chinese",
+        "code": "zh-TW",
+        "fluencyLevel": "native"
+      }
+    ],
+    "credits": {
+      "wantsCredit": false,
+      "publicName": null,
+      "publicSocial": null
+    },
+    "internal": {
+      "speakerId": "sp0001",
+      "social": {
+        "instagram": {
+          "handle": "chelsea.ringh",
+          "url": "https://www.instagram.com/chelsea.ringh/"
         }
+      }
     }
+  }
 }
