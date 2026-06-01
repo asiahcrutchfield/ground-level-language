@@ -756,7 +756,7 @@ export function createExperience(): void {
       if (previewRelease !== code) return
       previewRelease = null
       syncLanguageSeedStates()
-    }, 520)
+    }, 680)
   }
 
   function revealLanguage(code: SupportedLanguage, run: number): void {

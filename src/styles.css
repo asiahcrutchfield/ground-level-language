@@ -9283,6 +9283,9 @@ button:focus-visible {
   filter: drop-shadow(0 0 14px rgba(183, 217, 130, 0.16));
   transform-origin: 50% 70%;
   animation: language-seed-idle-float 4.8s ease-in-out infinite;
+  transition:
+    filter 420ms ease,
+    scale 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .language-seed-row:nth-child(1) .language-seed-art {
@@ -9339,7 +9342,9 @@ button:focus-visible {
 }
 
 .language-seed-row[data-preview-release="true"] .language-seed-art {
-  animation: language-preview-release 520ms ease-out;
+  animation: language-seed-idle-float 4.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(183, 217, 130, 0.16));
+  scale: 1;
 }
 
 .language-seed-row[data-pending="true"] .language-seed-art {
@@ -9571,16 +9576,6 @@ button:focus-visible {
 
   50% {
     scale: 1.08;
-  }
-}
-
-@keyframes language-preview-release {
-  0% {
-    transform: scale(1.04);
-  }
-
-  100% {
-    transform: scale(1);
   }
 }
 
