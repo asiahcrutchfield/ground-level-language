@@ -9504,6 +9504,7 @@ button:focus-visible {
 
 .language-seed-art.is-being-dragged {
   opacity: 0;
+  visibility: hidden;
 }
 
 /* Planting ghost: animates locally in the garden once a seed is dropped or planted. */

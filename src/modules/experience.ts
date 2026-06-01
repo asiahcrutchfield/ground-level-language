@@ -3587,6 +3587,16 @@ export function createExperience(): void {
       })
   }
 
+  function finishLanguagePlanting(sourceSeed: HTMLElement | null): void {
+    // Restore language-screen planting state after the app has left the screen.
+    window.setTimeout(() => {
+      sourceSeed?.classList.remove("is-being-dragged")
+      languageSelectGarden.dataset.planting = "false"
+      languageMoundButton.dataset.planting = "false"
+      isPlantingLanguage = false
+    }, 80)
+  }
+
   function plantSelectedLanguage(startRectOverride?: DOMRect): void {
     // Animate the pending language seed into the mound, then enter that language.
     if (!pendingLanguage || isPlantingLanguage) return
@@ -3625,12 +3635,9 @@ export function createExperience(): void {
     }
 
     window.setTimeout(() => {
-      languageSelectGarden.dataset.planting = "false"
-      languageMoundButton.dataset.planting = "false"
       languageSelectGarden.querySelector(".language-planting-seed")?.remove()
-      sourceSeed?.classList.remove("is-being-dragged")
-      isPlantingLanguage = false
       selectLanguage(code)
+      finishLanguagePlanting(sourceSeed ?? null)
     }, prefersReducedMotion() ? 80 : 1220)
   }
 
