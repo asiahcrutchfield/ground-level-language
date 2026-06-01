@@ -694,6 +694,7 @@ export function createExperience(): void {
   }
 
   function syncLanguageSeedStates(): void {
+    // Sync language seed UI state from the current preview, pending, and label timers.
     languageSeeds.forEach((seed) => {
       const row = languageSeedbed.querySelector<HTMLElement>(`.language-seed-row[data-language="${seed.code}"]`)
       if (!row) return
@@ -719,6 +720,7 @@ export function createExperience(): void {
   }
 
   function resetActivePreview(): void {
+    // Clear any active language preview audio and temporary label state.
     previewRun += 1
     window.clearTimeout(previewReleaseTimer)
     window.clearTimeout(languageNameTimer)
@@ -731,6 +733,7 @@ export function createExperience(): void {
   }
 
   function restoreLanguageSeedVisibility(): void {
+    // Restore source seeds and remove any temporary drag or planting ghosts.
     languageSeedbed.querySelectorAll<HTMLElement>(".language-seed-art.is-being-dragged").forEach((seed) => {
       seed.classList.remove("is-being-dragged")
     })
@@ -743,6 +746,7 @@ export function createExperience(): void {
   }
 
   function releaseLanguagePreview(code: SupportedLanguage): void {
+    // Play the short visual release state after preview audio finishes.
     activePreview = null
     previewRelease = code
     syncLanguageSeedStates()
@@ -761,12 +765,14 @@ export function createExperience(): void {
   }
 
   function finishLanguagePreview(code: SupportedLanguage, run: number, shouldShowName: boolean): void {
+    // End a preview run and briefly reveal the language name when appropriate.
     if (run !== previewRun) return
     if (shouldShowName) revealLanguageNameTemporarily(code)
     releaseLanguagePreview(code)
   }
 
   function revealLanguageNameTemporarily(code: SupportedLanguage): void {
+    // Show the language label for a short confirmation moment after preview.
     visibleLanguageName = code
     syncLanguageSeedStates()
 
@@ -3519,6 +3525,7 @@ export function createExperience(): void {
   }
 
   function previewLanguage(code: SupportedLanguage): void {
+    // Start language preview audio without committing to the language yet.
     if (activePreview === code && !previewAudio.paused) return
 
     resetActivePreview()
@@ -3581,6 +3588,7 @@ export function createExperience(): void {
   }
 
   function plantSelectedLanguage(startRectOverride?: DOMRect): void {
+    // Animate the pending language seed into the mound, then enter that language.
     if (!pendingLanguage || isPlantingLanguage) return
 
     const code = pendingLanguage
@@ -3638,6 +3646,7 @@ export function createExperience(): void {
   }
 
   function moveLanguageDragGhost(clientX: number, clientY: number): void {
+    // Move the body-level drag ghost with CSS variables so it follows the pointer.
     if (!languageSeedDrag?.ghost) return
 
     const nextX = clientX - languageSeedDrag.offsetX
@@ -3647,6 +3656,7 @@ export function createExperience(): void {
   }
 
   function startLanguageSeedDrag(event: PointerEvent, code: SupportedLanguage): void {
+    // Store pointer geometry; a real drag is not created until movement passes threshold.
     if (isPlantingLanguage) return
     if (event.button !== 0) return
 
@@ -3678,6 +3688,7 @@ export function createExperience(): void {
   }
 
   function updateLanguageSeedDrag(event: PointerEvent): void {
+    // Create and move the drag ghost only after intentional movement.
     if (!languageSeedDrag || languageSeedDrag.pointerId !== event.pointerId) return
 
     const distance = Math.hypot(event.clientX - languageSeedDrag.startX, event.clientY - languageSeedDrag.startY)
@@ -3719,6 +3730,7 @@ export function createExperience(): void {
   }
 
   function endLanguageSeedDrag(event: PointerEvent): void {
+    // Either plant the dragged seed on the mound or return it to its source.
     if (!languageSeedDrag || languageSeedDrag.pointerId !== event.pointerId) return
 
     const shouldPlant = languageSeedDrag.hasDragged && isPointInMound(event.clientX, event.clientY)
@@ -3750,6 +3762,7 @@ export function createExperience(): void {
   }
 
   function renderLanguageSeeds(): void {
+    // Render the seed options; button comes before label so names appear below seeds.
     clearNode(languageSeedbed)
     languageSeedbed.classList.add("language-seed-layer")
     languageSeedbed.dataset.count = String(languageSeeds.length)
@@ -3792,7 +3805,7 @@ export function createExperience(): void {
       name.textContent = getDisplayName(languageSeed.code)
 
       nameGroup.append(name)
-      row.append(nameGroup, button)
+      row.append(button, nameGroup)
       languageSeedbed.append(row)
     })
 
