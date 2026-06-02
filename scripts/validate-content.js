@@ -54,6 +54,40 @@ if (fs.existsSync(zhNaturalDir)) {
   }
 }
 
+const enNaturalDir = path.join(root, "content", "vocab", "en", "natural")
+if (fs.existsSync(enNaturalDir)) {
+  for (const file of fs.readdirSync(enNaturalDir)) {
+    if (!/^en_u\d{3}\.mp3$/.test(file)) {
+      errors.push(`Use en_u001.mp3-style names in en natural vocab audio: ${file}`)
+    }
+  }
+}
+
+const enSlowDir = path.join(root, "content", "vocab", "en", "slow")
+if (fs.existsSync(enSlowDir)) {
+  for (const file of fs.readdirSync(enSlowDir)) {
+    if (!/^en_u\d{4}\.mp3$/.test(file)) {
+      errors.push(`Use en_u0001.mp3-style names in en slow vocab audio: ${file}`)
+    }
+  }
+}
+
+const enStoryPiecesDir = path.join(root, "content", "stories", "s0-001", "audio", "en", "story_pieces")
+if (fs.existsSync(enStoryPiecesDir)) {
+  const stack = [enStoryPiecesDir]
+  while (stack.length) {
+    const current = stack.pop()
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const entryPath = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        stack.push(entryPath)
+      } else if (/-[NS]\d+\.mp3$/.test(entry.name)) {
+        errors.push(`Use underscore before en story-piece variant labels: ${entry.name}`)
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"))
   process.exit(1)
