@@ -1,0 +1,485 @@
+{
+  "u0001": {
+    "vocab": "貓",
+    "image": [
+      {
+        "filename": "u0001.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u001.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0002": {
+    "vocab": "食物",
+    "image": [
+      {
+        "filename": "u0002.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u002.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0003": {
+    "vocab": "地上",
+    "image": [
+      {
+        "filename": "u0003.gif",
+        "type": "default"
+      },
+      {
+        "filename": "u0003.webp",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u003.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0004": {
+    "vocab": "餓",
+    "image": [
+      {
+        "filename": "u0004.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u004.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0005": {
+    "vocab": "走",
+    "image": [
+      {
+        "filename": "u0005.gif",
+        "type": "default"
+      },
+      {
+        "filename": "u0005.webp",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u005.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0006": {
+    "vocab": "看",
+    "image": [
+      {
+        "filename": "u0006.gif",
+        "type": "default"
+      },
+      {
+        "filename": "u0006.webp",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u006.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0007": {
+    "vocab": "聞",
+    "image": [
+      {
+        "filename": "u0007.gif",
+        "type": "default"
+      },
+      {
+        "filename": "u0007.jpg",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u007.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0008": {
+    "vocab": "吃",
+    "image": [
+      {
+        "filename": "u0008.gif",
+        "type": "default"
+      },
+      {
+        "filename": "u0008.webp",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u008.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0009": {
+    "vocab": "聲音",
+    "image": [
+      {
+        "filename": "u0009.png",
+        "type": "default"
+      },
+      {
+        "filename": "u0009.webp",
+        "type": "alternate"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u009.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0010": {
+    "vocab": "停",
+    "image": [
+      {
+        "filename": "u0010.png",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u010.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0011": {
+    "vocab": "聽",
+    "image": [
+      {
+        "filename": "u0011.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u011.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0012": {
+    "vocab": "大",
+    "image": [
+      {
+        "filename": "u0012.png",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u012.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0013": {
+    "vocab": "小",
+    "image": [
+      {
+        "filename": "u00013.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u013.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0014": {
+    "vocab": "生氣",
+    "image": [
+      {
+        "filename": "u0014.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u014.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0015": {
+    "vocab": "打",
+    "image": [
+      {
+        "filename": "u0015.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u015.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0016": {
+    "vocab": "咬",
+    "image": [
+      {
+        "filename": "u00016.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u016.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0017": {
+    "vocab": "快",
+    "image": [
+      {
+        "filename": "u0017.gif",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u017.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0018": {
+    "vocab": "坐",
+    "image": [
+      {
+        "filename": "u0018.png",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u018.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0019": {
+    "vocab": "不動",
+    "image": [
+      {
+        "filename": "u0019.gif",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u019.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0020": {
+    "vocab": "晚上",
+    "image": [
+      {
+        "filename": "u0020.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u020.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0021": {
+    "vocab": "草",
+    "image": [
+      {
+        "filename": "u00021.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u021.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0022": {
+    "vocab": "躺下",
+    "image": [
+      {
+        "filename": "u00022.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u022.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0023": {
+    "vocab": "軟",
+    "image": [
+      {
+        "filename": "u00023.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u023.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0024": {
+    "vocab": "暖",
+    "image": [
+      {
+        "filename": "u0024.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u024.mp3"
+      }
+    ],
+    "syllables": 1,
+    "syllablePattern": "sy001",
+    "tonePattern": ""
+  },
+  "u0025": {
+    "vocab": "眼睛",
+    "image": [
+      {
+        "filename": "u0025.png",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u025.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0026": {
+    "vocab": "醒來",
+    "image": [
+      {
+        "filename": "u00026.jpg",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u026.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  },
+  "u0027": {
+    "vocab": "睡著",
+    "image": [
+      {
+        "filename": "u0027.webp",
+        "type": "default"
+      }
+    ],
+    "audio": [
+      {
+        "filename": "zh_u027.mp3"
+      }
+    ],
+    "syllables": 2,
+    "syllablePattern": "sy002",
+    "tonePattern": ""
+  }
+}
