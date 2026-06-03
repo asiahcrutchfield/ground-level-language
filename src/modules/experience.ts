@@ -1635,12 +1635,6 @@ export function createExperience(): void {
 
     if (!appState.selectedStoryId) return
 
-    if (demoConfig.enabled && previousSection === "story" && section === "recall") {
-      renderDemoFinishScreen(appState.selectedStoryId)
-      setSurface("demoFinish")
-      return
-    }
-
     if (section === "preview") renderMeaningPreviewWorld(appState.selectedStoryId)
     if (section === "primer") renderMeaningPrimer(appState.selectedStoryId)
     if (section === "story") renderMeaningStory(appState.selectedStoryId)

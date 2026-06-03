@@ -7503,10 +7503,6 @@ button:focus-visible {
   opacity: 0.5;
 }
 
-.app[data-demo="meaning-tree"] .story-lesson-progress span:nth-child(n + 4) {
-  display: none;
-}
-
 .demo-finish-screen {
   display: grid;
   min-height: 100svh;
