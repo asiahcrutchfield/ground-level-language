@@ -7470,23 +7470,21 @@ button:focus-visible {
   animation: recall-soft-miss 260ms ease;
 }
 
-.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item {
-  left: 50%;
-  top: 60%;
-  z-index: 5;
-  width: clamp(96px, 26vw, 128px);
+.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item[data-endpoint="1"] {
+  z-index: 6;
+  width: max(var(--node-size), 96px);
+  height: max(var(--node-size), 96px);
   min-width: 96px;
   min-height: 96px;
-  justify-self: center;
-  transform: translate(-50%, -50%) scale(0.84);
 }
 
-.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item::before {
-  display: none;
+.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item[data-endpoint="1"]::before {
+  pointer-events: none;
 }
 
-.app[data-demo="meaning-tree"] .demo-cat-arc-button {
-  width: 100%;
+.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item[data-endpoint="1"] .demo-cat-arc-button {
+  width: 96px;
+  height: 96px;
   min-width: 96px;
   min-height: 96px;
   cursor: pointer;
@@ -7494,7 +7492,9 @@ button:focus-visible {
 }
 
 .app[data-demo="meaning-tree"] .demo-cat-arc-button .arc-icon,
-.app[data-demo="meaning-tree"] .demo-cat-arc-button svg {
+.app[data-demo="meaning-tree"] .demo-cat-arc-button .arc-icon *,
+.app[data-demo="meaning-tree"] .demo-cat-arc-button svg,
+.app[data-demo="meaning-tree"] .demo-cat-arc-button svg * {
   pointer-events: none;
 }
 

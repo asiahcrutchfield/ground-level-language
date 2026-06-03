@@ -3412,6 +3412,7 @@ export function createExperience(): void {
     const demoStory = story ?? getStoryById(demoConfig.storyId)
     const item = document.createElement("li")
     item.className = "arc-node-item demo-arc-item is-unlocked"
+    item.dataset.endpoint = "1"
 
     const button = document.createElement("button")
     button.className = "arc-button demo-cat-arc-button"
@@ -3439,7 +3440,7 @@ export function createExperience(): void {
       button.addEventListener("click", () => {
         appState.selectedArcId = demoConfig.arcId
         appState.selectedStoryId = demoConfig.storyId
-        renderMeaningPreviewWorld(demoStory.id)
+        renderMeaningPreviewWorld(demoConfig.storyId)
         setSurface("meaningPreview")
       })
     }
