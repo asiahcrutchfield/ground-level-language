@@ -59,24 +59,74 @@ export const conceptIcons: Record<string, string> = {
 }
 
 export const defaultSignature = ["cat", "food", "night"]
-export const fallbackPrimerAudio = "engine/vocab/nan/audio/nan_u0002.wav"
+export const fallbackPrimerAudio = "engine/vocab/zh/natural/zh_u002.mp3"
 
 const universalImages = [
   "u0001.webp",
+  "u00013.jpg",
+  "u00016.jpg",
   "u0002.webp",
+  "u00021.jpg",
+  "u00022.jpg",
+  "u00023.jpg",
+  "u00026.jpg",
   "u0003.gif",
+  "u0003.webp",
   "u0004.webp",
   "u0005.gif",
+  "u0005.webp",
+  "u0006.gif",
   "u0006.webp",
   "u0007.gif",
+  "u0007.jpg",
+  "u0008.gif",
   "u0008.webp",
-  "u0009.webp"
+  "u0009.png",
+  "u0009.webp",
+  "u0010.png",
+  "u0011.webp",
+  "u0012.png",
+  "u0014.webp",
+  "u0015.webp",
+  "u0017.gif",
+  "u0018.png",
+  "u0019.gif",
+  "u0020.webp",
+  "u0024.webp",
+  "u0025.png",
+  "u0027.webp"
 ]
 
+const conceptImageFiles: Partial<Record<string, string>> = {
+  cat: "u0001.webp",
+  food: "u0002.webp",
+  ground: "u0003.webp",
+  grass: "u00021.jpg",
+  night: "u0020.webp",
+  sleep: "u0009.webp",
+  hungry: "u0018.png",
+  smell: "u0004.webp",
+  walk: "u0003.gif",
+  see: "u00026.jpg",
+  look: "u00026.jpg",
+  eat: "u0007.gif",
+  sound: "u0009.png",
+  hear: "u0009.png",
+  stop: "u00013.jpg",
+  big: "u0012.png",
+  small: "u0012.png",
+  mad: "u0014.webp",
+  fast: "u0017.gif",
+  run: "u0017.gif"
+}
+
+function getConceptImage(concept: string | undefined): string | undefined {
+  const image = concept ? conceptImageFiles[concept] : undefined
+  return image ? `engine/universal/images/${image}` : undefined
+}
+
 const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
-  en: ["en_u0001.mp3", "en_u0002.mp3", "en_u0003.mp3", "en_u0004.mp3", "en_u0005.mp3"],
-  nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
-  zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
+  zh: ["zh_u001.mp3", "zh_u002.mp3", "zh_u003.mp3", "zh_u004.mp3", "zh_u005.mp3"]
 }
 
 function shuffled<T>(items: readonly T[]): T[] {
@@ -88,13 +138,17 @@ function getPreviewCount(story: Story): number {
 }
 
 function getVocabAudioFiles(lang: SupportedLanguage): string[] {
-  return vocabAudioFiles[lang] ?? vocabAudioFiles.nan ?? []
+  return vocabAudioFiles[lang] ?? vocabAudioFiles.zh ?? []
+}
+
+function getVocabAudioLanguage(lang: SupportedLanguage): SupportedLanguage {
+  return vocabAudioFiles[lang] ? lang : "zh"
 }
 
 function getPrimerAudioFiles(selectedLanguage: SupportedLanguage): string[] {
+  const audioLanguage = getVocabAudioLanguage(selectedLanguage)
   return getVocabAudioFiles(selectedLanguage).map(
-    (audio) =>
-      selectedLanguage === "en" ? `/engine/vocab/en/audio/natural/${audio}` : `engine/vocab/${selectedLanguage}/audio/${audio}`
+    (audio) => `engine/vocab/${audioLanguage}/natural/${audio}`
   )
 }
 
@@ -121,10 +175,9 @@ export function renderArcButtons(options: {
   arcList: HTMLElement
   arcs: MeaningArc[]
   prefersReducedMotion: () => boolean
-  selectionDelay?: number
   onArcSelected: (arc: MeaningArc, button: HTMLButtonElement) => void
 }): void {
-  const { arcList, arcs, prefersReducedMotion, selectionDelay, onArcSelected } = options
+  const { arcList, arcs, prefersReducedMotion, onArcSelected } = options
   arcs.forEach((arc, index) => {
     const item = document.createElement("li")
     item.className = arc.unlocked ? "arc-node-item is-unlocked" : "arc-node-item is-dormant"
@@ -167,7 +220,7 @@ export function renderArcButtons(options: {
           delete arcList.dataset.selecting
           delete button.dataset.selected
         },
-        selectionDelay ?? (prefersReducedMotion() ? 20 : 520)
+        prefersReducedMotion() ? 20 : 520
       )
     })
 
@@ -228,6 +281,7 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
   const concepts = [...signature, ...story.coreConcepts].filter(Boolean)
   const imageFiles = shuffled(universalImages).slice(0, count)
   const audioFiles = shuffled(getVocabAudioFiles(selectedLanguage)).slice(0, count)
+  const audioLanguage = getVocabAudioLanguage(selectedLanguage)
 
   return imageFiles.map((image, index) => {
     const concept = concepts[index % concepts.length] ?? `moment-${index + 1}`
@@ -237,35 +291,32 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
       id: concept,
       symbol: concept,
       image: `engine/universal/images/${image}`,
-      audio: audio
-        ? selectedLanguage === "en"
-          ? `/engine/vocab/en/audio/natural/${audio}`
-          : `engine/vocab/${selectedLanguage}/audio/${audio}`
-        : undefined
+      audio: audio ? `engine/vocab/${audioLanguage}/natural/${audio}` : undefined
     }
   })
 }
 
 export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage): PrimerItem[] {
-  if (story.primerItems?.length) return story.primerItems.slice(0, 5)
+  if (story.primerItems?.length) return story.primerItems
 
   const moments = getPreviewMoments(story, selectedLanguage)
-  const concepts = [
+  const concepts = Array.from(new Set([
     ...(story.visualSignature ?? []),
     ...story.coreConcepts,
     ...defaultSignature
-  ].filter(Boolean)
+  ].filter(Boolean)))
   const audioFiles = getPrimerAudioFiles(selectedLanguage)
 
-  return moments.slice(0, 5).map((moment, index) => {
+  return concepts.map((concept, index) => {
+    const moment = moments[index % Math.max(1, moments.length)]
     const id = concepts[index % concepts.length] ?? moment.id
-    const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? (selectedLanguage === "en" ? undefined : fallbackPrimerAudio)
+    const wholeAudio = moment.audio ?? audioFiles[index % audioFiles.length] ?? fallbackPrimerAudio
     const phonemeCount = Math.max(2, Math.min(4, id.length || 3))
     const syllableCount = Math.max(1, Math.min(3, Math.ceil((id.length || 3) / 3)))
 
     return {
       id,
-      image: moment.image,
+      image: getConceptImage(id) ?? moment.image,
       wholeAudio,
       phonemes: createSoundPieces(phonemeCount, `${id}-sound`, wholeAudio),
       syllables: createSoundPieces(syllableCount, `${id}-pulse`, wholeAudio),
@@ -281,23 +332,36 @@ export function resolveStoryAsset(path: string | undefined, base = ""): string {
   return `${base}${path}`
 }
 
+function getBuiltInStoryScenes(story: Story): StoryScene[] {
+  const arcId = story.arcId ?? `${story.perspective}-${story.arc}`
+  if (story.id !== "s0-001" || arcId !== "cat-stray") return []
+
+  return [
+    { id: "cat-food-01-wake", image: "/engine/stories/s0-001/images/s0-01.png", start: 0, end: 7.6 },
+    { id: "cat-food-02-smell-walk", image: "/engine/stories/s0-001/images/s0-02.png", start: 7.6, end: 15.2 },
+    { id: "cat-food-03-food-ground", image: "/engine/stories/s0-001/images/s0-03.png", start: 15.2, end: 26.6 },
+    { id: "cat-food-04-eat", image: "/engine/stories/s0-001/images/s0-04.png", start: 26.6, end: 30.4 },
+    { id: "cat-food-05-hear-stop-look", image: "/engine/stories/s0-001/images/s0-05.png", start: 30.4, end: 41.8 },
+    { id: "cat-food-06-big-cat", image: "/engine/stories/s0-001/images/s0-06.png", start: 41.8, end: 64.6 },
+    { id: "cat-food-07-fight-back", image: "/engine/stories/s0-001/images/s0-07.png", start: 64.6, end: 87.4 },
+    { id: "cat-food-08-big-cat-runs", image: "/engine/stories/s0-001/images/s0-08.png", start: 87.4, end: 106.4 },
+    { id: "cat-food-09-sleep-grass-night", image: "/engine/stories/s0-001/images/s0-09.png", start: 106.4, end: 136.8 }
+  ]
+}
+
 export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage, storyAudioBase = ""): StoryScene[] {
   const providedScenes = story.scenes?.filter((scene) => scene.image || scene.audio || scene.start !== undefined)
+  const builtInStoryScenes = getBuiltInStoryScenes(story)
   const sourceScenes: StoryScene[] = providedScenes?.length
     ? providedScenes
-    : [
-        ...getPrimerItems(story, selectedLanguage).map((item) => ({
-          id: item.id,
-          image: item.image,
-          audio: item.wholeAudio
-        })),
-        ...universalImages.map((image, index) => ({
+    : builtInStoryScenes.length
+      ? builtInStoryScenes
+      : universalImages.map((image, index) => ({
           id: `fallback-scene-${index + 1}`,
           image: `engine/universal/images/${image}`
-        }))
-      ] satisfies StoryScene[]
+        })) satisfies StoryScene[]
 
-  const maxScenes = providedScenes?.length ? providedScenes.length : 5
+  const maxScenes = providedScenes?.length || builtInStoryScenes.length ? sourceScenes.length : 5
 
   return sourceScenes.slice(0, maxScenes).map((scene, index) => {
     const start = scene.start ?? index * 3.8
@@ -307,7 +371,6 @@ export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage
       id: scene.id || `scene-${index + 1}`,
       image: scene.image ? resolveStoryAsset(scene.image, storyAudioBase) : `engine/universal/images/${universalImages[index % universalImages.length]}`,
       audio: scene.audio ? resolveStoryAsset(scene.audio, storyAudioBase) : undefined,
-      audioPieces: scene.audioPieces?.map((piece) => resolveStoryAsset(piece, storyAudioBase)),
       start,
       end
     }

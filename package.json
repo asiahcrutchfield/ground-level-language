@@ -2,10 +2,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run validate-content && npm run build-content && tsc && vite build",
     "preview": "vite preview",
-    "sync-engine": "node sync-engine-watch.js",
-    "new-lang": "node create-language.js"
+    "build-content": "node scripts/build-content.js",
+    "sync-engine": "node scripts/sync-engine-watch.js",
+    "new-lang": "node scripts/create-language.js",
+    "validate-content": "node scripts/validate-content.js"
   },
   "dependencies": {
     "chokidar": "^5.0.0"

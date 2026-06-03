@@ -1,0 +1,37 @@
+{
+    "sy01": {
+        "pattern": ["ma"],
+        "syllables": 1,
+        "tone": 1,
+        "audio": {
+            "default": "zh_sy01.mp3"
+        }
+    },
+
+    "sy02": {
+        "pattern": ["ma"],
+        "syllables": 1,
+        "tone": 3,
+        "audio": {
+            "default": "zh_sy02.mp3"
+        }
+    },
+
+    "sy03": {
+        "pattern": ["ma"],
+        "syllables": 1,
+        "tone": 4,
+        "audio": {
+            "default": "zh_sy03.mp3"
+        }
+    },
+
+    "sy04": {
+        "pattern": ["ma", "ma"],
+        "syllables": 2,
+        "tone": [2, 4],
+        "audio": {
+            "default": "zh_sy04.mp3"
+        }
+    }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "s0-001",
+  "title": {
+    "zh": "地上的食物"
+  },
+  "arcId": "cat-stray",
+  "arc": "stray",
+  "perspective": "cat",
+  "coreConcepts": [
+    "u0001",
+    "u0002",
+    "u0003",
+    "u0004",
+    "u0005",
+    "u0006",
+    "u0007",
+    "u0008",
+    "u0009",
+    "u0010",
+    "u0011",
+    "u0012",
+    "u0013",
+    "u0014",
+    "u0015",
+    "u0016",
+    "u0017",
+    "u0018",
+    "u0019",
+    "u0020",
+    "u0021",
+    "u0022",
+    "u0023",
+    "u0024",
+    "u0025",
+    "u0026",
+    "u0027"
+  ],
+  "visualSignature": [
+    "u0001",
+    "u0002",
+    "u0020"
+  ],
+  "audio": {
+    "natural": "audio/zh/natural/zh_s0-001.mp3",
+    "slow": "audio/zh/slow/zh_s0-001.mp3"
+  },
+  "imageOrder": [
+    {
+      "filename": "s0-01.png",
+      "startLine": 1,
+      "endLine": 2
+    },
+    {
+      "filename": "s0-02.png",
+      "startLine": 3,
+      "endLine": 5
+    },
+    {
+      "filename": "s0-03.png",
+      "startLine": 6,
+      "endLine": 7
+    },
+    {
+      "filename": "s0-04.png",
+      "startLine": 8,
+      "endLine": 8
+    },
+    {
+      "filename": "s0-05.png",
+      "startLine": 9,
+      "endLine": 11
+    },
+    {
+      "filename": "s0-06.png",
+      "startLine": 12,
+      "endLine": 19
+    },
+    {
+      "filename": "s0-07.png",
+      "startLine": 20,
+      "endLine": 23
+    },
+    {
+      "filename": "s0-08.png",
+      "startLine": 24,
+      "endLine": 28
+    },
+    {
+      "filename": "s0-09.png",
+      "startLine": 29,
+      "endLine": 36
+    }
+  ]
+}

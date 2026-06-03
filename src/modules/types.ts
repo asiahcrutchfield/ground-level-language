@@ -16,7 +16,8 @@ export type LearningPaths = {
   images: string
   phonemes: string
   phonemeAudio: string
-  stories: readonly string[]
+  storyMeta: string
+  storyLines: string
 }
 
 export type VocabImage = {
