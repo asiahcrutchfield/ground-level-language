@@ -90,7 +90,7 @@ type PreviewVocabularyPod = {
   audio: string[]
 }
 
-const previewPath = (code: SupportedLanguage): string => `engine/speech/${code}/preview.mp3`
+const previewPath = (code: SupportedLanguage): string => `engine/previews/${code}/preview.mp3`
 
 const languageSeedMarkup: Record<SupportedLanguage, string> = {
   en: englishSeedSvgMarkup,
@@ -109,8 +109,7 @@ const previewVocabularyPods = [
   { id: "ending", label: "Big, small, night, sleep", items: ["大", "小", "晚上", "睡著"] }
 ] as const
 const previewVocabularyAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
-  nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
-  zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
+  zh: ["zh_u001.mp3", "zh_u002.mp3", "zh_u003.mp3", "zh_u004.mp3", "zh_u005.mp3"]
 }
 
 const demoConfig = {
@@ -324,11 +323,46 @@ const getDisplayName = (code: SupportedLanguage): string => {
 
 const getStoryArcId = (story: Story): string => story.arcId ?? `${story.perspective}-${story.arc}`
 
+let seedSvgInstanceId = 0
+
+function scopeInlineSvgIds(svg: SVGSVGElement, prefix: string): void {
+  const idMap = new Map<string, string>()
+
+  svg.querySelectorAll<SVGElement>("[id]").forEach((element) => {
+    const currentId = element.id
+    if (!currentId) return
+
+    const scopedId = `${prefix}-${currentId}`
+    idMap.set(currentId, scopedId)
+    element.id = scopedId
+  })
+
+  if (idMap.size === 0) return
+
+  svg.querySelectorAll<SVGElement>("*").forEach((element) => {
+    Array.from(element.attributes).forEach((attribute) => {
+      let nextValue = attribute.value
+      idMap.forEach((scopedId, currentId) => {
+        nextValue = nextValue
+          .replaceAll(`url(#${currentId})`, `url(#${scopedId})`)
+          .replaceAll(`#${currentId}`, `#${scopedId}`)
+      })
+      if (nextValue !== attribute.value) {
+        element.setAttribute(attribute.name, nextValue)
+      }
+    })
+  })
+}
+
 function createSeedSvg(code: SupportedLanguage): HTMLElement {
   const wrapper = document.createElement("span")
   wrapper.className = "language-seed-art"
   wrapper.innerHTML = languageSeedMarkup[code].trim()
-  wrapper.querySelector("svg")?.setAttribute("focusable", "false")
+  const svg = wrapper.querySelector("svg")
+  if (svg) {
+    svg.setAttribute("focusable", "false")
+    scopeInlineSvgIds(svg, `language-seed-${code}-${seedSvgInstanceId++}`)
+  }
   return wrapper
 }
 
@@ -923,13 +957,13 @@ export function createExperience(): void {
   }
 
   function getPreviewVocabularyPods(): PreviewVocabularyPod[] {
-    const audioLanguage = appState.selectedLanguage === "en" ? "nan" : appState.selectedLanguage
-    const audioFiles = previewVocabularyAudioFiles[audioLanguage] ?? previewVocabularyAudioFiles.nan ?? []
+    const audioLanguage = previewVocabularyAudioFiles[appState.selectedLanguage] ? appState.selectedLanguage : "zh"
+    const audioFiles = previewVocabularyAudioFiles[audioLanguage] ?? previewVocabularyAudioFiles.zh ?? []
 
     return previewVocabularyPods.map((pod, podIndex) => {
       const audio = pod.items.map((_, itemIndex) => {
         const audio = audioFiles[(podIndex * 3 + itemIndex) % Math.max(1, audioFiles.length)]
-        return audio ? `engine/vocab/${audioLanguage}/audio/${audio}` : fallbackPrimerAudio
+        return audio ? `engine/vocab/${audioLanguage}/natural/${audio}` : fallbackPrimerAudio
       })
 
       return { ...pod, audio }
@@ -938,11 +972,11 @@ export function createExperience(): void {
 
   function getStoryImagePreviewMoments(story: Story): StoryImagePreviewMoment[] {
     const catStoryScenes: StoryImagePreviewMoment[] = [
-      { id: "cat-wakes-up", scene: "wake", symbol: "cat", image: "/stories/arcs/cat/s0/s0-01.png" },
-      { id: "cat-smells-food", scene: "smell", symbol: "food", image: "/stories/arcs/cat/s0/s0-02.png" },
-      { id: "food-on-ground", scene: "ground", symbol: "food", image: "/stories/arcs/cat/s0/s0-03.png" },
-      { id: "big-cat-appears", scene: "big-cat", symbol: "cat", image: "/stories/arcs/cat/s0/s0-06.png" },
-      { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night", image: "/stories/arcs/cat/s0/s0-09.png" }
+      { id: "cat-wakes-up", scene: "wake", symbol: "cat", image: "/engine/stories/s0-001/images/s0-01.png" },
+      { id: "cat-smells-food", scene: "smell", symbol: "food", image: "/engine/stories/s0-001/images/s0-02.png" },
+      { id: "food-on-ground", scene: "ground", symbol: "food", image: "/engine/stories/s0-001/images/s0-03.png" },
+      { id: "big-cat-appears", scene: "big-cat", symbol: "cat", image: "/engine/stories/s0-001/images/s0-06.png" },
+      { id: "cat-sleeps-at-night", scene: "sleep", symbol: "night", image: "/engine/stories/s0-001/images/s0-09.png" }
     ]
 
     if (story.id === "s0-001" && getStoryArcId(story) === "cat-stray") return catStoryScenes
@@ -1395,7 +1429,6 @@ export function createExperience(): void {
   }
 
   function getStoryAudioSource(story: Story): string {
-    if (story.id === "s0-001") return "/stories/langs/zh/s0-001.mp3"
     return resolveStoryAsset(story.audio, storyAudioBase)
   }
 

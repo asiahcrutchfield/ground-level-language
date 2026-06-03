@@ -59,7 +59,7 @@ export const conceptIcons: Record<string, string> = {
 }
 
 export const defaultSignature = ["cat", "food", "night"]
-export const fallbackPrimerAudio = "engine/vocab/nan/audio/nan_u0002.wav"
+export const fallbackPrimerAudio = "engine/vocab/zh/natural/zh_u002.mp3"
 
 const universalImages = [
   "u0001.webp",
@@ -126,8 +126,7 @@ function getConceptImage(concept: string | undefined): string | undefined {
 }
 
 const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
-  nan: ["nan_u0001.wav", "nan_u0002.wav", "nan_u0003.mp3", "nan_u0004.mp3", "nan_u0005.mp3"],
-  zh: ["zh_u0001.mp3", "zh_u0002.mp3", "zh_u0003.mp3", "zh_u0004.mp3", "zh_u0005.mp3"]
+  zh: ["zh_u001.mp3", "zh_u002.mp3", "zh_u003.mp3", "zh_u004.mp3", "zh_u005.mp3"]
 }
 
 function shuffled<T>(items: readonly T[]): T[] {
@@ -139,12 +138,17 @@ function getPreviewCount(story: Story): number {
 }
 
 function getVocabAudioFiles(lang: SupportedLanguage): string[] {
-  return vocabAudioFiles[lang] ?? vocabAudioFiles.nan ?? []
+  return vocabAudioFiles[lang] ?? vocabAudioFiles.zh ?? []
+}
+
+function getVocabAudioLanguage(lang: SupportedLanguage): SupportedLanguage {
+  return vocabAudioFiles[lang] ? lang : "zh"
 }
 
 function getPrimerAudioFiles(selectedLanguage: SupportedLanguage): string[] {
+  const audioLanguage = getVocabAudioLanguage(selectedLanguage)
   return getVocabAudioFiles(selectedLanguage).map(
-    (audio) => `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}`
+    (audio) => `engine/vocab/${audioLanguage}/natural/${audio}`
   )
 }
 
@@ -277,6 +281,7 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
   const concepts = [...signature, ...story.coreConcepts].filter(Boolean)
   const imageFiles = shuffled(universalImages).slice(0, count)
   const audioFiles = shuffled(getVocabAudioFiles(selectedLanguage)).slice(0, count)
+  const audioLanguage = getVocabAudioLanguage(selectedLanguage)
 
   return imageFiles.map((image, index) => {
     const concept = concepts[index % concepts.length] ?? `moment-${index + 1}`
@@ -286,7 +291,7 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
       id: concept,
       symbol: concept,
       image: `engine/universal/images/${image}`,
-      audio: audio ? `engine/vocab/${selectedLanguage === "en" ? "nan" : selectedLanguage}/audio/${audio}` : undefined
+      audio: audio ? `engine/vocab/${audioLanguage}/natural/${audio}` : undefined
     }
   })
 }
@@ -332,15 +337,15 @@ function getBuiltInStoryScenes(story: Story): StoryScene[] {
   if (story.id !== "s0-001" || arcId !== "cat-stray") return []
 
   return [
-    { id: "cat-food-01-wake", image: "/stories/arcs/cat/s0/s0-01.png", start: 0, end: 7.6 },
-    { id: "cat-food-02-smell-walk", image: "/stories/arcs/cat/s0/s0-02.png", start: 7.6, end: 15.2 },
-    { id: "cat-food-03-food-ground", image: "/stories/arcs/cat/s0/s0-03.png", start: 15.2, end: 26.6 },
-    { id: "cat-food-04-eat", image: "/stories/arcs/cat/s0/s0-04.png", start: 26.6, end: 30.4 },
-    { id: "cat-food-05-hear-stop-look", image: "/stories/arcs/cat/s0/s0-05.png", start: 30.4, end: 41.8 },
-    { id: "cat-food-06-big-cat", image: "/stories/arcs/cat/s0/s0-06.png", start: 41.8, end: 64.6 },
-    { id: "cat-food-07-fight-back", image: "/stories/arcs/cat/s0/s0-07.png", start: 64.6, end: 87.4 },
-    { id: "cat-food-08-big-cat-runs", image: "/stories/arcs/cat/s0/s0-08.png", start: 87.4, end: 106.4 },
-    { id: "cat-food-09-sleep-grass-night", image: "/stories/arcs/cat/s0/s0-09.png", start: 106.4, end: 136.8 }
+    { id: "cat-food-01-wake", image: "/engine/stories/s0-001/images/s0-01.png", start: 0, end: 7.6 },
+    { id: "cat-food-02-smell-walk", image: "/engine/stories/s0-001/images/s0-02.png", start: 7.6, end: 15.2 },
+    { id: "cat-food-03-food-ground", image: "/engine/stories/s0-001/images/s0-03.png", start: 15.2, end: 26.6 },
+    { id: "cat-food-04-eat", image: "/engine/stories/s0-001/images/s0-04.png", start: 26.6, end: 30.4 },
+    { id: "cat-food-05-hear-stop-look", image: "/engine/stories/s0-001/images/s0-05.png", start: 30.4, end: 41.8 },
+    { id: "cat-food-06-big-cat", image: "/engine/stories/s0-001/images/s0-06.png", start: 41.8, end: 64.6 },
+    { id: "cat-food-07-fight-back", image: "/engine/stories/s0-001/images/s0-07.png", start: 64.6, end: 87.4 },
+    { id: "cat-food-08-big-cat-runs", image: "/engine/stories/s0-001/images/s0-08.png", start: 87.4, end: 106.4 },
+    { id: "cat-food-09-sleep-grass-night", image: "/engine/stories/s0-001/images/s0-09.png", start: 106.4, end: 136.8 }
   ]
 }
 

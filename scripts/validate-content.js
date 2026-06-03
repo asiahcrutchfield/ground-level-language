@@ -8,8 +8,6 @@ const requiredPaths = [
   "content/vocab",
   "content/phonetics",
   "content/universal/images",
-  "public/engine",
-  "public/stories",
   "apps",
   "src",
   "scripts"
@@ -83,6 +81,30 @@ if (fs.existsSync(enStoryPiecesDir)) {
         stack.push(entryPath)
       } else if (/-[NS]\d+\.mp3$/.test(entry.name)) {
         errors.push(`Use underscore before en story-piece variant labels: ${entry.name}`)
+      }
+    }
+  }
+}
+
+const storyAudioRoot = path.join(root, "content", "stories", "s0-001", "audio")
+if (fs.existsSync(storyAudioRoot)) {
+  for (const langEntry of fs.readdirSync(storyAudioRoot, { withFileTypes: true })) {
+    if (!langEntry.isDirectory()) continue
+
+    const lang = langEntry.name
+    const stack = [path.join(storyAudioRoot, lang)]
+    while (stack.length) {
+      const current = stack.pop()
+      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        const entryPath = path.join(current, entry.name)
+        if (entry.isDirectory()) {
+          stack.push(entryPath)
+          continue
+        }
+
+        if (!entry.name.startsWith(`${lang}_`)) {
+          errors.push(`Prefix story audio filenames with language code and underscore: ${path.relative(root, entryPath)}`)
+        }
       }
     }
   }

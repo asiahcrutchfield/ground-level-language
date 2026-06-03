@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run validate-content && npm run build-content && tsc && vite build",
     "preview": "vite preview",
     "build-content": "node scripts/build-content.js",
     "sync-engine": "node scripts/sync-engine-watch.js",
