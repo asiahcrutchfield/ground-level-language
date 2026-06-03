@@ -7471,11 +7471,22 @@ button:focus-visible {
 }
 
 .demo-arc-item {
+  left: 50%;
+  top: 60%;
+  z-index: 5;
+  width: clamp(96px, 24vw, 128px);
   justify-self: center;
+  transform: translate(-50%, -50%) scale(0.84);
+}
+
+.demo-arc-item::before {
+  display: none;
 }
 
 .demo-cat-arc-button {
+  width: 100%;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .demo-cat-arc-button:disabled {

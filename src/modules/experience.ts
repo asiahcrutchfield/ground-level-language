@@ -3409,6 +3409,7 @@ export function createExperience(): void {
     clearNode(storyPodBed)
 
     const arc = meaningArcs.find((candidate) => candidate.id === demoConfig.arcId)
+    const demoStory = story ?? getStoryById(demoConfig.storyId)
     const item = document.createElement("li")
     item.className = "arc-node-item demo-arc-item is-unlocked"
     item.dataset.endpoint = "1"
@@ -3418,9 +3419,9 @@ export function createExperience(): void {
     button.type = "button"
     button.dataset.arcId = demoConfig.arcId
     button.dataset.subject = arc?.subject ?? "cat"
-    button.disabled = !story
-    button.setAttribute("aria-label", story ? `Start ${story.title}` : "Story unavailable")
-    button.setAttribute("aria-disabled", String(!story))
+    button.disabled = !demoStory
+    button.setAttribute("aria-label", demoStory ? `Start ${demoStory.title}` : "Story unavailable")
+    button.setAttribute("aria-disabled", String(!demoStory))
 
     const icon = document.createElement("span")
     icon.className = "arc-icon"
@@ -3435,11 +3436,11 @@ export function createExperience(): void {
 
     button.append(icon)
 
-    if (story) {
+    if (demoStory) {
       button.addEventListener("click", () => {
         appState.selectedArcId = demoConfig.arcId
         appState.selectedStoryId = demoConfig.storyId
-        renderMeaningPreviewWorld(story.id)
+        renderMeaningPreviewWorld(demoStory.id)
         setSurface("meaningPreview")
       })
     }
