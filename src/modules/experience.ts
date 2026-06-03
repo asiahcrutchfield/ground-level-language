@@ -3412,7 +3412,6 @@ export function createExperience(): void {
     const demoStory = story ?? getStoryById(demoConfig.storyId)
     const item = document.createElement("li")
     item.className = "arc-node-item demo-arc-item is-unlocked"
-    item.dataset.endpoint = "1"
 
     const button = document.createElement("button")
     button.className = "arc-button demo-cat-arc-button"

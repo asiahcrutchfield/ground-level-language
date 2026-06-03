@@ -7470,26 +7470,35 @@ button:focus-visible {
   animation: recall-soft-miss 260ms ease;
 }
 
-.demo-arc-item {
+.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item {
   left: 50%;
   top: 60%;
   z-index: 5;
-  width: clamp(96px, 24vw, 128px);
+  width: clamp(96px, 26vw, 128px);
+  min-width: 96px;
+  min-height: 96px;
   justify-self: center;
   transform: translate(-50%, -50%) scale(0.84);
 }
 
-.demo-arc-item::before {
+.app[data-demo="meaning-tree"] .arc-node-item.demo-arc-item::before {
   display: none;
 }
 
-.demo-cat-arc-button {
+.app[data-demo="meaning-tree"] .demo-cat-arc-button {
   width: 100%;
+  min-width: 96px;
+  min-height: 96px;
   cursor: pointer;
   pointer-events: auto;
 }
 
-.demo-cat-arc-button:disabled {
+.app[data-demo="meaning-tree"] .demo-cat-arc-button .arc-icon,
+.app[data-demo="meaning-tree"] .demo-cat-arc-button svg {
+  pointer-events: none;
+}
+
+.app[data-demo="meaning-tree"] .demo-cat-arc-button:disabled {
   cursor: default;
   opacity: 0.5;
 }
