@@ -113,7 +113,7 @@ const previewVocabularyAudioFiles: Partial<Record<SupportedLanguage, string[]>> 
 }
 
 const demoConfig = {
-  enabled: false,
+  enabled: true,
   arcId: "cat-stray",
   storyId: "s0-001"
 } as const
@@ -3437,6 +3437,7 @@ export function createExperience(): void {
 
     if (story) {
       button.addEventListener("click", () => {
+        appState.selectedArcId = demoConfig.arcId
         appState.selectedStoryId = demoConfig.storyId
         renderMeaningPreviewWorld(story.id)
         setSurface("meaningPreview")
