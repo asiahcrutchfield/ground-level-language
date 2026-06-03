@@ -39,6 +39,7 @@ function readJson(relativePath) {
 
 for (const relativePath of [
   "content/stories/s0-001/meta.json",
+  "content/stories/s0-001/lines/lines.en.json",
   "content/stories/s0-001/lines/lines.zh.json",
   "content/vocab/zh/labels.json"
 ]) {

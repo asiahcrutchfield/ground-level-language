@@ -3438,15 +3438,32 @@ export function createExperience(): void {
 
     if (demoStory) {
       button.addEventListener("click", () => {
-        appState.selectedArcId = demoConfig.arcId
-        appState.selectedStoryId = demoConfig.storyId
-        renderMeaningPreviewWorld(demoConfig.storyId)
-        setSurface("meaningPreview")
+        enterDemoStoryPreview(demoStory)
       })
     }
 
     item.append(button)
     arcList.append(item)
+  }
+
+  function enterDemoStoryPreview(story?: Story): void {
+    const demoStory = story ?? getStoryById(demoConfig.storyId)
+
+    if (!demoStory) {
+      console.warn("Demo story unavailable", {
+        selectedLanguage: appState.selectedLanguage,
+        demoStoryId: demoConfig.storyId,
+        loadedStoryIds: allStories.map((candidate) => candidate.id)
+      })
+      return
+    }
+
+    appState.selectedPath = "meaning-tree"
+    appState.selectedArcId = demoConfig.arcId
+    appState.selectedStoryId = demoStory.id
+
+    renderMeaningPreviewWorld(demoStory.id)
+    setSurface("meaningPreview")
   }
 
   function renderDemoFinishScreen(storyId: string): void {

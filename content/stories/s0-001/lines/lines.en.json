@@ -1,0 +1,635 @@
+[
+  {
+    "line": "I wake up.",
+    "number": 1,
+    "concepts": [
+      "u0026"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:00",
+        "0:01"
+      ],
+      "slow": [
+        "0:00",
+        "0:01"
+      ]
+    }
+  },
+  {
+    "line": "I am hungry.",
+    "number": 2,
+    "concepts": [
+      "u0004"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:01",
+        "0:02"
+      ],
+      "slow": [
+        "0:01",
+        "0:02"
+      ]
+    }
+  },
+  {
+    "line": "I smell food.",
+    "number": 3,
+    "concepts": [
+      "u0007",
+      "u0002"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:03",
+        "0:04"
+      ],
+      "slow": [
+        "0:03",
+        "0:04"
+      ]
+    }
+  },
+  {
+    "line": "I walk, I walk, I walk.",
+    "number": 4,
+    "concepts": [
+      "u0005"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:04",
+        "0:06"
+      ],
+      "slow": [
+        "0:03",
+        "0:04"
+      ]
+    }
+  },
+  {
+    "line": "I see food.",
+    "number": 5,
+    "concepts": [
+      "u0006",
+      "u0002"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:07",
+        "0:08"
+      ],
+      "slow": [
+        "0:04",
+        "0:05"
+      ]
+    }
+  },
+  {
+    "line": "Food is on the ground.",
+    "number": 6,
+    "concepts": [
+      "u0002",
+      "u0003"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:08",
+        "0:10"
+      ],
+      "slow": [
+        "0:05",
+        "0:06"
+      ]
+    }
+  },
+  {
+    "line": "I smell the food.",
+    "number": 7,
+    "concepts": [
+      "u0007",
+      "u0002"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:10",
+        "0:11"
+      ],
+      "slow": [
+        "0:06",
+        "0:07"
+      ]
+    }
+  },
+  {
+    "line": "I eat.",
+    "number": 8,
+    "concepts": [
+      "u0008"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:12",
+        "0:13"
+      ],
+      "slow": [
+        "0:07",
+        "0:08"
+      ]
+    }
+  },
+  {
+    "line": "I hear a sound.",
+    "number": 9,
+    "concepts": [
+      "u0011",
+      "u0009"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:13",
+        "0:17"
+      ],
+      "slow": [
+        "0:08",
+        "0:09"
+      ]
+    }
+  },
+  {
+    "line": "I stop.",
+    "number": 10,
+    "concepts": [
+      "u0010"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:17",
+        "0:19"
+      ],
+      "slow": [
+        "0:09",
+        "0:10"
+      ]
+    }
+  },
+  {
+    "line": "I look, I look, I look.",
+    "number": 11,
+    "concepts": [
+      "u0006"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:19",
+        "0:21"
+      ],
+      "slow": [
+        "0:10",
+        "0:11"
+      ]
+    }
+  },
+  {
+    "line": "I see a cat.",
+    "number": 12,
+    "concepts": [
+      "u0006",
+      "u0001"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:22",
+        "0:24"
+      ],
+      "slow": [
+        "0:11",
+        "0:12"
+      ]
+    }
+  },
+  {
+    "line": "The cat is big.",
+    "number": 13,
+    "concepts": [
+      "u0001",
+      "u0012"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:23",
+        "0:25"
+      ],
+      "slow": [
+        "0:12",
+        "0:13"
+      ]
+    }
+  },
+  {
+    "line": "The cat looks at me.",
+    "number": 14,
+    "concepts": [
+      "u0001",
+      "u0006"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:25",
+        "0:27"
+      ],
+      "slow": [
+        "0:13",
+        "0:14"
+      ]
+    }
+  },
+  {
+    "line": "The cat looks at the food.",
+    "number": 15,
+    "concepts": [
+      "u0001",
+      "u0006",
+      "u0002"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:27",
+        "0:29"
+      ],
+      "slow": [
+        "0:14",
+        "0:15"
+      ]
+    }
+  },
+  {
+    "line": "The cat is angry.",
+    "number": 16,
+    "concepts": [
+      "u0001",
+      "u0014"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:30",
+        "0:32"
+      ],
+      "slow": [
+        "0:15",
+        "0:16"
+      ]
+    }
+  },
+  {
+    "line": "The cat makes a sound.",
+    "number": 17,
+    "concepts": [
+      "u0001",
+      "u0009"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:32",
+        "0:34"
+      ],
+      "slow": [
+        "0:16",
+        "0:17"
+      ]
+    }
+  },
+  {
+    "line": "I am small.",
+    "number": 18,
+    "concepts": [
+      "u0013"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:34",
+        "0:35"
+      ],
+      "slow": [
+        "0:17",
+        "0:18"
+      ]
+    }
+  },
+  {
+    "line": "I make a sound too.",
+    "number": 19,
+    "concepts": [
+      "u0009"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:35",
+        "0:37"
+      ],
+      "slow": [
+        "0:18",
+        "0:19"
+      ]
+    }
+  },
+  {
+    "line": "The cat hits me.",
+    "number": 20,
+    "concepts": [
+      "u0001",
+      "u0015"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:38",
+        "0:39"
+      ],
+      "slow": [
+        "0:19",
+        "0:20"
+      ]
+    }
+  },
+  {
+    "line": "I hit the cat.",
+    "number": 21,
+    "concepts": [
+      "u0015",
+      "u0001"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:39",
+        "0:41"
+      ],
+      "slow": [
+        "0:20",
+        "0:21"
+      ]
+    }
+  },
+  {
+    "line": "I am fast.",
+    "number": 22,
+    "concepts": [
+      "u0017"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:41",
+        "0:42"
+      ],
+      "slow": [
+        "0:21",
+        "0:22"
+      ]
+    }
+  },
+  {
+    "line": "I bite the cat.",
+    "number": 23,
+    "concepts": [
+      "u0016",
+      "u0001"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:42",
+        "0:44"
+      ],
+      "slow": [
+        "0:22",
+        "0:23"
+      ]
+    }
+  },
+  {
+    "line": "The cat runs away.",
+    "number": 24,
+    "concepts": [
+      "u0001",
+      "u0005",
+      "u0017"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:45",
+        "0:47"
+      ],
+      "slow": [
+        "0:23",
+        "0:24"
+      ]
+    }
+  },
+  {
+    "line": "I sit down.",
+    "number": 25,
+    "concepts": [
+      "u0018"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:47",
+        "0:48"
+      ],
+      "slow": [
+        "0:24",
+        "0:25"
+      ]
+    }
+  },
+  {
+    "line": "I look.",
+    "number": 26,
+    "concepts": [
+      "u0006"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:48",
+        "0:49"
+      ],
+      "slow": [
+        "0:25",
+        "0:26"
+      ]
+    }
+  },
+  {
+    "line": "I do not move.",
+    "number": 27,
+    "concepts": [
+      "u0019"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:49",
+        "0:50"
+      ],
+      "slow": [
+        "0:26",
+        "0:27"
+      ]
+    }
+  },
+  {
+    "line": "I eat the food.",
+    "number": 28,
+    "concepts": [
+      "u0008",
+      "u0002"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:51",
+        "0:52"
+      ],
+      "slow": [
+        "0:27",
+        "0:28"
+      ]
+    }
+  },
+  {
+    "line": "Now it is night.",
+    "number": 29,
+    "concepts": [
+      "u0020"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:52",
+        "0:54"
+      ],
+      "slow": [
+        "0:28",
+        "0:29"
+      ]
+    }
+  },
+  {
+    "line": "I see grass.",
+    "number": 30,
+    "concepts": [
+      "u0006",
+      "u0021"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:54",
+        "0:55"
+      ],
+      "slow": [
+        "0:29",
+        "0:30"
+      ]
+    }
+  },
+  {
+    "line": "I walk to the grass.",
+    "number": 31,
+    "concepts": [
+      "u0005",
+      "u0021"
+    ],
+    "timestamps": {
+      "natural": [
+        "0:55",
+        "1:00"
+      ],
+      "slow": [
+        "0:30",
+        "0:31"
+      ]
+    }
+  },
+  {
+    "line": "I lie down.",
+    "number": 32,
+    "concepts": [
+      "u0022"
+    ],
+    "timestamps": {
+      "natural": [
+        "1:00",
+        "1:02"
+      ],
+      "slow": [
+        "0:31",
+        "0:32"
+      ]
+    }
+  },
+  {
+    "line": "The grass is soft.",
+    "number": 33,
+    "concepts": [
+      "u0021",
+      "u0023"
+    ],
+    "timestamps": {
+      "natural": [
+        "1:02",
+        "1:03"
+      ],
+      "slow": [
+        "0:32",
+        "0:33"
+      ]
+    }
+  },
+  {
+    "line": "I am warm.",
+    "number": 34,
+    "concepts": [
+      "u0024"
+    ],
+    "timestamps": {
+      "natural": [
+        "1:04",
+        "1:05"
+      ],
+      "slow": [
+        "0:33",
+        "0:34"
+      ]
+    }
+  },
+  {
+    "line": "I close my eyes.",
+    "number": 35,
+    "concepts": [
+      "u0025"
+    ],
+    "timestamps": {
+      "natural": [
+        "1:05",
+        "1:07"
+      ],
+      "slow": [
+        "0:34",
+        "0:35"
+      ]
+    }
+  },
+  {
+    "line": "I fall asleep.",
+    "number": 36,
+    "concepts": [
+      "u0027"
+    ],
+    "timestamps": {
+      "natural": [
+        "1:08",
+        "1:09"
+      ],
+      "slow": [
+        "0:35",
+        "0:36"
+      ]
+    }
+  }
+]
