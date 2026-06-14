@@ -121,9 +121,9 @@ const demoConfig = {
 } as const
 
 const feedbackFormUrls = {
-  generic: "PASTE_GOOGLE_FORM_URL_HERE",
-  positive: "PASTE_OPTIONAL_PREFILLED_POSITIVE_URL_HERE",
-  negative: "PASTE_OPTIONAL_PREFILLED_NEGATIVE_URL_HERE"
+  generic: "https://forms.gle/umYPWCuwYRZAE6pG9",
+  positive: "https://forms.gle/umYPWCuwYRZAE6pG9",
+  negative: "https://forms.gle/umYPWCuwYRZAE6pG9"
 } as const
 
 const soundSections: SoundSection[] = [
@@ -2115,13 +2115,8 @@ export function createExperience(): void {
   }
 
   function openFeedbackForm(kind: "generic" | "positive" | "negative" = "generic"): void {
-    const url = feedbackFormUrls[kind] || feedbackFormUrls.generic
-    if (!url || url.includes("PASTE_")) {
-      reflectionScreen.classList.add("is-feedback-missing")
-      window.setTimeout(() => reflectionScreen.classList.remove("is-feedback-missing"), 520)
-      return
-    }
-
+    const url = feedbackFormUrls[kind]
+    if (!url) return
     window.open(url, "_blank", "noopener,noreferrer")
   }
 
