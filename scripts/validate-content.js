@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
+// Lightweight content validation for required folders and filename conventions.
 const root = process.cwd()
 const requiredPaths = [
   "content",
@@ -15,12 +16,14 @@ const requiredPaths = [
 
 const errors = []
 
+// Required folders define the current source-of-truth project layout.
 for (const relativePath of requiredPaths) {
   if (!fs.existsSync(path.join(root, relativePath))) {
     errors.push(`Missing ${relativePath}`)
   }
 }
 
+// Reads JSON files and records structural errors without throwing early.
 function readJson(relativePath) {
   const filePath = path.join(root, relativePath)
   if (!fs.existsSync(filePath)) return undefined
@@ -37,6 +40,7 @@ function readJson(relativePath) {
   }
 }
 
+// Validate known required JSON files for the current prototype story and language.
 for (const relativePath of [
   "content/stories/s0-001/meta.json",
   "content/stories/s0-001/lines/lines.zh.json",
@@ -45,6 +49,7 @@ for (const relativePath of [
   readJson(relativePath)
 }
 
+// Filename convention checks keep generated paths predictable across languages.
 const zhNaturalDir = path.join(root, "content", "vocab", "zh", "natural")
 if (fs.existsSync(zhNaturalDir)) {
   for (const file of fs.readdirSync(zhNaturalDir)) {

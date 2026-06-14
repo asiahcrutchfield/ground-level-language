@@ -1,3 +1,4 @@
+// DOM handles needed by the story preview section.
 export type PreviewSectionElements = {
   section: HTMLElement
   signature: HTMLElement

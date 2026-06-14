@@ -56,6 +56,7 @@ import { createStoryLessonShell } from "./storyLesson/storyLesson"
 import type { StoryLessonSectionId } from "./storyLesson/storyLessonTypes"
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
+// Local UI state and view-model types used only by the experience controller.
 type Surface = AppSurface
 type SeedState = "idle" | "previewing" | "revealed" | "selected"
 type LanguageSeedDrag = {
@@ -90,6 +91,7 @@ type PreviewVocabularyPod = {
   audio: string[]
 }
 
+// Static configuration for language previews, demo mode, feedback links, and prototype lesson data.
 const previewPath = (code: SupportedLanguage): string => `engine/previews/${code}/preview.mp3`
 
 const languageSeedMarkup: Record<SupportedLanguage, string> = {
@@ -195,6 +197,7 @@ const soundSections: SoundSection[] = [
 
 const soundLessonSteps: SoundLessonStepId[] = ["preview", "primer", "guided-tuning", "perception-recall", "reflection"]
 
+// Sound Garden prototype lessons define the sound sections, practice cards, and lesson order.
 const soundLessons: SoundLesson[] = [
   {
     id: "tone-001",
@@ -283,6 +286,7 @@ const soundLessons: SoundLesson[] = [
   }
 ]
 
+// Meaning Tree arc definitions decide which branches are unlocked on the tree.
 const meaningArcs: MeaningArc[] = [
   {
     id: "cat-stray",
@@ -325,6 +329,7 @@ const getStoryArcId = (story: Story): string => story.arcId ?? `${story.perspect
 
 let seedSvgInstanceId = 0
 
+// SVG helpers make injected raw SVG safe for repeated inline use.
 function scopeInlineSvgIds(svg: SVGSVGElement, prefix: string): void {
   const idMap = new Map<string, string>()
 
@@ -419,7 +424,9 @@ function createGardenMeaningMarkup(): string {
   `
 }
 
+// The experience controller owns screen transitions, lesson rendering, and user interaction wiring.
 export function createExperience(): void {
+  // Screen and control lookups bind the static HTML shell to the TypeScript controller.
   const app = mustQuery<HTMLElement>("#app")
   const startScreen = mustQuery<HTMLElement>("#start-screen")
   const languageScreen = mustQuery<HTMLElement>("#language-screen")
@@ -577,6 +584,7 @@ export function createExperience(): void {
   const recallAudio = new Audio()
   const primerBackdrop = document.createElement("button")
 
+  // Transient state tracks active screens, audio objects, selected lessons, and animation timers.
   let surface: Surface = "start"
   let hasBegun = false
   let openingTransitionTimer = 0
@@ -620,6 +628,8 @@ export function createExperience(): void {
     code: language.code,
     state: "idle"
   }))
+
+  // Story lesson shell maps surface changes onto the shared section navigation chrome.
   const storyLessonSurfaceSections: Partial<Record<Surface, StoryLessonSectionId>> = {
     meaningPreview: "preview",
     primer: "primer",
@@ -649,6 +659,7 @@ export function createExperience(): void {
     onSectionRequested: enterStoryLessonSection
   })
 
+  // Surface helpers show one app screen at a time and keep lesson section state synchronized.
   function isStoryLessonSurface(value: Surface): boolean {
     return storyLessonSurfaceSections[value] !== undefined
   }
@@ -705,6 +716,7 @@ export function createExperience(): void {
     if (surface !== "path") clearGardenLabels()
   }
 
+  // Language preview helpers manage seed states, preview audio, and temporary labels.
   function clearGardenLabels(): void {
     window.clearTimeout(gardenLabelTimer)
     document.querySelectorAll<HTMLElement>(".garden-choice.is-label-visible").forEach((choice) => {
@@ -842,6 +854,7 @@ export function createExperience(): void {
     }, 360)
   }
 
+  // Meaning Tree preview and primer helpers manage image glimpses, audio nodes, and expandable cards.
   function stopPreviewMomentAudio(): void {
     stopAudio(previewMomentAudio)
     document.querySelectorAll(".is-preview-playing").forEach((element) => {
@@ -1358,6 +1371,7 @@ export function createExperience(): void {
     })
   }
 
+  // Story playback helpers drive scene images, auto/manual modes, progress, and audio timing.
   function getStoryById(storyId: string): Story | undefined {
     return allStories.find((candidate) => candidate.id === storyId)
   }
@@ -1619,6 +1633,7 @@ export function createExperience(): void {
     showStoryScene(story, 0)
   }
 
+  // Story lesson navigation connects shell buttons to section-specific renderers.
   function enterStoryLessonSection(section: StoryLessonSectionId, previousSection: StoryLessonSectionId): void {
     if (previousSection === "preview" && section !== "preview") {
       stopPreviewMomentAudio()
@@ -1649,6 +1664,7 @@ export function createExperience(): void {
     setSurface(storyLessonSectionSurfaces[section])
   }
 
+  // Recall helpers render prompts, answer choices, feedback, and audio previews.
   function goBackToStorySelection(): void {
     stopStoryAudio()
     if (demoConfig.enabled) {
@@ -2085,6 +2101,7 @@ export function createExperience(): void {
     renderRecallPrompt()
   }
 
+  // Reflection helpers mark story completion and route the learner to the next action.
   function goBackToStory(): void {
     stopRecallAudio()
     if (appState.selectedStoryId) renderMeaningStory(appState.selectedStoryId)
@@ -2175,6 +2192,7 @@ export function createExperience(): void {
     goBackToStorySelection()
   }
 
+  // Sound Garden overview renders sound categories and their playable previews.
   function enterSoundGardenWithTransition(sourceButton?: HTMLElement): void {
     if (isGardenTransitioning) return
 
@@ -2333,6 +2351,7 @@ export function createExperience(): void {
     setSurface("soundLessonList")
   }
 
+  // Sound lesson list helpers show lessons inside the chosen sound category.
   function renderLessonHeader(sectionId: string): void {
     const section = soundSections.find((candidate) => candidate.id === sectionId)
     clearNode(lessonHeader)
@@ -2416,6 +2435,7 @@ export function createExperience(): void {
       .forEach((lesson) => soundLessonList.append(renderSoundLessonCard(lesson)))
   }
 
+  // Sound lesson section renderers cover preview, primer, guided tuning, recall, and reflection.
   function stopLessonPreviewAudio(): void {
     if (currentLessonPreviewAudio) {
       currentLessonPreviewAudio.pause()
@@ -3092,6 +3112,7 @@ export function createExperience(): void {
     })
   }
 
+  // Sound lesson navigation moves between steps, lessons, sections, and the path gate.
   function goBackToSoundGarden(): void {
     stopLessonPreviewAudio()
     selectedSoundLessonId = null
@@ -3370,6 +3391,7 @@ export function createExperience(): void {
     setSurface("path")
   }
 
+  // Meaning Tree navigation renders arcs, story pods, and demo-only entry points.
   function getStoriesForArc(arcId: string): Story[] {
     return allStories.filter((story) => getStoryArcId(story) === arcId)
   }
@@ -3557,6 +3579,7 @@ export function createExperience(): void {
       })
   }
 
+  // Language selection flow handles previewing, planting, dragging, and committing seeds.
   function previewLanguage(code: SupportedLanguage): void {
     // Start language preview audio without committing to the language yet.
     if (activePreview === code && !previewAudio.paused) return
@@ -3858,6 +3881,7 @@ export function createExperience(): void {
     setSurface("language")
   }
 
+  // Event listeners connect static controls to the stateful render functions above.
   seedButton.addEventListener("click", () => {
     if (hasBegun) return
     hasBegun = true

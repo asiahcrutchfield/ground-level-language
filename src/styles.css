@@ -1,3 +1,4 @@
+/* Theme tokens and browser-level defaults for the whole app. */
 :root {
   --soil: #142018;
   --soil-deep: #0e140f;
@@ -131,6 +132,7 @@ button:focus-visible {
   height: 100%;
 }
 
+/* App shell and shared screen containers. */
 [hidden] {
   display: none !important;
 }
@@ -510,6 +512,7 @@ button:focus-visible {
   animation-duration: 4s;
 }
 
+/* Path gate, Meaning Tree arc screen, and story branch selection. */
 .path-screen,
 .meaning-arc-screen,
 .story-branch-screen,
@@ -999,6 +1002,7 @@ button:focus-visible {
   pointer-events: none;
 }
 
+/* Sound Garden overview and sound lesson list. */
 .sound-garden-screen {
   overflow-y: auto;
   padding-block: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-bottom));
@@ -1544,6 +1548,7 @@ button:focus-visible {
   animation: phrase-preview-wave 900ms ease-in-out infinite;
 }
 
+/* Sound lesson shell and step-specific practice screens. */
 .sound-lesson-screen {
   align-items: stretch;
   align-content: stretch;
@@ -2564,6 +2569,7 @@ button:focus-visible {
   height: 38px;
 }
 
+/* Responsive adjustments for compact screens and shorter viewports. */
 @media (max-height: 680px) {
   .app[data-sound-step="perception-recall"] {
     padding-block: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-bottom));
@@ -3024,6 +3030,7 @@ button:focus-visible {
   transform: none;
 }
 
+/* Meaning Tree story lesson shell: preview, primer, story, recall, and reflection. */
 .story-lesson-screen {
   align-content: start;
   overflow-y: auto;
@@ -7470,6 +7477,7 @@ button:focus-visible {
   animation: recall-soft-miss 260ms ease;
 }
 
+/* Demo-only screens and controls remain scoped behind demo mode state. */
 .demo-arc-item {
   justify-self: center;
 }

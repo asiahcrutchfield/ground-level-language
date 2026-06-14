@@ -1,3 +1,5 @@
+// Sound Garden data contracts describe sound lesson navigation and preview media.
+
 export type SoundLessonStepId = "preview" | "primer" | "guided-tuning" | "perception-recall" | "reflection"
 
 export type SoundVisualType = "contour" | "particle" | "pulse" | "rhythm" | "resonance" | "phrase"

@@ -1,8 +1,10 @@
 import fs from "node:fs"
 import path from "node:path"
 
+// Mirrors source content into the public engine folder used by Vite.
 const root = process.cwd()
 
+// Copies a source directory to a destination after clearing stale output.
 function copyDirectory(fromRelativePath, toRelativePath) {
   const from = path.join(root, fromRelativePath)
   const to = path.join(root, toRelativePath)
@@ -12,6 +14,7 @@ function copyDirectory(fromRelativePath, toRelativePath) {
   fs.cpSync(from, to, { recursive: true })
 }
 
+// Rebuilds public/engine from content while skipping private notes.
 function mirrorContentToEngine() {
   const enginePath = path.join(root, "public/engine")
   fs.rmSync(enginePath, { recursive: true, force: true })

@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
+// Scaffolds the minimum phonetics folders and JSON files for a new language.
 const lang = process.argv[2]
 
 if (!lang) {
@@ -11,6 +12,7 @@ if (!lang) {
 const root = process.cwd()
 const basePath = path.join(root, "content", "phonetics", lang)
 
+// These folders mirror the expected phonetics content structure.
 const folders = [
   "phonemes/consonants",
   "phonemes/vowels",
@@ -20,6 +22,7 @@ const folders = [
   "intonation/audio/slow"
 ]
 
+// Starter JSON files let validation and loaders run before real data exists.
 const files = [
   { path: "phonemes/phonemes.json", content: { vowels: {}, consonants: {} } },
   { path: "syllabic/syllables.json", content: {} },

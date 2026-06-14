@@ -1,13 +1,17 @@
+// DOM utilities for strict element lookups and small creation helpers.
+
 export function mustQuery<T extends Element>(selector: string, root: ParentNode = document): T {
   const element = root.querySelector<T>(selector)
   if (!element) throw new Error(`Missing required element: ${selector}`)
   return element
 }
 
+// Clears dynamic containers before rerendering their current state.
 export function clearNode(node: Element): void {
   while (node.firstChild) node.firstChild.remove()
 }
 
+// Builds simple inline SVG icons from path data for generated controls.
 export function createSvgIcon(paths: string[]): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
   svg.setAttribute("viewBox", "0 0 24 24")

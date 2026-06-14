@@ -1,9 +1,12 @@
+// Shared audio helpers used by both lesson paths.
+
 export function stopAudio(audio: HTMLAudioElement): void {
   audio.pause()
   audio.removeAttribute("src")
   audio.load()
 }
 
+// Adds a short visual echo class after audio or fallback sound feedback.
 export function runEchoGap(element: HTMLElement, duration = 1200): void {
   element.classList.add("is-echoing")
   window.setTimeout(() => {
@@ -11,6 +14,7 @@ export function runEchoGap(element: HTMLElement, duration = 1200): void {
   }, duration)
 }
 
+// Plays the soft transition chime used when entering major garden spaces.
 export function makeChime(): void {
   const AudioContextConstructor =
     window.AudioContext ||

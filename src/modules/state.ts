@@ -1,5 +1,6 @@
 import type { SupportedLanguage } from "./types"
 
+// App-level surfaces correspond to the major screens controlled by experience.ts.
 export type AppSurface =
   | "start"
   | "language"
@@ -18,6 +19,7 @@ export type AppSurface =
 
 export type PathId = "meaning-tree" | "sound-garden"
 
+// Mutable navigation state for the current session.
 export type AppState = {
   selectedLanguage: SupportedLanguage
   selectedPath: PathId | null
@@ -28,6 +30,7 @@ export type AppState = {
   completedStoryIds: Set<string>
 }
 
+// Creates the initial app state before any path, arc, or story is selected.
 export function createAppState(selectedLanguage: SupportedLanguage): AppState {
   return {
     selectedLanguage,

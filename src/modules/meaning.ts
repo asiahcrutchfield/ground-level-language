@@ -1,5 +1,6 @@
 import type { PreviewMoment, PrimerItem, SoundPiece, Story, StoryScene, SupportedLanguage } from "./types"
 
+// Meaning Tree domain types describe arcs, recall prompts, and choices.
 export type MeaningArc = {
   id: string
   subject: string
@@ -33,6 +34,7 @@ export type RecallPrompt = {
   correctIndex: number
 }
 
+// Small symbolic maps and fallback assets keep prototype screens renderable.
 export const conceptIcons: Record<string, string> = {
   cat: "🐈",
   dog: "🐕",
@@ -129,6 +131,7 @@ const vocabAudioFiles: Partial<Record<SupportedLanguage, string[]>> = {
   zh: ["zh_u001.mp3", "zh_u002.mp3", "zh_u003.mp3", "zh_u004.mp3", "zh_u005.mp3"]
 }
 
+// Asset helper functions choose fallback images/audio when content is incomplete.
 function shuffled<T>(items: readonly T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5)
 }
@@ -166,11 +169,13 @@ function getFallbackVisualSignature(story: Story): string[] {
   return ["○", "○", "○"]
 }
 
+// Story signatures are the compact symbols shown around story and arc UI.
 export function getStorySignature(story: Story): string[] {
   if (story.visualSignature?.length) return story.visualSignature.slice(0, 3)
   return getFallbackVisualSignature(story)
 }
 
+// Renders selectable meaning arcs on the tree screen.
 export function renderArcButtons(options: {
   arcList: HTMLElement
   arcs: MeaningArc[]
@@ -229,6 +234,7 @@ export function renderArcButtons(options: {
   })
 }
 
+// Renders the story pods that appear after selecting a meaning arc.
 export function renderStoryPods(options: {
   storyPodBed: HTMLElement
   stories: Story[]
@@ -273,6 +279,7 @@ export function renderStoryPods(options: {
   })
 }
 
+// Preview moments feed the first story lesson section.
 export function getPreviewMoments(story: Story, selectedLanguage: SupportedLanguage): PreviewMoment[] {
   if (story.previewMoments?.length) return story.previewMoments.slice(0, 5)
 
@@ -296,6 +303,7 @@ export function getPreviewMoments(story: Story, selectedLanguage: SupportedLangu
   })
 }
 
+// Primer items feed the vocabulary/audio card section.
 export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage): PrimerItem[] {
   if (story.primerItems?.length) return story.primerItems
 
@@ -326,12 +334,14 @@ export function getPrimerItems(story: Story, selectedLanguage: SupportedLanguage
   })
 }
 
+// Resolves relative story asset paths against the story asset base.
 export function resolveStoryAsset(path: string | undefined, base = ""): string {
   if (!path) return ""
   if (/^(https?:|data:|blob:|\/|engine\/|stories\/|assets\/)/.test(path)) return path
   return `${base}${path}`
 }
 
+// Built-in story scenes keep the prototype cat story working without extra JSON fields.
 function getBuiltInStoryScenes(story: Story): StoryScene[] {
   const arcId = story.arcId ?? `${story.perspective}-${story.arc}`
   if (story.id !== "s0-001" || arcId !== "cat-stray") return []
@@ -349,6 +359,7 @@ function getBuiltInStoryScenes(story: Story): StoryScene[] {
   ]
 }
 
+// Story scenes drive the staged image/audio story playback section.
 export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage, storyAudioBase = ""): StoryScene[] {
   const providedScenes = story.scenes?.filter((scene) => scene.image || scene.audio || scene.start !== undefined)
   const builtInStoryScenes = getBuiltInStoryScenes(story)
@@ -377,6 +388,7 @@ export function getStoryScenes(story: Story, selectedLanguage: SupportedLanguage
   })
 }
 
+// Recall prompt generation turns primer and scene data into simple practice tasks.
 function getRecallPattern(item: PrimerItem, fallbackIndex: number): number[] {
   const phonemeCount = Math.max(2, item.phonemes?.length ?? 2 + (fallbackIndex % 3))
   return Array.from({ length: Math.min(5, phonemeCount) }, (_, index) => (index % 2 === 0 ? 1 : 0.64))

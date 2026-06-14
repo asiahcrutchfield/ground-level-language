@@ -6,6 +6,7 @@ import {
 } from "./storyLessonState"
 import type { StoryLessonSectionElementMap, StoryLessonSectionId, StoryLessonShell } from "./storyLessonTypes"
 
+// Wires the shared story lesson shell: progress dots, section visibility, and nav buttons.
 type StoryLessonShellConfig = {
   sections: StoryLessonSectionElementMap
   progress: HTMLElement
@@ -23,6 +24,7 @@ export function createStoryLessonShell({
 }: StoryLessonShellConfig): StoryLessonShell {
   let currentSection: StoryLessonSectionId = "preview"
 
+  // Updates section progress dots to match the active story lesson section.
   function renderProgress(): void {
     const dots = Array.from(progress.children)
     const activeIndex = getStoryLessonSectionIndex(currentSection)
@@ -34,6 +36,7 @@ export function createStoryLessonShell({
     progress.setAttribute("aria-label", `Story lesson section ${activeIndex + 1} of ${storyLessonSectionOrder.length}`)
   }
 
+  // Hides or disables navigation buttons at the beginning and end of the flow.
   function updateNavigation(): void {
     previousButton.hidden = !getPreviousStoryLessonSection(currentSection)
     nextButton.hidden = !getNextStoryLessonSection(currentSection)
@@ -41,6 +44,7 @@ export function createStoryLessonShell({
     nextButton.disabled = nextButton.hidden
   }
 
+  // Shows the requested section and refreshes shell chrome.
   function showSection(section: StoryLessonSectionId): void {
     storyLessonSectionOrder.forEach((sectionId) => {
       sections[sectionId].hidden = sectionId !== section
@@ -50,6 +54,7 @@ export function createStoryLessonShell({
     updateNavigation()
   }
 
+  // Lets the outer experience render section-specific content before switching.
   function requestSection(section: StoryLessonSectionId): void {
     if (section === currentSection) {
       showSection(section)

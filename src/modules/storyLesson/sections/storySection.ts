@@ -1,3 +1,4 @@
+// DOM handles needed by the story playback section.
 export type StorySectionElements = {
   section: HTMLElement
   modeGate: HTMLElement

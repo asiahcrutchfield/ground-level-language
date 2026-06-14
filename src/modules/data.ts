@@ -10,6 +10,7 @@ import type {
   VocabItem
 } from "./types"
 
+// Supported language metadata drives the language picker and content paths.
 export const supportedLanguages = ["en", "nan", "zh"] as const
 
 export const languageOptions: readonly LanguageOption[] = [
@@ -20,11 +21,13 @@ export const languageOptions: readonly LanguageOption[] = [
 
 export const languageStorageKey = "ground-level-language"
 
+// Normalizes stored or document-provided language codes to supported base codes.
 export function normalizeLanguage(value: string | null | undefined): SupportedLanguage {
   const code = value?.toLowerCase().split("-")[0]
   return supportedLanguages.includes(code as SupportedLanguage) ? (code as SupportedLanguage) : "zh"
 }
 
+// Reads the persisted language choice, falling back to the document default.
 export function getInitialLanguage(): SupportedLanguage {
   try {
     const savedLanguage = window.localStorage.getItem(languageStorageKey)
@@ -36,6 +39,7 @@ export function getInitialLanguage(): SupportedLanguage {
   return normalizeLanguage(document.documentElement.dataset.learningLang)
 }
 
+// Persists the active language when browser storage is available.
 export function saveLanguage(lang: SupportedLanguage): void {
   try {
     window.localStorage.setItem(languageStorageKey, lang)
@@ -44,6 +48,7 @@ export function saveLanguage(lang: SupportedLanguage): void {
   }
 }
 
+// Builds the public/engine paths for the selected language and current story.
 export function getLearningPaths(lang: SupportedLanguage): LearningPaths {
   return {
     vocab: `engine/vocab/${lang}/labels.json`,
@@ -56,6 +61,7 @@ export function getLearningPaths(lang: SupportedLanguage): LearningPaths {
   }
 }
 
+// Fetch helpers centralize JSON loading and fallback lookup behavior.
 async function loadJson<T>(path: string): Promise<T> {
   const response = await fetch(path)
   if (!response.ok) throw new Error(`Unable to load ${path}`)
@@ -80,6 +86,7 @@ function dirname(path: string): string {
   return path.slice(0, path.lastIndexOf("/") + 1)
 }
 
+// Content JSON can use a source-friendly shape; these local types describe it.
 type ContentVocabEntry = Omit<Partial<VocabEntry>, "audio" | "image"> & {
   audio?: {
     natural?: string
@@ -119,6 +126,7 @@ type ContentStoryLine = {
   }
 }
 
+// Timestamp parsing converts content time labels into numeric seconds.
 function parseTimestamp(value: string | undefined): number | undefined {
   if (!value) return undefined
 
@@ -129,6 +137,7 @@ function parseTimestamp(value: string | undefined): number | undefined {
   return parts[0] * 3600 + parts[1] * 60 + parts[2]
 }
 
+// Normalizers convert content files into the app's shared runtime contracts.
 function normalizeVocabEntry(entry: ContentVocabEntry): VocabEntry {
   const naturalAudio = Array.isArray(entry.audio) ? entry.audio : entry.audio?.natural
 
@@ -189,6 +198,7 @@ function normalizeContentStory(meta: ContentStoryMeta, lines: ContentStoryLine[]
   }
 }
 
+// Loads vocabulary, phonetics, and story data together for the selected language.
 export async function loadLearningData(lang: SupportedLanguage): Promise<LearningData> {
   const paths = getLearningPaths(lang)
   const [vocabResult, phonemeFile, storyMeta, storyLines] = await Promise.all([

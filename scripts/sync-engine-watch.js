@@ -2,10 +2,12 @@ import fs from "node:fs"
 import path from "node:path"
 import chokidar from "chokidar"
 
+// Keeps app package public/engine folders in sync during content iteration.
 const root = process.cwd()
 const publicEnginePath = path.join(root, "public", "engine")
 const apps = ["ear-trainer", "mouth-trainer", "stories", "dictionary"]
 
+// Copies the built engine assets into every app shell that consumes them.
 function syncPublicEngineToApps() {
   if (!fs.existsSync(publicEnginePath)) {
     console.error("Missing public/engine. Nothing to sync.")
@@ -26,6 +28,7 @@ function syncPublicEngineToApps() {
   }
 }
 
+// Batches rapid file watcher events into one sync pass.
 let timeoutId = null
 
 function debouncedSync() {

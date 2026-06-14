@@ -1,3 +1,5 @@
+// Shared data contracts for content loaded from public/engine and rendered in the app.
+
 export type Mode = "vocab" | "ear" | "story" | "replay"
 
 export type Surface = "landing" | "home" | "experience"
@@ -20,6 +22,7 @@ export type LearningPaths = {
   storyLines: string
 }
 
+// Vocabulary entries describe a meaning, its visual assets, and playable audio.
 export type VocabImage = {
   filename: string
   type: string
@@ -64,6 +67,7 @@ export type SoundItem = SoundEntry & {
 
 export type PhonemeFile = Record<"vowels" | "consonants", Record<string, SoundEntry>>
 
+// Story records are the normalized shape used by the Meaning Tree lesson flow.
 export type Story = {
   id: string
   title: string
@@ -79,6 +83,7 @@ export type Story = {
   audio: string
 }
 
+// Preview, primer, and scene types feed the staged lesson sections.
 export type PreviewMoment = {
   id: string
   image?: string
