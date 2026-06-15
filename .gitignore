@@ -1,6 +1,0 @@
-dist/
-node_modules/
-.vite/
-apps/**/dist/
-apps/**/node_modules/
-apps/**/.vite/
